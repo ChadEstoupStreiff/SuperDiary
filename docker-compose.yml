@@ -1,0 +1,88 @@
+version: "3.9"
+
+services:
+  back:
+    build: ./back
+    container_name: my_back
+    hostname: back
+    restart: unless-stopped
+    ports:
+      - "${BACK_PORT}:8000"
+    volumes:
+      - ${DATA_PATH}/shared:/shared
+    networks:
+      - appnet
+
+  front:
+    build: ./front
+    container_name: my_front
+    hostname: front
+    restart: unless-stopped
+    ports:
+      - "${FRONT_PORT}:3000"
+    networks:
+      - appnet
+
+  obsidian:
+    image: quay.io/skoenig/obsidian-remote
+    container_name: obsidian_server
+    hostname: obsidian
+    restart: unless-stopped
+    ports:
+      - "${OBSIDIAN_PORT}:8080"
+    environment:
+      # No password
+      # PASSWORD not set
+    volumes:
+      - ${DATA_PATH}/shared:/vault
+    networks:
+      - appnet
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx
+    container_name: paperless
+    hostname: paperless
+    restart: unless-stopped
+    ports:
+      - "${PAPERLESS_PORT}:8000"
+    environment:
+      PAPERLESS_CONSUMPTION_DIR: /shared
+      PAPERLESS_DATA_DIR: /data
+      PAPERLESS_MEDIA_ROOT: /media
+      PAPERLESS_SECRET_KEY: ${APPS_PASSWORD}
+      PAPERLESS_AUTO_LOGIN_USERNAME: admin
+    volumes:
+      - ${DATA_PATH}/shared:/shared
+      - ${DATA_PATH}/paperless/data:/data
+      - ${DATA_PATH}/paperless/media:/media
+    depends_on:
+      - paperless_db
+      - paperless_redis
+    networks:
+      - appnet
+
+  paperless_db:
+    image: postgres:15
+    container_name: paperless_db
+    hostname: paperless_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: paperless
+      POSTGRES_USER: paperless
+      POSTGRES_PASSWORD: ${APPS_PASSWORD}
+    volumes:
+      - ${DATA_PATH}/paperless/db:/var/lib/postgresql/data
+    networks:
+      - appnet
+
+  paperless_redis:
+    image: redis:7
+    container_name: paperless_redis
+    hostname: paperless_redis
+    restart: unless-stopped
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
