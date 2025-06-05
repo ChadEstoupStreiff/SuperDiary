@@ -12,4 +12,4 @@ if [ -z "$PROJECT_NAME" ]; then
 fi
 
 # Run docker compose with APP_NAME as project name
-docker compose -p "$PROJECT_NAME" up -d --build
+docker compose -p "superdiary_$PROJECT_NAME" up -d --build

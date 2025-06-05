@@ -14,6 +14,7 @@ App idea:
 - Summarize with LLM
 - Chat to ask questions in context
 - Data compressor ?
+- Duplicate finder
 
 **Whisper** for audio transcription
 **Ollama for LLM** to make resumes

@@ -1,0 +1,10 @@
+fastapi==0.95.*
+python-multipart
+uvicorn[standard]==0.22.*
+python-multipart==0.0.*
+tqdm
+
+python-dotenv
+mysqlclient
+sqlalchemy
+whoosh

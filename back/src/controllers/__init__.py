@@ -1,0 +1,2 @@
+from controllers.FileManager import FileManager
+from controllers.OCRManager import OCRManager
