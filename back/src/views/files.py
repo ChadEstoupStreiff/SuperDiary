@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 import os
 import traceback
 from datetime import datetime
@@ -59,12 +60,13 @@ async def delete_file(file: str):
 @router.get("/download/{file:path}")
 async def get_file(file: str):
     """
-    Get a file by its ID.
+    Get a file by its path. Returns correct media type for browser rendering.
     """
     if os.path.exists(file):
+        media_type, _ = mimetypes.guess_type(file)
         return FileResponse(
             file,
-            media_type="application/octet-stream",
+            media_type=media_type or "application/octet-stream",
             filename=os.path.basename(file),
         )
     else:
