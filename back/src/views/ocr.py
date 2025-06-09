@@ -1,9 +1,9 @@
 import logging
+import os
 import traceback
 
 from controllers import OCRManager
 from fastapi import APIRouter, HTTPException
-import os
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
 
@@ -52,7 +52,8 @@ async def list_ocr_tasks():
             status_code=500, detail=f"Error listing OCR tasks: {str(e)}"
         )
 
-@router.post("/launch/{file:path}")
+
+@router.post("/ask/{file:path}")
 async def launch_ocr(file: str):
     """
     Launch OCR processing for a specific file.
@@ -60,7 +61,7 @@ async def launch_ocr(file: str):
     if not os.path.exists(file):
         raise HTTPException(status_code=404, detail=f"File {file} not found.")
     try:
-        OCRManager.add_files_to_queue(file)
+        OCRManager.add_file_to_queue(file)
         return {"message": f"OCR processing for {file} has been launched."}
     except Exception as e:
         logging.error(f"Error launching OCR for {file}: {str(e)}")

@@ -44,7 +44,7 @@ def display_file(file_path: str):
         or file_extension == "xlsm"
         or file_extension == "csv"
     ):
-        st.dataframe(pd.read_csv(file_path), use_container_width=True)
+        st.dataframe(pd.read_csv(file_path), use_container_width=True, height=1000)
 
     else:
         with open(file_path, "rb") as file:

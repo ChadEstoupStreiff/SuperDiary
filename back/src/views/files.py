@@ -5,7 +5,7 @@ import traceback
 from datetime import datetime
 from typing import List
 
-from controllers import FileManager, OCRManager
+from controllers import FileManager, OCRManager, TranscriptionManager
 from fastapi import APIRouter, HTTPException, UploadFile
 from starlette.responses import FileResponse
 
@@ -31,7 +31,18 @@ async def upload_files(files: List[UploadFile], subdirectory: str, date: str = N
                 content = await file.read()
                 f.write(content)
 
-            OCRManager.add_files_to_queue(file_path)
+            file_extension = os.path.splitext(file.filename)[1].lower().replace(".", "")
+            if (
+                file_extension == "png"
+                or file_extension == "jpg"
+                or file_extension == "jpeg"
+                or file_extension == "bmp"
+                or file_extension == "webp"
+            ):
+                OCRManager.add_file_to_queue(file_path)
+            elif file_extension == "mp3" or file_extension == "wav":
+                TranscriptionManager.add_file_to_queue(file_path)
+                
         return {"message": f"{len(files)} files uploaded successfully."}
     except Exception as e:
         logging.error(f"Error uploading files: {str(e)}")

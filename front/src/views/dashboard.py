@@ -6,6 +6,14 @@ def dashboard():
     """
     Render the dashboard page.
     """
+    # cols = st.columns(3)
+    # with cols[0]:
+    #     st.page_link(explorer, label="🔍 Explorer", use_container_width=True)
+    # with cols[1]:
+    #     st.page_link(audio_record, label="🎤 Audio Record", use_container_width=True)
+    # with cols[2]:
+    #     st.page_link(settings, label="⚙️ Settings", use_container_width=True)
+
     st.write("Welcome to the Super Diary Dashboard!")
     cols = st.columns([2, 1])
 
@@ -21,7 +29,9 @@ def dashboard():
             use_container_width=True,
         ):
             if files:
-                files_payload = [("files", (file.name, file, file.type)) for file in files]
+                files_payload = [
+                    ("files", (file.name, file, file.type)) for file in files
+                ]
                 response = requests.post(
                     "http://back:80/files/upload?subdirectory=uploads",
                     files=files_payload,
@@ -36,8 +46,6 @@ def dashboard():
         with st.container(border=True):
             st.metric(
                 label="Total Files",
-                value=requests.get(
-                    "http://back:80/files/count"
-                ).json(),
+                value=requests.get("http://back:80/files/count").json(),
                 help="Total number of files processed by the system.",
             )

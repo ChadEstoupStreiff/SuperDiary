@@ -32,6 +32,16 @@ services:
     build: ./back
     container_name: back
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [ gpu ]
     volumes:
       - ${DATA_PATH}/shared:/shared
       - .env:/.env

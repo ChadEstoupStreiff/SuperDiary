@@ -8,3 +8,4 @@ python-dotenv
 mysqlclient
 sqlalchemy
 whoosh
+faster_whisper

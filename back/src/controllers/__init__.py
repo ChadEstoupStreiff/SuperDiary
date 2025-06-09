@@ -1,2 +1,5 @@
 from controllers.FileManager import FileManager
 from controllers.OCRManager import OCRManager
+from controllers.TranscriptionManager import TranscriptionManager
+from controllers.SummarizeManager import SummarizeManager
+from controllers.NoteManager import NoteManager

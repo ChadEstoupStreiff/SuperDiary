@@ -7,8 +7,16 @@ from sqlalchemy.orm import declarative_base
 Base = declarative_base()
 
 
+class Note(Base):
+    __tablename__ = "Note"
+
+    file = Column(String(512), primary_key=True, index=True)
+    date = Column(DateTime, nullable=False)
+    note = Column(TEXT(16320), nullable=False)
+
 class TaskStateEnum(Enum):
     PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
@@ -30,11 +38,11 @@ class OCRTask(Base):
     )
     added = Column(DateTime, primary_key=True)
     completed = Column(DateTime, nullable=True)
-    error_message = Column(TEXT(16320), nullable=True)
+    result = Column(TEXT(16320), nullable=True)
 
 
-class Resume(Base):
-    __tablename__ = "Resume"
+class Summary(Base):
+    __tablename__ = "Summary"
 
     file = Column(String(512), primary_key=True, index=True)
     date = Column(DateTime, nullable=False)
@@ -42,8 +50,8 @@ class Resume(Base):
     keywords = Column(TEXT(16320), nullable=False)
 
 
-class ResumeTask(Base):
-    __tablename__ = "ResumeTask"
+class SummaryTask(Base):
+    __tablename__ = "SummaryTask"
 
     file = Column(String(512), primary_key=True, index=True)
     state = Column(
@@ -51,7 +59,7 @@ class ResumeTask(Base):
     )
     added = Column(DateTime, primary_key=True)
     completed = Column(DateTime, nullable=True)
-    error_message = Column(TEXT(16320), nullable=True)
+    result = Column(TEXT(16320), nullable=True)
 
 
 class Transcription(Base):
@@ -71,4 +79,4 @@ class TranscriptionTask(Base):
     )
     added = Column(DateTime, primary_key=True)
     completed = Column(DateTime, nullable=True)
-    error_message = Column(TEXT(16320), nullable=True)
+    result = Column(TEXT(16320), nullable=True)

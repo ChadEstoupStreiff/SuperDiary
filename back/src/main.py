@@ -1,12 +1,11 @@
 import logging
+from threading import Thread
 
 import uvicorn
-
-from fastapi import FastAPI
-from controllers import FileManager, OCRManager
-from threading import Thread
+from controllers import FileManager, OCRManager, SummarizeManager, TranscriptionManager
 from db import DB
 from db.models import Base
+from fastapi import FastAPI
 
 app = FastAPI()
 
@@ -16,8 +15,19 @@ import views.files
 app.include_router(views.files.router)
 
 import views.ocr
+
 app.include_router(views.ocr.router)
 
+import views.transcription
+
+app.include_router(views.transcription.router)
+
+import views.summarize
+
+app.include_router(views.summarize.router)
+
+import views.notes
+app.include_router(views.notes.router)
 
 
 if __name__ == "__main__":
@@ -27,6 +37,14 @@ if __name__ == "__main__":
     Base.metadata.create_all(bind=DB().engine)
 
     FileManager.setup()
+
+    transcription_thread = Thread(target=TranscriptionManager.start_thread)
+    transcription_thread.daemon = True  # Daemonize thread
+    transcription_thread.start()
+
+    summarize_thread = Thread(target=SummarizeManager.start_thread)
+    summarize_thread.daemon = True  # Daemonize thread
+    summarize_thread.start()
 
     ocr_thread = Thread(target=OCRManager.start_thread)
     ocr_thread.daemon = True  # Daemonize thread
