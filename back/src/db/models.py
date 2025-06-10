@@ -6,6 +6,11 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
+class Setting(Base):
+    __tablename__ = "Setting"
+
+    key = Column(String(64), primary_key=True, index=True)
+    value = Column(TEXT(16320), nullable=False)
 
 class Note(Base):
     __tablename__ = "Note"
@@ -46,7 +51,7 @@ class Summary(Base):
 
     file = Column(String(512), primary_key=True, index=True)
     date = Column(DateTime, nullable=False)
-    content = Column(TEXT(16320), nullable=False)
+    summary = Column(TEXT(16320), nullable=False)
     keywords = Column(TEXT(16320), nullable=False)
 
 

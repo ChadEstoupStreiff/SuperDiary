@@ -60,7 +60,7 @@ async def launch_summarize(file: str):
     Launch summarization processing for a specific file.
     """
     try:
-        SummarizeManager.add_files_to_queue(file)
+        SummarizeManager.add_file_to_queue(file)
         return {"message": f"Summarization launched for {file}."}
     except Exception as e:
         logging.error(f"Error launching summarization for {file}: {str(e)}")

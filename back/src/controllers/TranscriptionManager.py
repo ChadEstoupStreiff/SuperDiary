@@ -81,7 +81,6 @@ class TranscriptionManager:
                     f"Error processing transcription for file {file}: {str(e)}"
                 )
                 logging.error(traceback.format_exc())
-                raise e
             finally:
                 cls.in_progress_file = None
                 db.close()
@@ -132,6 +131,62 @@ class TranscriptionManager:
             "date": transcription.date,
             "transcription": transcription.transcription,
         }
+
+    @classmethod
+    def delete(cls, file):
+        """
+        Delete the transcription and its tasks for a given file.
+        """
+        db = get_db()
+        try:
+            transcription = (
+                db.query(Transcription).filter(Transcription.file == file).first()
+            )
+            if transcription:
+                db.delete(transcription)
+
+            tasks = (
+                db.query(TranscriptionTask).filter(TranscriptionTask.file == file).all()
+            )
+            for task in tasks:
+                db.delete(task)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting transcription for file {file}: {str(e)}")
+            logging.error(traceback.format_exc())
+            raise e
+        finally:
+            db.close()
+
+    @classmethod
+    def move(cls, file, new_file):
+        """
+        Move the transcription and its tasks to a new file.
+        """
+        db = get_db()
+        try:
+            transcription = (
+                db.query(Transcription).filter(Transcription.file == file).first()
+            )
+            if transcription:
+                transcription.file = new_file
+
+            tasks = (
+                db.query(TranscriptionTask).filter(TranscriptionTask.file == file).all()
+            )
+            for task in tasks:
+                task.file = new_file
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(
+                f"Error moving transcription for file {file} to {new_file}: {str(e)}"
+            )
+            logging.error(traceback.format_exc())
+            raise e
+        finally:
+            db.close()
 
     @classmethod
     def get_tasks(cls, file):

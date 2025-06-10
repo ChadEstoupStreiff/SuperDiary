@@ -4,7 +4,7 @@ import traceback
 from datetime import datetime
 
 from db import Summary, SummaryTask, TaskStateEnum, get_db
-
+import json
 
 class SummarizeManager:
     in_progress_file = None
@@ -41,17 +41,19 @@ class SummarizeManager:
 
                 logging.info(f"SUMMARY >> Processing file: {file}")
                 # TODO: Implement summarization logic
-                result = "summary content"
-                logging.info(f"SUMMARY >> Result for file {file}: {result}")
+                summary = "summary content"
+                keywords = ["keyword1", "keyword2"]
+                logging.info(f"SUMMARY >> Result for file {file}: {keywords} - {summary}")
 
                 task.state = TaskStateEnum.COMPLETED
                 task.completed = datetime.now()
-                task.result = result
+                task.result = f"{keywords} - {summary}"
                 db.add(
                     Summary(
                         file=file,
                         date=datetime.now(),
-                        summary=result,
+                        summary=summary,
+                        keywords=json.dumps(keywords)
                     )
                 )
                 db.commit()
@@ -66,13 +68,12 @@ class SummarizeManager:
                     db.commit()
                 logging.error(f"Error processing summary for file {file}: {str(e)}")
                 logging.error(traceback.format_exc())
-                raise e
             finally:
                 cls.in_progress_file = None
                 db.close()
 
     @classmethod
-    def add_files_to_queue(cls, file):
+    def add_file_to_queue(cls, file):
         db = get_db()
         try:
             if (
@@ -114,7 +115,57 @@ class SummarizeManager:
             "file": summary.file,
             "date": summary.date,
             "summary": summary.summary,
+            "keywords": json.loads(summary.keywords),
         }
+
+    @classmethod
+    def delete(cls, file):
+        """
+        Delete the summary and its tasks for a given file.
+        """
+        db = get_db()
+        try:
+            summary = db.query(Summary).filter(Summary.file == file).first()
+            if summary:
+                db.delete(summary)
+
+            tasks = db.query(SummaryTask).filter(SummaryTask.file == file).all()
+            for task in tasks:
+                db.delete(task)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting summary for file {file}: {str(e)}")
+            logging.error(traceback.format_exc())
+            raise e
+        finally:
+            db.close()
+
+    @classmethod
+    def move(cls, file, new_file):
+        """
+        Move the summary and its tasks to a new file.
+        """
+        db = get_db()
+        try:
+            summary = db.query(Summary).filter(Summary.file == file).first()
+            if summary:
+                summary.file = new_file
+                db.commit()
+
+            tasks = db.query(SummaryTask).filter(SummaryTask.file == file).all()
+            for task in tasks:
+                task.file = new_file
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(
+                f"Error moving summary for file {file} to {new_file}: {str(e)}"
+            )
+            logging.error(traceback.format_exc())
+            raise e
+        finally:
+            db.close()
 
     @classmethod
     def get_tasks(cls, file):

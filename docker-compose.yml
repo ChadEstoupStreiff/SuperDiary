@@ -32,10 +32,7 @@ services:
     build: ./back
     container_name: back
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 8g
+    # deploy:
     #   resources:
     #     reservations:
     #       devices:

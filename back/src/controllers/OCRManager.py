@@ -1,5 +1,6 @@
 import logging
 import queue
+import subprocess
 import traceback
 from datetime import datetime
 
@@ -36,8 +37,16 @@ class OCRManager:
                 db.commit()
 
                 logging.info(f"OCR >> Processing for file: {file}")
-                # TODO implement OCR processing logic
-                result = "coucou"
+                proc = subprocess.run(
+                    ["python3", "/app/tesseract.py", file],
+                    capture_output=True,
+                    text=True,
+                )
+                if proc.returncode != 0:
+                    raise RuntimeError(
+                        f"Subprocess failed with code {proc.returncode}: {proc.stderr.strip()}"
+                    )
+                result = proc.stdout.strip()
                 logging.info(f"OCR >> Result for file {file}: {result}")
 
                 task.state = TaskStateEnum.COMPLETED
@@ -62,7 +71,6 @@ class OCRManager:
                     db.commit()
                 logging.error(f"Error processing OCR for file {file}: {str(e)}")
                 logging.error(traceback.format_exc())
-                raise e
             finally:
                 cls.in_progess_file = None
                 db.close()
@@ -114,6 +122,53 @@ class OCRManager:
             "date": ocr.date,
             "ocr": ocr.ocr,
         }
+
+    @classmethod
+    def delete(cls, file):
+        """
+        Delete the OCR result for a file.
+        """
+        db = get_db()
+        try:
+            ocr = db.query(OCR).filter(OCR.file == file).first()
+            if ocr:
+                db.delete(ocr)
+
+            tasks = db.query(OCRTask).filter(OCRTask.file == file).all()
+            for task in tasks:
+                db.delete(task)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting OCR for file {file}: {str(e)}")
+            logging.error(traceback.format_exc())
+            raise e
+        finally:
+            db.close()
+
+    @classmethod
+    def move(cls, file, new_file):
+        """
+        Move the OCR result for a file to a new file.
+        """
+        db = get_db()
+        try:
+            ocr = db.query(OCR).filter(OCR.file == file).first()
+            if ocr:
+                ocr.file = new_file
+                db.commit()
+
+            tasks = db.query(OCRTask).filter(OCRTask.file == file).all()
+            for task in tasks:
+                task.file = new_file
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error moving OCR for file {file} to {new_file}: {str(e)}")
+            logging.error(traceback.format_exc())
+            raise e
+        finally:
+            db.close()
 
     @classmethod
     def get_tasks(cls, file):

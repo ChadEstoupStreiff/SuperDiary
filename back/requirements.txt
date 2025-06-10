@@ -8,4 +8,6 @@ python-dotenv
 mysqlclient
 sqlalchemy
 whoosh
+
 faster_whisper
+pytesseract==0.3.*

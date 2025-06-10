@@ -13,7 +13,11 @@ class NoteManager:
         note = db.query(Note).filter(Note.file == file).first()
         db.close()
         if not note:
-            raise Exception("Note not found for this file.")
+            return {
+                "file": file,
+                "date": datetime.now(),
+                "note": "",
+            }
         return {
             "file": note.file,
             "date": note.date,
@@ -32,9 +36,45 @@ class NoteManager:
                 existing_note.note = note
                 existing_note.date = datetime.now()
             else:
-                new_note = Note(file=file, note=note)
+                new_note = Note(file=file, date=datetime.now(), note=note)
                 db.add(new_note)
             db.commit()
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+    @classmethod
+    def delete(cls, file):
+        """
+        Delete the note for a file.
+        """
+        db = get_db()
+        try:
+            note = db.query(Note).filter(Note.file == file).first()
+            if note:
+                db.delete(note)
+                db.commit()
+        except Exception as e:
+            db.rollback()
+            raise e
+        finally:
+            db.close()
+
+    @classmethod
+    def move(cls, file, new_file):
+        """
+        Move the note to a new file.
+        """
+        db = get_db()
+        try:
+            note = db.query(Note).filter(Note.file == file).first()
+            if note:
+                note.file = new_file
+                db.commit()
+            else:
+                raise Exception("Note not found for this file.")
         except Exception as e:
             db.rollback()
             raise e

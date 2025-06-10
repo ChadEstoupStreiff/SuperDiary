@@ -4,6 +4,9 @@ FROM python:3.9.16-bullseye
 RUN pip install --upgrade pip
 RUN apt-get update -y
 RUN apt-get upgrade -y
+RUN apt update
+RUN apt install tesseract-ocr -y
+RUN apt install tesseract-ocr-eng tesseract-ocr-fra -y
 
 
 # requirements

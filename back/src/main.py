@@ -29,6 +29,39 @@ app.include_router(views.summarize.router)
 import views.notes
 app.include_router(views.notes.router)
 
+import views.settings
+app.include_router(views.settings.router)
+
+@app.get("/ocr/health")
+def ocr_health():
+    """
+    Health check for the OCR service.
+    """
+    if ocr_thread.is_alive():
+        return "RUNNING"
+    else:
+        return "DEAD"
+
+@app.get("/transcription/health")
+def transcription_health():
+    """
+    Health check for the transcription service.
+    """
+    if transcription_thread.is_alive():
+        return "RUNNING"
+    else:
+        return "DEAD"
+    
+@app.get("/summarize/health")
+def summarize_health():
+    """
+    Health check for the summarization service.
+    """
+    if summarize_thread.is_alive():
+        return "RUNNING"
+    else:
+        return "DEAD"
+
 
 if __name__ == "__main__":
     logging.basicConfig(

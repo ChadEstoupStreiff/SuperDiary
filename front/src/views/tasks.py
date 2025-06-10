@@ -10,14 +10,17 @@ def tasks(
     list_transcription: bool = True,
 ):
     with st.expander("Summarization Tasks", expanded=True):
+        summarization_health = requests.get("http://back:80/summarize/health").json()
+        st.caption(f"Daemon health: {summarization_health}")
+
         response = requests.get(
-            "http://back:80/summarization/tasks" + (f"/{file}" if file else "")
+            "http://back:80/summarize/tasks" + (f"/{file}" if file else "")
         )
         if response.status_code == 200:
             tasks = response.json()
             tasks_df = pd.DataFrame(tasks)
             st.dataframe(
-                tasks_df, use_container_width=True, hide_index=True, height=500
+                tasks_df, use_container_width=True, hide_index=True, height=300
             )
         else:
             if print_errors:
@@ -27,6 +30,9 @@ def tasks(
 
     if list_ocr:
         with st.expander("OCR Tasks", expanded=True):
+            ocr_health = requests.get("http://back:80/ocr/health").json()
+            st.caption(f"Daemon health: {ocr_health}")
+
             response = requests.get(
                 "http://back:80/ocr/tasks" + (f"/{file}" if file else "")
             )
@@ -34,7 +40,7 @@ def tasks(
                 tasks = response.json()
                 tasks_df = pd.DataFrame(tasks)
                 st.dataframe(
-                    tasks_df, use_container_width=True, hide_index=True, height=500
+                    tasks_df, use_container_width=True, hide_index=True, height=300
                 )
             else:
                 if print_errors:
@@ -44,6 +50,11 @@ def tasks(
 
     if list_transcription:
         with st.expander("Transcription Tasks", expanded=True):
+            transcription_health = requests.get(
+                "http://back:80/transcription/health"
+            ).json()
+            st.caption(f"Daemon health: {transcription_health}")
+
             response = requests.get(
                 "http://back:80/transcription/tasks" + (f"/{file}" if file else "")
             )
@@ -51,7 +62,7 @@ def tasks(
                 tasks = response.json()
                 tasks_df = pd.DataFrame(tasks)
                 st.dataframe(
-                    tasks_df, use_container_width=True, hide_index=True, height=500
+                    tasks_df, use_container_width=True, hide_index=True, height=300
                 )
             else:
                 if print_errors:
