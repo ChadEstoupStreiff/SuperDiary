@@ -1,11 +1,12 @@
+import base64
 import json
+import mimetypes
 import os
 import tempfile
 
 import pandas as pd
 import requests
 import streamlit as st
-from streamlit_pdf_viewer import pdf_viewer
 
 map_languauge_extension = {
     "py:": "python",
@@ -30,7 +31,8 @@ map_languauge_extension = {
 }
 
 
-def display_file(file_path: str):
+def display_file(file_path: str, file_url: str, default_height_if_needed: int = 1000):
+    file_url = file_url.replace("http://back:80", "http://localhost:8400")
     file_extension = file_path.split(".")[-1].lower()
 
     if not os.path.exists(file_path):
@@ -38,10 +40,7 @@ def display_file(file_path: str):
         return
 
     try:
-        if file_extension == "pdf":
-            pdf_viewer(file_path, annotations=[], key=f"pdf_viewer_{file_path}")
-
-        elif (
+        if (
             file_extension == "xlsx"
             or file_extension == "xls"
             or file_extension == "ods"
@@ -97,15 +96,30 @@ def display_file(file_path: str):
                         language=language,
                     )
 
+                elif file_extension == "pdf":
+                    media_type, _ = mimetypes.guess_type(file_path)
+                    if not media_type:
+                        media_type = "application/octet-stream"
+                    encoded_content_string = base64.b64encode(file_bytes).decode(
+                        "utf-8"
+                    )
+                    data_uri = f"data:{media_type};base64,{encoded_content_string}"
+                    st.markdown(
+                        f'<embed src="{data_uri}" width="100%" height="{default_height_if_needed}px" />',
+                        unsafe_allow_html=True,
+                    )
+
                 else:
                     st.error(
                         f"Can't load a preview for this file type. {file_extension} is not supported."
                     )
     except Exception as e:
-        st.error(f"File might be corrupted or not supported. Error displaying file: {str(e)}")
+        st.error(
+            f"File might be corrupted or not supported. Error displaying file: {str(e)}"
+        )
 
 
-def download_and_display_file(file_name):
+def download_and_display_file(file_name, default_height_if_needed=1000):
     file_url = f"http://back:80/files/download/{file_name}"
     with st.spinner("Downloading file..."):
         result = requests.get(file_url)
@@ -115,6 +129,6 @@ def download_and_display_file(file_name):
             delete=True, suffix=f".{file_extension}"
         ) as fp:
             fp.write(result.content)
-            display_file(fp.name)
+            display_file(fp.name, file_url, default_height_if_needed=default_height_if_needed)
     else:
         st.error(f"Error fetching file: {result.text}")

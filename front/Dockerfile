@@ -12,6 +12,7 @@ RUN pip install -r requirements.txt
 # RUN cp config.toml ~/.streamlit/config.toml
 # RUN cp credentials.toml ~/.streamlit/credentials.toml
 
+COPY assets /assets
 COPY src /app
 WORKDIR /app
 

@@ -9,7 +9,7 @@ from views.tasks import tasks
 if __name__ == "__main__":
     st.set_page_config(
         page_title="Super Diary",
-        page_icon=":rocket:",
+        page_icon="/assets/logo.png",
         layout="wide",
     )
 

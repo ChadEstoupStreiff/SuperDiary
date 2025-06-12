@@ -1,17 +1,55 @@
-# SuperDiary
+<img src="front/assets/logo.png" alt="drawing" width="30"/>  
 
-SuperDiary is a custom daily journal designed to store all types of work-related data—text, audio, images, and more. It enables easy and efficient retrieval using AI tools and various software integrations.
+# Super Diary
 
-### Ideas:
-Organize all with date, project_name and tasks, maybe /data/<date>/<project>/<folders> ?
+**Super Diary** is a powerful, AI-enhanced web application for organizing, searching, and extracting content from your documents. Inspired by tools like Paperless, it leverages state-of-the-art models to unlock the full potential of your file collection.
 
-**Custom app** Front & back backend
-App idea:
-- Calendar that list infos of days (like number of notes, audios, files ...)
-- Summarize with LLM
-- Chat to ask questions in context
-- Data compressor ?
-- Duplicate finder
-- Tags, tag AI ?
+## 🚀 Features
 
-**Ollama for LLM** to make resumes
+- 🔍 **Smart Search**: Find files using natural language queries.
+- 🧠 **AI Extraction**:
+  - **Whisper** for audio transcription
+  - **Tesseract** for OCR on images and PDFs
+  - **LLMs** (llama3) for text understanding, summarization, tagging, and Q&A
+- 📂 **Universal File Support**: Text, PDF, images, audio, and more.
+- 🔒 **Local-first**: You control your data.
+
+## 📦 Tech Stack
+
+- **Back**: Python / FastAPI / SQLAlchemy  
+- **Front**: Streamlit  
+- **AI**: Whisper, Tesseract, Hugging Face LLMs  
+- **Infra**: Docker for deployment
+
+## 📷 Preview  
+In coming...
+
+## 🚀 Launch
+
+### ⚠️ Install [Docker](https://docs.docker.com/engine/install/) and [docker compose](https://docs.docker.com/compose/install/).
+
+Get the app on your computer
+```bash
+git clone https://github.com/yourusername/super-diary.git
+cd super-diary
+```
+
+Copy and edit .env
+```bash
+cp .env_ex .env
+vim .env
+```
+
+Start the web app
+```bash
+./up.sh
+```
+
+Stop the web app
+```bash
+./down.sh
+```  
+
+## 🎓 License
+
+MIT License © Chad Estoup-Streiff

@@ -323,6 +323,6 @@ def explorer():
             for i, file_preview_info in enumerate(file_preview_infos):
                 file_preview_container = file_preview_info
                 with file_preview_container:
-                    download_and_display_file(files[i])
+                    download_and_display_file(files[i], default_height_if_needed=250)
         else:
             st.write("No files found in the system.")
