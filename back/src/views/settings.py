@@ -13,6 +13,9 @@ default_settings = {
     "enable_auto_transcription": True,
     "enable_auto_summary": True,
     "transcription_model": "small",
+    # "summarization_model": "llama3.2:3b",
+    # "summarization_model": "llama3.1:8b",
+    "summarization_model": "llama3.2:1b",
 }
 
 def format_value(value: Any) -> str:
@@ -46,7 +49,7 @@ def get_setting(key: str, default=None):
     db = get_db()
     try:
         setting = db.query(Setting).filter(Setting.key == key).first()
-        return parse_value(setting.value if setting else default_settings.get(key, default))
+        return parse_value(setting.value) if setting else default_settings.get(key, default)
     except Exception as e:
         logging.error(f"Error retrieving setting {key}: {str(e)}")
         logging.error(traceback.format_exc())

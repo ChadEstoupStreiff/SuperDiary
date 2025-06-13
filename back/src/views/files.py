@@ -5,7 +5,11 @@ import traceback
 from datetime import datetime
 from typing import List
 
-from controllers import NoteManager, FileManager, OCRManager, SummarizeManager, TranscriptionManager
+from controllers.FileManager import FileManager
+from controllers.NoteManager import NoteManager
+from controllers.OCRManager import OCRManager
+from controllers.SummarizeManager import SummarizeManager
+from controllers.TranscriptionManager import TranscriptionManager
 from fastapi import APIRouter, HTTPException, UploadFile
 from starlette.responses import FileResponse
 from views.settings import get_setting
@@ -36,21 +40,11 @@ async def upload_files(
                 content = await file.read()
                 f.write(content)
 
-            file_extension = os.path.splitext(file.filename)[1].lower().replace(".", "")
-            if (
-                file_extension == "png"
-                or file_extension == "jpg"
-                or file_extension == "jpeg"
-                or file_extension == "bmp"
-                or file_extension == "webp"
-            ) and get_setting("enable_auto_ocr"):
+            mime, _ = mimetypes.guess_type(file_path)
+            if mime.startswith("image/") and get_setting("enable_auto_ocr"):
                 OCRManager.add_file_to_queue(file_path)
             elif (
-                file_extension == "mp3"
-                or file_extension == "wav"
-                or file_extension == "mp4"
-                or file_extension == "avi"
-                or file_extension == "mov"
+                mime.startswith("audio/") or mime.startswith("video/")
             ) and get_setting("enable_auto_transcription"):
                 TranscriptionManager.add_file_to_queue(file_path)
             if get_setting("enable_auto_summary"):

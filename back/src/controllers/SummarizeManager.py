@@ -1,10 +1,23 @@
+import json
 import logging
+import mimetypes
+import os
 import queue
+import time
 import traceback
 from datetime import datetime
 
+import docx
+import tiktoken
+from controllers.OCRManager import OCRManager
+from controllers.TranscriptionManager import TranscriptionManager
 from db import Summary, SummaryTask, TaskStateEnum, get_db
-import json
+from langchain.output_parsers import ResponseSchema, StructuredOutputParser
+from langchain_community.chat_models import ChatOllama
+from langchain_core.prompts import PromptTemplate
+from PyPDF2 import PdfReader
+from views.settings import get_setting
+
 
 class SummarizeManager:
     in_progress_file = None
@@ -14,7 +27,11 @@ class SummarizeManager:
         db = get_db()
         pending = (
             db.query(SummaryTask)
-            .filter(SummaryTask.state == TaskStateEnum.PENDING)
+            .filter(
+                SummaryTask.state.in_(
+                    [TaskStateEnum.PENDING, TaskStateEnum.IN_PROGRESS]
+                )
+            )
             .all()
         )
         db.close()
@@ -24,12 +41,68 @@ class SummarizeManager:
 
     @classmethod
     def loop(cls):
+        time.sleep(10)
         while True:
+            time.sleep(1)
             file = cls.queue.get()
             cls.in_progress_file = file
 
             db = get_db()
             try:
+                logging.info(f"SUMMARY >> Processing file: {file}")
+                transcription = None
+                ocr = None
+                content = None
+                file_extension = file.split(".")[-1].lower()
+                mime, _ = mimetypes.guess_type(file)
+                logging.info(
+                    f"SUMMARY >> File extension: {file_extension}, MIME type: {mime}"
+                )
+
+                # MARK: Image
+                if mime.startswith("image/"):
+                    logging.info("SUMMARY >> Attempting to get OCR.")
+                    ocr = OCRManager.get(file)
+                    if ocr is None:
+                        logging.info("SUMMARY >> No OCR found, re-adding to queue.")
+                        cls.queue.put(file)
+                        continue
+                    ocr = ocr.get("ocr")
+
+                # MARK: Audio and Video
+                elif mime.startswith("audio/") or mime.startswith("video/"):
+                    logging.info("SUMMARY >> Attempting to get transcription.")
+                    transcription = TranscriptionManager.get(file)
+                    if transcription is None:
+                        logging.info(
+                            "SUMMARY >> No transcription found, re-adding to queue."
+                        )
+                        cls.queue.put(file)
+                        continue
+                    transcription = transcription.get("transcription")
+
+                # MARK: Text and JSON
+                elif mime is None or mime.startswith("text") or mime.endswith("json"):
+                    logging.info("SUMMARY >> Attempting to read text content.")
+                    with open(file, "r", encoding="utf-8", errors="ignore") as f:
+                        content = f.read()
+
+                # MARK: PDF
+                elif mime == "application/pdf":
+                    logging.info("SUMMARY >> Attempting to read PDF content.")
+                    content = "\n".join(
+                        page.extract_text() or "" for page in PdfReader(file).pages
+                    )
+
+                # MARK: Word
+                elif mime in (
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ):
+                    logging.info("SUMMARY >> Attempting to read DOCX content.")
+                    doc = docx.Document(file)
+                    content = "\n".join(p.text for p in doc.paragraphs)
+
                 task = (
                     db.query(SummaryTask)
                     .filter(SummaryTask.file == file)
@@ -38,12 +111,27 @@ class SummarizeManager:
                 )
                 task.state = TaskStateEnum.IN_PROGRESS
                 db.commit()
+                # MARK: Prompt
+                if transcription is None and ocr is None and content is None:
+                    raise Exception(f"Can't summarize this type of file: {file}")
+                else:
+                    logging.info("SUMMARY >> Asking LLM for summary.")
+                    keywords, summary = cls.make_summary(
+                        input=f"""
+File Name: {os.path.basename(file)}
+File Extension: {file_extension}
+MIME Type: {mime if mime else "Not available"}
 
-                logging.info(f"SUMMARY >> Processing file: {file}")
-                # TODO: Implement summarization logic
-                summary = "summary content"
-                keywords = ["keyword1", "keyword2"]
-                logging.info(f"SUMMARY >> Result for file {file}: {keywords} - {summary}")
+OCR: {ocr if ocr else "Not available"}
+Transcription: {transcription if transcription else "Not available"}
+Content:
+{content if content else "Not available"}
+""",
+                        model=get_setting("summarization_model"),
+                    )
+                logging.info(
+                    f"SUMMARY >> Result for file {file}: {keywords} - {summary}"
+                )
 
                 task.state = TaskStateEnum.COMPLETED
                 task.completed = datetime.now()
@@ -53,7 +141,7 @@ class SummarizeManager:
                         file=file,
                         date=datetime.now(),
                         summary=summary,
-                        keywords=json.dumps(keywords)
+                        keywords=json.dumps(keywords),
                     )
                 )
                 db.commit()
@@ -71,6 +159,45 @@ class SummarizeManager:
             finally:
                 cls.in_progress_file = None
                 db.close()
+
+    @classmethod
+    def make_summary(cls, input, model, max_tokens: int = 2048):  # 4086 / 2
+        prompt_template_str = """"File context:
+{input_text}
+
+Instructions:
+You are an expert summarizer from a powerfull file system. Your task is to analyze the provided file and generate:
+1. A list of relevant keywords, from 5 to 10 keywords, that capture the main topics and themes of the content.
+2. A long and detailed summary, that captures the essence of the content, including key points and insights.
+
+Follow the format below:
+{format_instructions}
+"""
+        response_schemas = [
+            ResponseSchema(
+                name="summary", description="Concise summary of the content"
+            ),
+            ResponseSchema(name="keywords", description="List of relevant keywords"),
+        ]
+        parser = StructuredOutputParser.from_response_schemas(response_schemas)
+        format_instructions = parser.get_format_instructions()
+
+        llm = ChatOllama(base_url="http://ollama:11434", model=model)
+
+        input_tokenized = tiktoken.encoding_for_model("gpt-3.5-turbo").encode(input)
+        if len(input_tokenized) > max_tokens:
+            truncated_input = tiktoken.encoding_for_model("gpt-3.5-turbo").decode(
+                input_tokenized[:max_tokens]
+            )
+        else:
+            truncated_input = input
+
+        prompt = PromptTemplate.from_template(prompt_template_str)
+        chain = prompt | llm | parser
+        result = chain.invoke(
+            {"input_text": truncated_input, "format_instructions": format_instructions}
+        )
+        return result["keywords"], result["summary"]
 
     @classmethod
     def add_file_to_queue(cls, file):
@@ -110,7 +237,7 @@ class SummarizeManager:
         summary = db.query(Summary).filter(Summary.file == file).first()
         db.close()
         if not summary:
-            raise Exception("Summary not found for this file.")
+            return None
         return {
             "file": summary.file,
             "date": summary.date,
@@ -172,8 +299,6 @@ class SummarizeManager:
         db = get_db()
         tasks = db.query(SummaryTask).filter(SummaryTask.file == file).all()
         db.close()
-        if not tasks:
-            raise Exception("Summary task not found for this file.")
 
         return [
             {

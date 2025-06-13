@@ -1,10 +1,12 @@
 import streamlit as st
-
-from views.dashboard import dashboard
-from views.explorer import explorer
-from views.audio_record import audio_record
-from views.settings import settings
-from views.tasks import tasks
+from pages import (
+    PAGE_AUDIO_RECORD,
+    PAGE_DASHBOARD,
+    PAGE_EXPLORER,
+    PAGE_SETTINGS,
+    PAGE_TASKS,
+    PAGE_VIEWER,
+)
 
 if __name__ == "__main__":
     st.set_page_config(
@@ -15,37 +17,12 @@ if __name__ == "__main__":
 
     pg = st.navigation(
         [
-            st.Page(
-                dashboard,
-                title="Dashboard",
-                icon="🏠",
-                url_path="dashboard",
-                default=True,
-            ),
-            st.Page(
-                explorer,
-                title="Explorer",
-                icon="🔍",
-                url_path="explorer",
-            ),
-            st.Page(
-                audio_record,
-                title="Audio Record",
-                icon="🎤",
-                url_path="audio_record",
-            ),
-            st.Page(
-                tasks,
-                title="Tasks",
-                icon="📝",
-                url_path="tasks",
-            ),
-            st.Page(
-                settings,
-                title="Settings",
-                icon="⚙️",
-                url_path="settings",
-            ),
+            PAGE_DASHBOARD,
+            PAGE_EXPLORER,
+            PAGE_VIEWER,
+            PAGE_AUDIO_RECORD,
+            PAGE_TASKS,
+            PAGE_SETTINGS,
         ]
     )
     pg.run()

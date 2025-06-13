@@ -3,71 +3,63 @@ import requests
 import streamlit as st
 
 
-def tasks(
-    file=None,
-    print_errors: bool = True,
-    list_ocr: bool = True,
-    list_transcription: bool = True,
-):
-    with st.expander("Summarization Tasks", expanded=True):
-        summarization_health = requests.get("http://back:80/summarize/health").json()
-        st.caption(f"Daemon health: {summarization_health}")
+def fetch_display_tasks(task_type: str, file: str = None):
+    """
+    Load tasks from the backend based on the task type and optional file.
+    """
+    result_health = requests.get(f"http://back:80/{task_type}/health")
+    if result_health.status_code != 200:
+        st.error(f"Failed to fetch {task_type} health status: {result_health.text}")
+    else:
+        health_status = result_health.json()
+        result_running = requests.get(f"http://back:80/{task_type}/running")
+        if result_running.status_code == 200 and result_running.json() is not None:
+            st.caption(
+                f"Daemon health: {health_status} - {result_running.content.decode('utf-8')}"
+            )
+        else:
+            st.caption(f"Daemon health: {health_status}")
 
-        response = requests.get(
-            "http://back:80/summarize/tasks" + (f"/{file}" if file else "")
-        )
-        if response.status_code == 200:
-            tasks = response.json()
+    result_tasks = requests.get(
+        f"http://back:80/{task_type}/tasks" + (f"/{file}" if file else "")
+    )
+    if result_tasks.status_code == 200:
+        tasks = result_tasks.json()
+        if tasks:
             tasks_df = pd.DataFrame(tasks)
             st.dataframe(
                 tasks_df, use_container_width=True, hide_index=True, height=300
             )
         else:
-            if print_errors:
-                st.error(f"Failed to fetch summarization tasks: {response.text}")
-            else:
-                st.warning("No summarization tasks available or failed to fetch tasks.")
+            st.warning(f"No {task_type} tasks available.")
+    else:
+        st.error(f"Failed to fetch {task_type} tasks: {result_tasks.text}")
+
+
+def tasks(
+    file=None,
+    list_ocr: bool = True,
+    list_transcription: bool = True,
+):
+    with st.expander("Summarization Tasks", expanded=True):
+        fetch_display_tasks("summarize", file)
 
     if list_ocr:
         with st.expander("OCR Tasks", expanded=True):
-            ocr_health = requests.get("http://back:80/ocr/health").json()
-            st.caption(f"Daemon health: {ocr_health}")
-
-            response = requests.get(
-                "http://back:80/ocr/tasks" + (f"/{file}" if file else "")
-            )
-            if response.status_code == 200:
-                tasks = response.json()
-                tasks_df = pd.DataFrame(tasks)
-                st.dataframe(
-                    tasks_df, use_container_width=True, hide_index=True, height=300
-                )
-            else:
-                if print_errors:
-                    st.error(f"Failed to fetch OCR tasks: {response.text}")
-                else:
-                    st.warning("No OCR tasks available or failed to fetch tasks.")
+            fetch_display_tasks("ocr", file)
 
     if list_transcription:
         with st.expander("Transcription Tasks", expanded=True):
-            transcription_health = requests.get(
-                "http://back:80/transcription/health"
-            ).json()
-            st.caption(f"Daemon health: {transcription_health}")
+            fetch_display_tasks("transcription", file)
 
-            response = requests.get(
-                "http://back:80/transcription/tasks" + (f"/{file}" if file else "")
-            )
-            if response.status_code == 200:
-                tasks = response.json()
-                tasks_df = pd.DataFrame(tasks)
-                st.dataframe(
-                    tasks_df, use_container_width=True, hide_index=True, height=300
-                )
-            else:
-                if print_errors:
-                    st.error(f"Failed to fetch transcription tasks: {response.text}")
-                else:
-                    st.warning(
-                        "No transcription tasks available or failed to fetch tasks."
-                    )
+
+if __name__ == "__main__":
+    st.set_page_config(
+        page_title="Super Diary",
+        page_icon="/assets/logo.png",
+        layout="wide",
+    )
+    tasks()
+
+if __name__ == "__main__":
+    tasks()

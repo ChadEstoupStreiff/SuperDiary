@@ -74,7 +74,7 @@ class NoteManager:
                 note.file = new_file
                 db.commit()
             else:
-                raise Exception("Note not found for this file.")
+                return None
         except Exception as e:
             db.rollback()
             raise e

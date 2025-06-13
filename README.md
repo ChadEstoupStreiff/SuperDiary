@@ -26,7 +26,8 @@ In coming...
 
 ## 🚀 Launch
 
-### ⚠️ Install [Docker](https://docs.docker.com/engine/install/) and [docker compose](https://docs.docker.com/compose/install/).
+> Install [Docker](https://docs.docker.com/engine/install/) and [docker compose](https://docs.docker.com/compose/install/).  
+#### ⚠️ Make sure you allocated enough RAM to docker (see in settings) ! AI models may crash if not enough RAM.  
 
 Get the app on your computer
 ```bash

@@ -1,10 +1,26 @@
 import logging
 import traceback
 
-from controllers import SummarizeManager
+from controllers.SummarizeManager import SummarizeManager
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/summarize", tags=["Summarize"])
+
+
+@router.get("/running")
+async def get_running_summarize():
+    """
+    Get the list of currently running summarization tasks.
+    """
+    try:
+        return SummarizeManager.in_progress_file
+    except Exception as e:
+        logging.error(f"Error retrieving running summarization tasks: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving running summarization tasks: {str(e)}",
+        )
 
 
 @router.get("/get/{file:path}")

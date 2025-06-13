@@ -21,12 +21,53 @@ def apply_settings(settings):
         st.sidebar.error("Failed to apply settings. Please try again later.")
 
 
-
 def settings():
     """
     Settings page for the application.
     This function is a placeholder for the settings view.
     """
+    result = requests.get("http://back:80/ollama/list")
+    if result.status_code == 200:
+        installed_models = [m["name"] for m in result.json()]
+    else:
+        installed_models = None
+
+    with st.expander("LLM Settings", expanded=True):
+        if installed_models is None:
+            st.error("Failed to fetch installed models. Please try again later.")
+
+        cols = st.columns(2)
+        with cols[0]:
+            model_pull_name = st.text_input(
+                "Model to install",
+                help="Enter the name of the model to pull from Ollama.",
+            )
+            st.caption("See available models at this link: https://ollama.com/library")
+            if st.button("Pull Model", use_container_width=True):
+                with st.spinner("Pulling model..."):
+                    if model_pull_name:
+                        result = requests.post(
+                            f"http://back:80/ollama/pull/{model_pull_name}"
+                        )
+                        if result.status_code == 200:
+                            st.success(
+                                f"Model '{model_pull_name}' pulled successfully."
+                            )
+                            installed_models = requests.get(
+                                "http://back:80/ollama/list"
+                            ).json()
+                        else:
+                            st.error(
+                                f"Failed to pull model '{model_pull_name}': {result.text}"
+                            )
+                    else:
+                        st.warning("Please enter a model name to pull.")
+        with cols[1]:
+            st.subheader("Installed Models:")
+            for model in installed_models:
+                st.badge(model)
+
+    st.header("Application Settings")
     with st.form("settings_form"):
         settings = load_settings()
 
@@ -37,6 +78,12 @@ def settings():
                 "Enable auto Summarization",
                 value=settings["enable_auto_summary"],
                 help="Enable automatic summarization of text files when uploaded.",
+            )
+            settings["summarization_model"] = st.selectbox(
+                "Summarization model",
+                options=installed_models if installed_models else [],
+                index=installed_models.index(settings["summarization_model"]),
+                help="Select the model to use for summarization.",
             )
 
         with st.expander("OCR Settings", expanded=True):
@@ -79,9 +126,11 @@ def settings():
 """)
 
         with top:
-
             if st.form_submit_button("Apply Settings", use_container_width=True):
                 apply_settings(settings)
         if st.form_submit_button("Apply settings", use_container_width=True):
             apply_settings(settings)
 
+
+if __name__ == "__main__":
+    settings()

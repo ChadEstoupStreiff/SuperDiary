@@ -22,8 +22,7 @@ def audio_record():
                 )
             ]
             response = requests.post(
-                "http://back:80/files/upload?subdirectory=audio&date="
-                + date.strftime("%Y-%m-%d"),
+                "http://back:80/files/upload?subdirectory=audio&date=" + date,
                 files=files_payload,
             )
             if response.status_code == 200:
@@ -32,3 +31,7 @@ def audio_record():
                 st.error(f"Failed to upload audio: {response.text}")
         else:
             st.warning("No audio recorded yet. Please record audio first.")
+
+
+if __name__ == "__main__":
+    audio_record()

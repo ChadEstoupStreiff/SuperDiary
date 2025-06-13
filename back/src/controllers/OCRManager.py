@@ -1,6 +1,7 @@
 import logging
 import queue
 import subprocess
+import time
 import traceback
 from datetime import datetime
 
@@ -17,7 +18,13 @@ class OCRManager:
         This method should be implemented to handle the OCR processing logic.
         """
         db = get_db()
-        pending = db.query(OCRTask).filter(OCRTask.state == TaskStateEnum.PENDING).all()
+        pending = (
+            db.query(OCRTask)
+            .filter(
+                OCRTask.state.in_([TaskStateEnum.PENDING, TaskStateEnum.IN_PROGRESS])
+            )
+            .all()
+        )
         db.close()
         for task in pending:
             OCRManager.queue.put(task.file)
@@ -26,6 +33,7 @@ class OCRManager:
 
     @classmethod
     def loop(cls):
+        time.sleep(10)
         while True:
             file = cls.queue.get()
             cls.in_progess_file = file
@@ -116,7 +124,7 @@ class OCRManager:
         ocr = db.query(OCR).filter(OCR.file == file).first()
         db.close()
         if not ocr:
-            raise Exception("OCR not found for this file.")
+            return None
         return {
             "file": ocr.file,
             "date": ocr.date,
@@ -179,8 +187,6 @@ class OCRManager:
         db = get_db()
         ocr_tasks = db.query(OCRTask).filter(OCRTask.file == file).all()
         db.close()
-        if not ocr_tasks:
-            raise Exception("OCR task not found for this file.")
 
         return [
             {

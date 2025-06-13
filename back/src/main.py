@@ -2,10 +2,15 @@ import logging
 from threading import Thread
 
 import uvicorn
-from controllers import FileManager, OCRManager, SummarizeManager, TranscriptionManager
+from controllers.FileManager import FileManager
+from controllers.OCRManager import OCRManager
+from controllers.TranscriptionManager import TranscriptionManager
+from controllers.SummarizeManager import SummarizeManager
 from db import DB
 from db.models import Base
 from fastapi import FastAPI
+from views.settings import get_setting
+from views.ollama import list_models, pull_model
 
 app = FastAPI()
 
@@ -27,10 +32,17 @@ import views.summarize
 app.include_router(views.summarize.router)
 
 import views.notes
+
 app.include_router(views.notes.router)
 
 import views.settings
+
 app.include_router(views.settings.router)
+
+import views.ollama
+
+app.include_router(views.ollama.router)
+
 
 @app.get("/ocr/health")
 def ocr_health():
@@ -42,6 +54,7 @@ def ocr_health():
     else:
         return "DEAD"
 
+
 @app.get("/transcription/health")
 def transcription_health():
     """
@@ -51,7 +64,8 @@ def transcription_health():
         return "RUNNING"
     else:
         return "DEAD"
-    
+
+
 @app.get("/summarize/health")
 def summarize_health():
     """
@@ -82,6 +96,9 @@ if __name__ == "__main__":
     ocr_thread = Thread(target=OCRManager.start_thread)
     ocr_thread.daemon = True  # Daemonize thread
     ocr_thread.start()
+
+    if len(list_models()) == 0:
+        pull_model(get_setting("summarization_model"))
 
     uvicorn.run(app, host="0.0.0.0", port=80)
     ocr_thread.join()  # Wait for the OCR thread to finish

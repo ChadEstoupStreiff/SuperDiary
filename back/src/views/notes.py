@@ -1,7 +1,7 @@
 import logging
 import traceback
 
-from controllers import NoteManager
+from controllers.NoteManager import NoteManager
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/notes", tags=["Notes"])

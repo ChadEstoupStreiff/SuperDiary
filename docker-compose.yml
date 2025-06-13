@@ -27,6 +27,21 @@ services:
     hostname: pma
     networks:
       - appnet
+    
+  
+  ollama:
+    image: docker.io/ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_KEEP_ALIVE=1h
+      - OLLAMA_HOST=0.0.0.0
+    volumes:
+      - ${DATA_PATH}/ollama:/root/.ollama
+    tty: true
+    hostname: ollama
+    networks:
+      - appnet
 
   back:
     build: ./back

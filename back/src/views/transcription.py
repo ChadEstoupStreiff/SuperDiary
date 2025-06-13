@@ -2,10 +2,26 @@ import logging
 import os
 import traceback
 
-from controllers import TranscriptionManager
+from controllers.TranscriptionManager import TranscriptionManager
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/transcription", tags=["Transcription"])
+
+
+@router.get("/running")
+async def get_running_transcription():
+    """
+    Get the list of currently running transcription tasks.
+    """
+    try:
+        return TranscriptionManager.in_progress_file
+    except Exception as e:
+        logging.error(f"Error retrieving running transcription tasks: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving running transcription tasks: {str(e)}",
+        )
 
 
 @router.get("/get/{file:path}")

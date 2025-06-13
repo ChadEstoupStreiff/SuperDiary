@@ -6,14 +6,6 @@ def dashboard():
     """
     Render the dashboard page.
     """
-    # cols = st.columns(3)
-    # with cols[0]:
-    #     st.page_link(explorer, label="🔍 Explorer", use_container_width=True)
-    # with cols[1]:
-    #     st.page_link(audio_record, label="🎤 Audio Record", use_container_width=True)
-    # with cols[2]:
-    #     st.page_link(settings, label="⚙️ Settings", use_container_width=True)
-
     st.write("Welcome to the Super Diary Dashboard!")
     cols = st.columns([2, 1])
 
@@ -49,3 +41,6 @@ def dashboard():
                 value=requests.get("http://back:80/files/count").json(),
                 help="Total number of files processed by the system.",
             )
+
+if __name__ == "__main__":
+    dashboard()

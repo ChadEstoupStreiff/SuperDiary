@@ -1,6 +1,7 @@
 import logging
 import queue
 import subprocess
+import time
 import traceback
 from datetime import datetime
 
@@ -15,7 +16,11 @@ class TranscriptionManager:
         db = get_db()
         pending = (
             db.query(TranscriptionTask)
-            .filter(TranscriptionTask.state == TaskStateEnum.PENDING)
+            .filter(
+                TranscriptionTask.state.in_(
+                    [TaskStateEnum.PENDING, TaskStateEnum.IN_PROGRESS]
+                )
+            )
             .all()
         )
         db.close()
@@ -25,6 +30,7 @@ class TranscriptionManager:
 
     @classmethod
     def loop(cls):
+        time.sleep(10)
         while True:
             file = cls.queue.get()
             cls.in_progress_file = file
@@ -125,7 +131,7 @@ class TranscriptionManager:
         )
         db.close()
         if not transcription:
-            raise Exception("Transcription not found for this file.")
+            return None
         return {
             "file": transcription.file,
             "date": transcription.date,
@@ -193,8 +199,6 @@ class TranscriptionManager:
         db = get_db()
         tasks = db.query(TranscriptionTask).filter(TranscriptionTask.file == file).all()
         db.close()
-        if not tasks:
-            raise Exception("Transcription task not found for this file.")
 
         return [
             {

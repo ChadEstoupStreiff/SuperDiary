@@ -129,6 +129,8 @@ def download_and_display_file(file_name, default_height_if_needed=1000):
             delete=True, suffix=f".{file_extension}"
         ) as fp:
             fp.write(result.content)
-            display_file(fp.name, file_url, default_height_if_needed=default_height_if_needed)
+            display_file(
+                fp.name, file_url, default_height_if_needed=default_height_if_needed
+            )
     else:
         st.error(f"Error fetching file: {result.text}")

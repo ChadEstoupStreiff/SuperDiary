@@ -2,10 +2,25 @@ import logging
 import os
 import traceback
 
-from controllers import OCRManager
+from controllers.OCRManager import OCRManager
 from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/ocr", tags=["OCR"])
+
+
+@router.get("/running")
+async def get_running_ocr():
+    """
+    Get the list of currently running OCR tasks.
+    """
+    try:
+        return OCRManager.in_progess_file
+    except Exception as e:
+        logging.error(f"Error retrieving running OCR tasks: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving running OCR tasks: {str(e)}"
+        )
 
 
 @router.get("/get/{file:path}")
