@@ -30,6 +30,146 @@ map_languauge_extension = {
     "swift:": "swift",
 }
 
+mimes = [
+    "text/plain",
+    "text/markdown",
+    "text/html",
+    "text/csv",
+    "text/x-python",
+    "text/x-r",
+    "text/x-sql",
+    "text/x-latex",
+    "text/x-shellscript",
+    "text/x-csrc",
+    "text/x-java-source",
+    # Documents
+    "application/pdf",
+    "application/rtf",
+    "application/epub+zip",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.ms-excel",
+    "application/vnd.ms-powerpoint",
+    "application/x-iwork-keynote-sffkey",
+    "application/x-iwork-pages-sffpages",
+    "application/x-iwork-numbers-sffnumbers",
+    # Images
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/tiff",
+    "image/bmp",
+    "image/svg+xml",
+    # Audio
+    "audio/mpeg",
+    "audio/wav",
+    "audio/ogg",
+    "audio/flac",
+    "audio/aac",
+    "audio/x-ms-wma",
+    # Video
+    "video/mp4",
+    "video/avi",
+    "video/mov",
+    "video/webm",
+    "video/x-ms-wmv",
+    "video/x-flv",
+    "video/mpeg",
+    # Archives / disk images
+    "application/zip",
+    "application/x-7z-compressed",
+    "application/x-rar-compressed",
+    "application/x-tar",
+    "application/gzip",
+    "application/x-bzip",
+    "application/x-bzip2",
+    "application/x-iso9660-image",
+    # Code / binaries
+    "application/json",
+    "application/javascript",
+    "application/x-python-code",
+    "application/x-httpd-php",
+    "application/x-sh",
+    "application/x-bash",
+    "application/x-csh",
+    "application/xml",
+    "application/octet-stream",
+    "application/x-msdownload",
+]
+
+# ---------- Friendly labels ----------
+mimes_map = {
+    # Text / markup
+    "text/plain": "Text",
+    "text/markdown": "Markdown File",
+    "text/html": "HTML File",
+    "text/csv": "CSV File",
+    "text/x-python": "Python Script",
+    "text/x-r": "R Script",
+    "text/x-sql": "SQL Script",
+    "text/x-latex": "LaTeX File",
+    "text/x-shellscript": "Shell Script",
+    "text/x-csrc": "C Source File",
+    "text/x-java-source": "Java Source File",
+    # Documents
+    "application/pdf": "PDF",
+    "application/rtf": "RTF Document",
+    "application/epub+zip": "EPUB Document",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "Word Document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "Excel Spreadsheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "PowerPoint Presentation",
+    "application/vnd.ms-excel": "Excel Spreadsheet (Legacy)",
+    "application/vnd.ms-powerpoint": "PowerPoint Presentation (Legacy)",
+    "application/x-iwork-keynote-sffkey": "Keynote Presentation",
+    "application/x-iwork-pages-sffpages": "Pages Document",
+    "application/x-iwork-numbers-sffnumbers": "Numbers Spreadsheet",
+    # Images
+    "image/jpeg": "JPEG Image",
+    "image/png": "PNG Image",
+    "image/gif": "GIF Image",
+    "image/webp": "WebP Image",
+    "image/tiff": "TIFF Image",
+    "image/bmp": "Bitmap Image",
+    "image/svg+xml": "SVG Vector Image",
+    # Audio
+    "audio/mpeg": "MP3 Audio",
+    "audio/wav": "WAV Audio",
+    "audio/ogg": "OGG Audio",
+    "audio/flac": "FLAC Audio",
+    "audio/aac": "AAC Audio",
+    "audio/x-ms-wma": "WMA Audio",
+    # Video
+    "video/mp4": "MP4 Video",
+    "video/avi": "AVI Video",
+    "video/mov": "MOV Video",
+    "video/webm": "WebM Video",
+    "video/x-ms-wmv": "WMV Video",
+    "video/x-flv": "FLV Video",
+    "video/mpeg": "MPEG Video",
+    # Archives / disk images
+    "application/zip": "ZIP Archive",
+    "application/x-7z-compressed": "7z Archive",
+    "application/x-rar-compressed": "RAR Archive",
+    "application/x-tar": "TAR Archive",
+    "application/gzip": "GZ Archive",
+    "application/x-bzip": "BZIP Archive",
+    "application/x-bzip2": "BZIP2 Archive",
+    "application/x-iso9660-image": "ISO Disk Image",
+    # Code / binaries
+    "application/json": "JSON File",
+    "application/javascript": "JavaScript File",
+    "application/x-python-code": "Compiled Python Code",
+    "application/x-httpd-php": "PHP File",
+    "application/x-sh": "Shell Script",
+    "application/x-bash": "Bash Script",
+    "application/x-csh": "C-Shell Script",
+    "application/xml": "XML File",
+    "application/octet-stream": "Binary File",
+    "application/x-msdownload": "Windows Executable",
+}
+
 
 def display_file(file_path: str, file_url: str, default_height_if_needed: int = 1000):
     file_url = file_url.replace("http://back:80", "http://localhost:8400")
@@ -134,3 +274,17 @@ def download_and_display_file(file_name, default_height_if_needed=1000):
             )
     else:
         st.error(f"Error fetching file: {result.text}")
+
+
+def custom_style():
+    """
+    Apply custom CSS styles to the Streamlit app.
+    """
+    st.markdown(
+        """
+        <style>
+        #MainMenu {visibility: hidden;}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )

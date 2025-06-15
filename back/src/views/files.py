@@ -13,29 +13,31 @@ from controllers.TranscriptionManager import TranscriptionManager
 from fastapi import APIRouter, HTTPException, UploadFile
 from starlette.responses import FileResponse
 from views.settings import get_setting
+import json
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
 
 @router.post("/upload")
 async def upload_files(
-    files: List[UploadFile], subdirectory: str, date: datetime = None
+    files: List[UploadFile], subdirectory: str, date: str = None, file_edit_info: str = None 
 ):
     """
     Upload a file to the system.
     """
+    file_edit_info = json.loads(file_edit_info) if file_edit_info else {}
+    date = date or datetime.now().strftime("%Y-%m-%d")
     try:
-        if not date:
-            date = datetime.now().strftime("%Y-%m-%d")
-        else:
-            date = date.strftime("%Y-%m-%d")
-
-        file_directory = os.path.join("/shared", date, subdirectory)
-        if not os.path.exists(file_directory):
-            os.makedirs(file_directory, exist_ok=True)
 
         for file in files:
-            file_path = os.path.join(file_directory, file.filename)
+            file_date = file_edit_info.get(file.filename, {}).get("date", date)
+            file_name = file_edit_info.get(file.filename, {}).get("name", file.filename)
+
+            os.makedirs(
+                os.path.join("/shared", file_date, subdirectory), exist_ok=True
+            )
+
+            file_path = os.path.join("/shared", file_date, subdirectory, file_name)
             with open(file_path, "wb") as f:
                 content = await file.read()
                 f.write(content)
@@ -181,7 +183,10 @@ async def list_files():
     """
     List all files in the system.
     """
-    return walk_files()
+    result = walk_files()
+    result.sort()
+    result.reverse()
+    return result
 
 
 @router.get("/count")
@@ -193,13 +198,56 @@ async def count_files():
 
 
 @router.get("/search")
-async def search_files(query: str):
+async def search_files(
+    text: str = None,
+    start_date: str = None,
+    end_date: str = None,
+    types: str = None,
+):
     """
     Search for files based on a query.
     """
+    if text is not None and len(text) == 0:
+        text = None
+    if types is not None and len(types) == 0:
+        types = None
     try:
-        return FileManager.search_files(query)
+        result = FileManager.search_files(
+            text, start_date, end_date, types.split(",") if types else None
+        )
+        result.sort()
+        result.reverse()
+        return result
     except Exception as e:
         logging.error(f"Error searching files: {str(e)}")
         logging.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error searching files: {str(e)}")
+
+
+@router.get("/index")
+async def index_files():
+    """
+    Index all files in the system.
+    """
+    try:
+        return FileManager.get_indexed_files()
+    except Exception as e:
+        logging.error(f"Error getting indexed files: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, detail=f"Error getting indexed files: {str(e)}"
+        )
+
+
+@router.post("/index")
+async def reindex_files():
+    """
+    Reindex all files in the system.
+    """
+    try:
+        FileManager.index_files()
+        return {"message": "Files reindexed successfully."}
+    except Exception as e:
+        logging.error(f"Error reindexing files: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Error reindexing files: {str(e)}")

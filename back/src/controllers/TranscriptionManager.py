@@ -23,9 +23,11 @@ class TranscriptionManager:
             )
             .all()
         )
-        db.close()
         for task in pending:
+            task.state = TaskStateEnum.PENDING
             TranscriptionManager.queue.put(task.file)
+        db.commit()
+        db.close()
         TranscriptionManager.loop()
 
     @classmethod

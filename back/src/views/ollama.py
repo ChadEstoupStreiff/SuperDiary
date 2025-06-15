@@ -12,7 +12,6 @@ async def make_summary(content: str, model: str):
     try:
         return SummarizeManager.make_summary(
             input=content,
-            model=model,
         )
     except Exception as e:
         logging.error(f"Error making summary with model {model}: {str(e)}")

@@ -54,3 +54,7 @@ Stop the web app
 ## 🎓 License
 
 MIT License © Chad Estoup-Streiff
+
+
+### TODO / Ideas
+https://github.com/PaddlePaddle/PaddleOCR

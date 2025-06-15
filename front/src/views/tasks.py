@@ -54,12 +54,4 @@ def tasks(
 
 
 if __name__ == "__main__":
-    st.set_page_config(
-        page_title="Super Diary",
-        page_icon="/assets/logo.png",
-        layout="wide",
-    )
-    tasks()
-
-if __name__ == "__main__":
     tasks()

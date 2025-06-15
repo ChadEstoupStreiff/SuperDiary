@@ -7,6 +7,7 @@ from pages import (
     PAGE_TASKS,
     PAGE_VIEWER,
 )
+from utils import custom_style
 
 if __name__ == "__main__":
     st.set_page_config(
@@ -14,6 +15,7 @@ if __name__ == "__main__":
         page_icon="/assets/logo.png",
         layout="wide",
     )
+    # custom_style()
 
     pg = st.navigation(
         [

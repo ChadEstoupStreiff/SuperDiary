@@ -8,13 +8,10 @@ import traceback
 from datetime import datetime
 
 import docx
-import tiktoken
 from controllers.OCRManager import OCRManager
 from controllers.TranscriptionManager import TranscriptionManager
 from db import Summary, SummaryTask, TaskStateEnum, get_db
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
-from langchain_community.chat_models import ChatOllama
-from langchain_core.prompts import PromptTemplate
+from ollama import request_ollama
 from PyPDF2 import PdfReader
 from views.settings import get_setting
 
@@ -34,9 +31,11 @@ class SummarizeManager:
             )
             .all()
         )
-        db.close()
         for task in pending:
+            task.state = TaskStateEnum.PENDING
             SummarizeManager.queue.put(task.file)
+        db.commit()
+        db.close()
         SummarizeManager.loop()
 
     @classmethod
@@ -126,8 +125,7 @@ OCR: {ocr if ocr else "Not available"}
 Transcription: {transcription if transcription else "Not available"}
 Content:
 {content if content else "Not available"}
-""",
-                        model=get_setting("summarization_model"),
+"""
                     )
                 logging.info(
                     f"SUMMARY >> Result for file {file}: {keywords} - {summary}"
@@ -161,43 +159,49 @@ Content:
                 db.close()
 
     @classmethod
-    def make_summary(cls, input, model, max_tokens: int = 2048):  # 4086 / 2
-        prompt_template_str = """"File context:
-{input_text}
+    def make_summary(cls, input):
+        model = get_setting("summarization_model")
+        keywords = request_ollama(
+            model=model,
+            prompt=""""! FILE CONTENT START !
+{input}
+! FILE CONTENT END !
 
-Instructions:
-You are an expert summarizer from a powerfull file system. Your task is to analyze the provided file and generate:
-1. A list of relevant keywords, from 5 to 10 keywords, that capture the main topics and themes of the content.
-2. A long and detailed summary, that captures the essence of the content, including key points and insights.
+! TASK !
+You are an expert summarizer.
 
-Follow the format below:
-{format_instructions}
-"""
-        response_schemas = [
-            ResponseSchema(
-                name="summary", description="Concise summary of the content"
-            ),
-            ResponseSchema(name="keywords", description="List of relevant keywords"),
-        ]
-        parser = StructuredOutputParser.from_response_schemas(response_schemas)
-        format_instructions = parser.get_format_instructions()
+Extract **5 to 10 relevant keywords** that capture the **main topics and themes** of the file content above.
 
-        llm = ChatOllama(base_url="http://ollama:11434", model=model)
-
-        input_tokenized = tiktoken.encoding_for_model("gpt-3.5-turbo").encode(input)
-        if len(input_tokenized) > max_tokens:
-            truncated_input = tiktoken.encoding_for_model("gpt-3.5-turbo").decode(
-                input_tokenized[:max_tokens]
-            )
-        else:
-            truncated_input = input
-
-        prompt = PromptTemplate.from_template(prompt_template_str)
-        chain = prompt | llm | parser
-        result = chain.invoke(
-            {"input_text": truncated_input, "format_instructions": format_instructions}
+! FORMAT !
+Respond ONLY with a plain comma-separated list.  
+Do NOT use JSON, code blocks, quotes, or formatting.  
+Example: keyword1, keyword2, keyword3, ...
+""",
+            input_text=input,
         )
-        return result["keywords"], result["summary"]
+        if keywords.startswith("[") and keywords.endswith("]"):
+            keywords = json.loads(keywords)
+        else:
+            keywords = [w.strip() for w in keywords.split(",")]
+
+        summary = request_ollama(
+            model=model,
+            prompt=""""! FILE CONTENT START !
+{input}
+! FILE CONTENT END !
+
+! TASK !
+You are an expert summarizer.
+
+Write a **detailed summary** that captures the **essence**, **key points**, and **main insights** from the file content above.
+
+! FORMAT !
+Respond ONLY with plain text.  
+Do NOT include explanations, notes, or any formatting outside the summary itself.
+""",
+            input_text=input,
+        )
+        return (keywords, summary)
 
     @classmethod
     def add_file_to_queue(cls, file):

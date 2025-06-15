@@ -14,6 +14,6 @@ python-docx
 
 faster_whisper
 pytesseract==0.3.*
-langchain
-langchain-community
+# langchain
+# langchain-community
 tiktoken

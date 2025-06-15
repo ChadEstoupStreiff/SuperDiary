@@ -25,10 +25,11 @@ class OCRManager:
             )
             .all()
         )
-        db.close()
         for task in pending:
+            task.state = TaskStateEnum.PENDING
             OCRManager.queue.put(task.file)
-
+        db.commit()
+        db.close()
         OCRManager.loop()
 
     @classmethod

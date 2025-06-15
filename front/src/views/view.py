@@ -149,11 +149,12 @@ def see_file(file):
 
 def view():
     if "file_to_see" not in st.session_state:
-        st.error("No file selected to view. Please select a file from the explorer.")
+        # st.error("No file selected to view. Please select a file from the explorer.")
+        st.switch_page(PAGE_EXPLORER)
         return
     file = st.session_state.file_to_see
 
-    cols = st.columns([1, 2])
+    cols = st.columns(2)
     with cols[0]:
         # if st.button(
         #     "🔙 Back to Explorer",
@@ -170,9 +171,7 @@ def view():
             mime, _ = mimetypes.guess_type(file)
             if mime.startswith("audio/") or mime.startswith("video/"):
                 with st.spinner("Loading transcription..."):
-                    result = requests.get(
-                        f"http://back:80/transcription/get/{file}"
-                    )
+                    result = requests.get(f"http://back:80/transcription/get/{file}")
                 if result.status_code == 200 and result.json() is not None:
                     st.subheader("Transcription")
                     st.write(result.json().get("transcription", ""))
@@ -191,9 +190,7 @@ def view():
 
             elif mime.startswith("image/"):
                 with st.spinner("Loading OCR..."):
-                    result = requests.get(
-                        f"http://back:80/ocr/get/{file}"
-                    )
+                    result = requests.get(f"http://back:80/ocr/get/{file}")
                 if result.status_code == 200 and result.json() is not None:
                     st.subheader("OCR")
                     st.write(result.json().get("ocr", ""))

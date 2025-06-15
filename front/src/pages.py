@@ -9,14 +9,14 @@ PAGE_DASHBOARD = st.Page(
 )
 PAGE_EXPLORER = st.Page(
     "views/explorer.py",
-    title="Explorer",
-    icon="🔍",
+    title="Documents",
+    icon="📂",
     url_path="explorer",
 )
 PAGE_VIEWER = st.Page(
     "views/view.py",
-    title="View",
-    icon="👁️",
+    title="Viewer",
+    icon="🔎",
     url_path="view",
 )
 PAGE_AUDIO_RECORD = st.Page(
