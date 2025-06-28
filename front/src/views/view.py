@@ -8,6 +8,7 @@ import streamlit as st
 from utils import download_and_display_file
 from views.tasks import tasks as list_tasks
 from pages import PAGE_EXPLORER
+from utils import clear_cache
 
 
 @st.dialog("Delete file")
@@ -23,8 +24,11 @@ def dialog_delete_file(file):
     if st.button("Delete 🗑️", use_container_width=True):
         resulst = requests.delete(f"http://back:80/files/delete/{file}")
         if resulst.status_code == 200:
-            st.success("File deleted successfully.")
-            del st.session_state.file_to_see
+            st.toast(
+                "File deleted successfully. You will be redirected to the explorer.",
+                icon="✅",
+            )
+            clear_cache()
             st.rerun()
         else:
             st.error("Failed to delete the file. Please try again.")
@@ -85,7 +89,10 @@ def see_file(file):
             ):
                 result = requests.post(f"http://back:80/summarize/ask/{file}")
                 if result.status_code == 200:
-                    st.success("Task for summarization created.")
+                    st.toast(
+                        "Summary task created successfully. It may take some time to process.",
+                        icon="✅",
+                    )
                     time.sleep(1)
                     st.rerun()
                 else:
@@ -130,7 +137,10 @@ def see_file(file):
                     f"http://back:80/notes/{file}?note={edited_notes}"
                 )
                 if result_update.status_code == 200:
-                    st.success("Notes updated successfully.")
+                    st.toast(
+                        "Notes updated successfully.",
+                        icon="✅",
+                    )
                 else:
                     st.error("Failed to update notes. Please try again later.")
         else:
@@ -169,7 +179,10 @@ def view():
         with st.container(border=True):
             download_and_display_file(file)
             mime, _ = mimetypes.guess_type(file)
-            if mime.startswith("audio/") or mime.startswith("video/"):
+            if mime is None:
+                st.error("Could not determine the file type. Please check the file.")
+
+            elif mime.startswith("audio/") or mime.startswith("video/"):
                 with st.spinner("Loading transcription..."):
                     result = requests.get(f"http://back:80/transcription/get/{file}")
                 if result.status_code == 200 and result.json() is not None:
@@ -182,7 +195,10 @@ def view():
                             f"http://back:80/transcription/ask/{file}",
                         )
                         if result.status_code == 200:
-                            st.success("Transcription task created.")
+                            st.toast(
+                                "Transcription task created successfully. It may take some time to process.",
+                                icon="✅",
+                            )
                             time.sleep(1)
                             st.rerun()
                         else:
@@ -201,7 +217,10 @@ def view():
                             f"http://back:80/ocr/ask/{file}",
                         )
                         if result.status_code == 200:
-                            st.success("OCR task created.")
+                            st.toast(
+                                "OCR task created successfully. It may take some time to process.",
+                                icon="✅",
+                            )
                             time.sleep(1)
                             st.rerun()
                         else:

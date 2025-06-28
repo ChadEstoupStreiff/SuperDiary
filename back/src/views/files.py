@@ -1,3 +1,4 @@
+import json
 import logging
 import mimetypes
 import os
@@ -13,14 +14,16 @@ from controllers.TranscriptionManager import TranscriptionManager
 from fastapi import APIRouter, HTTPException, UploadFile
 from starlette.responses import FileResponse
 from views.settings import get_setting
-import json
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
 
 @router.post("/upload")
 async def upload_files(
-    files: List[UploadFile], subdirectory: str, date: str = None, file_edit_info: str = None 
+    files: List[UploadFile],
+    subdirectory: str,
+    date: str = None,
+    file_edit_info: str = None,
 ):
     """
     Upload a file to the system.
@@ -28,29 +31,39 @@ async def upload_files(
     file_edit_info = json.loads(file_edit_info) if file_edit_info else {}
     date = date or datetime.now().strftime("%Y-%m-%d")
     try:
-
         for file in files:
             file_date = file_edit_info.get(file.filename, {}).get("date", date)
-            file_name = file_edit_info.get(file.filename, {}).get("name", file.filename)
-
-            os.makedirs(
-                os.path.join("/shared", file_date, subdirectory), exist_ok=True
+            file_name = (
+                file_edit_info.get(file.filename, {})
+                .get("name", file.filename)
+                # .replace(" ", "_")
+                .replace("/", "_")
+                .replace("\\", "_")
+                .replace(":", "-")
+                .replace("?", "")
             )
 
+            os.makedirs(os.path.join("/shared", file_date, subdirectory), exist_ok=True)
+
             file_path = os.path.join("/shared", file_date, subdirectory, file_name)
+            
             with open(file_path, "wb") as f:
                 content = await file.read()
                 f.write(content)
+            if os.path.exists(file_path):
+                os.utime(file_path, None)
+            else:
 
-            mime, _ = mimetypes.guess_type(file_path)
-            if mime.startswith("image/") and get_setting("enable_auto_ocr"):
-                OCRManager.add_file_to_queue(file_path)
-            elif (
-                mime.startswith("audio/") or mime.startswith("video/")
-            ) and get_setting("enable_auto_transcription"):
-                TranscriptionManager.add_file_to_queue(file_path)
-            if get_setting("enable_auto_summary"):
-                SummarizeManager.add_file_to_queue(file_path)
+                mime, _ = mimetypes.guess_type(file_path)
+                if mime.startswith("image/") and get_setting("enable_auto_ocr"):
+                    OCRManager.add_file_to_queue(file_path)
+                elif (
+                    mime.startswith("audio/") or mime.startswith("video/")
+                ) and get_setting("enable_auto_transcription"):
+                    TranscriptionManager.add_file_to_queue(file_path)
+                if get_setting("enable_auto_summary"):
+                    SummarizeManager.add_file_to_queue(file_path)
+
 
         return {"message": f"{len(files)} files uploaded successfully."}
     except Exception as e:
@@ -202,6 +215,7 @@ async def search_files(
     text: str = None,
     start_date: str = None,
     end_date: str = None,
+    subfolder: str = None,
     types: str = None,
 ):
     """
@@ -211,9 +225,16 @@ async def search_files(
         text = None
     if types is not None and len(types) == 0:
         types = None
+    if subfolder is not None and len(subfolder) == 0:
+        subfolder = None
+
     try:
         result = FileManager.search_files(
-            text, start_date, end_date, types.split(",") if types else None
+            text,
+            start_date,
+            end_date,
+            subfolder.split(",") if subfolder else None,
+            types.split(",") if types else None,
         )
         result.sort()
         result.reverse()

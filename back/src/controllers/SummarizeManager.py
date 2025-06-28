@@ -134,6 +134,7 @@ Content:
                 task.state = TaskStateEnum.COMPLETED
                 task.completed = datetime.now()
                 task.result = f"{keywords} - {summary}"
+                db.query(SummaryTask).filter(SummaryTask.file == file).delete()
                 db.add(
                     Summary(
                         file=file,

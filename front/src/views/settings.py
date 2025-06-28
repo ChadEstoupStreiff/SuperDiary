@@ -16,9 +16,16 @@ def apply_settings(settings):
         json=settings,
     )
     if result.status_code == 200:
-        st.sidebar.success("Settings have been applied successfully.")
+        st.toast("Settings applied successfully!", icon="✅")
     else:
-        st.sidebar.error("Failed to apply settings. Please try again later.")
+        st.toast(
+            "Failed to apply settings. Please try again later.",
+            icon="❌",
+        )
+
+
+def ai_settings(prefix: str):
+    pass
 
 
 def settings():
@@ -26,46 +33,61 @@ def settings():
     Settings page for the application.
     This function is a placeholder for the settings view.
     """
-    result = requests.get("http://back:80/ollama/list")
-    if result.status_code == 200:
-        installed_models = [m["name"] for m in result.json()]
-    else:
-        installed_models = None
+    tab_llama, tab_chatgpt, tab_gemini = st.tabs(
+        ["Llama (local)", "OpenAI ChatGPT", "Google Gemini"]
+    )
 
     with st.expander("LLM Settings", expanded=True):
-        if installed_models is None:
-            st.error("Failed to fetch installed models. Please try again later.")
+        with tab_llama:
+            result = requests.get("http://back:80/ollama/list")
+            if result.status_code == 200:
+                installed_models = [m["name"] for m in result.json()]
+            else:
+                installed_models = None
 
-        cols = st.columns(2)
-        with cols[0]:
-            model_pull_name = st.text_input(
-                "Model to install",
-                help="Enter the name of the model to pull from Ollama.",
-            )
-            st.caption("See available models at this link: https://ollama.com/library")
-            if st.button("Pull Model", use_container_width=True):
-                with st.spinner("Pulling model..."):
-                    if model_pull_name:
-                        result = requests.post(
-                            f"http://back:80/ollama/pull/{model_pull_name}"
-                        )
-                        if result.status_code == 200:
-                            st.success(
-                                f"Model '{model_pull_name}' pulled successfully."
+                if installed_models is None:
+                    st.error(
+                        "Failed to fetch installed models. Please try again later."
+                    )
+
+            cols = st.columns(2)
+            with cols[0]:
+                model_pull_name = st.text_input(
+                    "Model to install",
+                    help="Enter the name of the model to pull from Ollama.",
+                )
+                st.caption(
+                    "See available models at this link: https://ollama.com/library"
+                )
+                if st.button("Pull Model", use_container_width=True):
+                    with st.spinner("Pulling model..."):
+                        if model_pull_name:
+                            result = requests.post(
+                                f"http://back:80/ollama/pull/{model_pull_name}"
                             )
-                            installed_models = requests.get(
-                                "http://back:80/ollama/list"
-                            ).json()
+                            if result.status_code == 200:
+                                st.toast(
+                                    f"Model '{model_pull_name}' pulled successfully.",
+                                    icon="✅",
+                                )
+                                installed_models = requests.get(
+                                    "http://back:80/ollama/list"
+                                ).json()
+                            else:
+                                st.toast(
+                                    f"Failed to pull model '{model_pull_name}'. Please try again.",
+                                    icon="❌",
+                                )
                         else:
-                            st.error(
-                                f"Failed to pull model '{model_pull_name}': {result.text}"
-                            )
-                    else:
-                        st.warning("Please enter a model name to pull.")
-        with cols[1]:
-            st.subheader("Installed Models:")
-            for model in installed_models:
-                st.badge(model)
+                            st.warning("Please enter a model name to pull.")
+            with cols[1]:
+                st.subheader("Installed Models:")
+                for model in installed_models:
+                    st.badge(model)
+        with tab_chatgpt:
+            st.error("In dev...")
+        with tab_gemini:
+            st.error("In dev...")
 
     st.header("Application Settings")
     with st.form("settings_form"):

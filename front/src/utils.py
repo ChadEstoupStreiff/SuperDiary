@@ -7,6 +7,8 @@ import tempfile
 import pandas as pd
 import requests
 import streamlit as st
+from urllib.parse import quote
+
 
 map_languauge_extension = {
     "py:": "python",
@@ -260,7 +262,9 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
 
 
 def download_and_display_file(file_name, default_height_if_needed=1000):
-    file_url = f"http://back:80/files/download/{file_name}"
+    encoded_file_name = quote(file_name)
+    file_url = f"http://back:80/files/download/{encoded_file_name}"
+
     with st.spinner("Downloading file..."):
         result = requests.get(file_url)
     if result.status_code == 200:
@@ -288,3 +292,9 @@ def custom_style():
         """,
         unsafe_allow_html=True,
     )
+
+def clear_cache():
+    if "explorer_files" in st.session_state:
+        del st.session_state.explorer_files
+    if "file_to_see" in st.session_state:
+        del st.session_state.file_to_see

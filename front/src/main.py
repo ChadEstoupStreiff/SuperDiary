@@ -3,11 +3,11 @@ from pages import (
     PAGE_AUDIO_RECORD,
     PAGE_DASHBOARD,
     PAGE_EXPLORER,
+    PAGE_NOTES,
     PAGE_SETTINGS,
     PAGE_TASKS,
     PAGE_VIEWER,
 )
-from utils import custom_style
 
 if __name__ == "__main__":
     st.set_page_config(
@@ -17,14 +17,19 @@ if __name__ == "__main__":
     )
     # custom_style()
 
-    pg = st.navigation(
-        [
+    pages = [
             PAGE_DASHBOARD,
             PAGE_EXPLORER,
-            PAGE_VIEWER,
+            PAGE_NOTES,
             PAGE_AUDIO_RECORD,
             PAGE_TASKS,
             PAGE_SETTINGS,
         ]
+    if "file_to_see" in st.session_state:
+        pages.insert(2, PAGE_VIEWER)
+
+    pg = st.navigation(
+        pages,
+        expanded=True,
     )
     pg.run()

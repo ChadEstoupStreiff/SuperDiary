@@ -1,6 +1,9 @@
+import json
+
 import requests
 import streamlit as st
-import json
+from utils import clear_cache
+
 
 @st.dialog("Upload files")
 def toast_upload(files):
@@ -26,7 +29,7 @@ def toast_upload(files):
                 border=True,
                 key=f"file_container_{file.name}",
             ):
-                cols = st.columns([2, 1] if toggle_edit_date else [1])
+                cols = st.columns([5, 2] if toggle_edit_date else [1])
                 with cols[0]:
                     file_edit_info[file.name]["name"] = st.text_input(
                         f"Save {file.name} as",
@@ -43,26 +46,28 @@ def toast_upload(files):
                         ).strftime("%Y-%m-%d")
 
     if st.button(
-        "Upload Files",
+        "✅ Save files",
         help="Click to upload the selected files.",
         use_container_width=True,
     ):
-        files_payload = [("files", (file.name, file, file.type)) for file in files]
-        request = f"http://back:80/files/upload?subdirectory=uploads&file_edit_info={json.dumps(file_edit_info)}"
-        if not toggle_edit_date:
-            request += f"&date={date.strftime('%Y-%m-%d')}"
-        response = requests.post(
-            request,
-            files=files_payload,
-        )
-        if response.status_code == 200:
-            st.success("Files uploaded successfully.")
-            if "explorer_files" in st.session_state:
-                del st.session_state.explorer_files
-            if "file_to_see" in st.session_state:
-                del st.session_state.file_to_see
-        else:
-            st.error(f"Failed to upload: {response.text}")
+        with st.spinner("Saving files..."):
+            files_payload = [("files", (file.name, file, file.type)) for file in files]
+            request = f"http://back:80/files/upload?subdirectory=uploads&file_edit_info={json.dumps(file_edit_info)}"
+            if not toggle_edit_date:
+                request += f"&date={date.strftime('%Y-%m-%d')}"
+            response = requests.post(
+                request,
+                files=files_payload,
+            )
+            if response.status_code == 200:
+                st.success(
+                    "Files uploaded successfully."
+                )
+                st.toast("Files uploaded successfully.", icon="✅")
+                clear_cache()
+            else:
+                st.error(f"Failed to upload files: {response.text}")
+                st.toast(f"Failed to upload files: {response.text}", icon="❌")
 
 
 def dashboard():

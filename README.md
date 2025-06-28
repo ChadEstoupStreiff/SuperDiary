@@ -57,4 +57,12 @@ MIT License © Chad Estoup-Streiff
 
 
 ### TODO / Ideas
-https://github.com/PaddlePaddle/PaddleOCR
+https://github.com/PaddlePaddle/PaddleOCR  
+
+Bugs:  
+- HEIC images
+- md files dont load
+- search query seems to not work
+- if upload while task is running, will crash (notes for exemple)
+- missing start ocr button
+- clears toasts notif on rerun

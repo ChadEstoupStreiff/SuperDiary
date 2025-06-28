@@ -19,6 +19,12 @@ PAGE_VIEWER = st.Page(
     icon="🔎",
     url_path="view",
 )
+PAGE_NOTES = st.Page(
+    "views/notes.py",
+    title="Notes",
+    icon="📝",
+    url_path="notes",
+)
 PAGE_AUDIO_RECORD = st.Page(
     "views/audio_record.py",
     title="Audio Record",

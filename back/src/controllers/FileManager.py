@@ -86,10 +86,11 @@ class FileManager:
         text: str = None,
         start_date: str = None,
         end_date: str = None,
+        subfolder: List[str] = None,
         types: List[list] = None,
     ):
         logging.critical(
-            f"Search files with text: {text}, start_date: {start_date}, end_date: {end_date}, types: {types}"
+            f"Search files with text: {text}, start_date: {start_date}, end_date: {end_date}, subfolders: {subfolder}, types: {types}"
         )
         start = time.time()
         if not cls.ix:
@@ -123,6 +124,7 @@ class FileManager:
                     (start_dt <= r_date if start_dt else True)
                     and (r_date <= end_dt if end_dt else True)
                     and (not types or r.get("mime") in types)
+                    and (not subfolder or r.get("subfolder") in subfolder)
                 ):
                     filtered.append(r.get("file"))
 

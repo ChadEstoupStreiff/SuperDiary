@@ -1,6 +1,6 @@
 import requests
 import streamlit as st
-
+from utils import clear_cache
 
 def audio_record():
     audio_data = st.audio_input(
@@ -26,9 +26,16 @@ def audio_record():
                 files=files_payload,
             )
             if response.status_code == 200:
-                st.success("Audio recorded and uploaded successfully!")
+                st.toast(
+                    "Audio recorded and uploaded successfully!",
+                    icon="✅",
+                )
+                clear_cache()
             else:
-                st.error(f"Failed to upload audio: {response.text}")
+                st.toast(
+                    "Failed to upload audio. Please try again.",
+                    icon="❌",
+                )
         else:
             st.warning("No audio recorded yet. Please record audio first.")
 

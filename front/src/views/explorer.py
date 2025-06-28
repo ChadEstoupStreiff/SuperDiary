@@ -102,7 +102,13 @@ def line_file(file: str, show_preview: bool):
         return None
 
 
-def search_files(text: str, start_date: datetime, end_date: datetime, types: List[str]):
+def search_files(
+    text: str,
+    start_date: datetime,
+    end_date: datetime,
+    subfolder: List[str],
+    types: List[str],
+):
     # MARK: SEARCH FILES
     with st.spinner("Searching files..."):
         request = (
@@ -110,11 +116,17 @@ def search_files(text: str, start_date: datetime, end_date: datetime, types: Lis
         )
         if text is not None:
             request += f"&text={text}"
+        if subfolder is not None and len(subfolder) > 0:
+            request += f"&subfolder={','.join(subfolder)}"
         if types is not None and len(types) > 0:
             request += f"&types={','.join(types)}"
 
         result = requests.get(request)
     if result.status_code == 200:
+        st.toast(
+            f"Found {len(result.json())} files matching the criteria.",
+            icon="✅",
+        )
         st.session_state.explorer_files = {
             "query": text,
             "start_date": start_date,
@@ -123,6 +135,10 @@ def search_files(text: str, start_date: datetime, end_date: datetime, types: Lis
             "files": result.json(),
         }
     else:
+        st.toast(
+            f"Failed to search files: {result.text}",
+            icon="❌",
+        )
         st.error(f"Failed to search files: {result.text}")
         st.session_state.explorer_files = {
             "query": text,
@@ -160,6 +176,17 @@ def explorer():
                 key="file_types",
                 help="Select file types to filter files.",
             )
+        with cols[2]:
+            subfolder = st.multiselect(
+                "Subfolders",
+                options=[
+                    "uploads",
+                    "notes",
+                    "audio",
+                ],
+                key="subfolders",
+                help="Select subfolders to filter files.",
+            )
 
         if st.form_submit_button(
             "Search",
@@ -170,6 +197,7 @@ def explorer():
                 search_text if len(search_text) > 0 else None,
                 search_dates[0],
                 search_dates[1],
+                subfolder,
                 file_types,
             )
 
@@ -202,6 +230,7 @@ def explorer():
             datetime.date.today() - datetime.timedelta(days=7),
             datetime.date.today(),
             [],
+            [],
         )
     if "explorer_files" in st.session_state:
         query_str = f"Found {len(st.session_state.explorer_files['files'])} files beetween {st.session_state.explorer_files['start_date']} and {st.session_state.explorer_files['end_date']}"
@@ -212,7 +241,7 @@ def explorer():
                 f" and types {', '.join(st.session_state.explorer_files['types'])}"
             )
         st.caption(query_str)
-        
+
         if len(st.session_state.explorer_files["files"]) > 0:
             files = st.session_state.explorer_files["files"]
             # MARK: TABLE

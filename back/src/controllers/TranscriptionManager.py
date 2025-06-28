@@ -64,14 +64,18 @@ class TranscriptionManager:
                 task.state = TaskStateEnum.COMPLETED
                 task.completed = datetime.now()
                 task.result = result
-                db.add(
-                    Transcription(
-                        file=file,
-                        date=datetime.now(),
-                        transcription=result,
+                if len(result) > 0:
+                    db.query(TranscriptionTask).filter(
+                        TranscriptionTask.file == file
+                    ).delete()
+                    db.add(
+                        Transcription(
+                            file=file,
+                            date=datetime.now(),
+                            transcription=result,
+                        )
                     )
-                )
-                db.commit()
+                    db.commit()
                 logging.info(f"TRANSCRIPTION >> Completed processing for file: {file}")
             except Exception as e:
                 db.rollback()
