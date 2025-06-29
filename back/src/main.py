@@ -35,13 +35,19 @@ import views.notes
 
 app.include_router(views.notes.router)
 
-import views.settings
-
-app.include_router(views.settings.router)
-
 import views.ollama
 
 app.include_router(views.ollama.router)
+
+import views.projects
+app.include_router(views.projects.router)
+
+import views.tags
+app.include_router(views.tags.router)
+
+import views.settings
+
+app.include_router(views.settings.router)
 
 
 @app.get("/ocr/health")

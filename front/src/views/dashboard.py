@@ -5,8 +5,8 @@ import streamlit as st
 from utils import clear_cache
 
 
-@st.dialog("Upload files")
-def toast_upload(files):
+@st.dialog("📤 Upload files")
+def dialog_upload(files):
     toggle_edit_date = st.toggle(
         "Edit Date By file",
         value=False,
@@ -63,7 +63,7 @@ def toast_upload(files):
                 st.success(
                     "Files uploaded successfully."
                 )
-                st.toast("Files uploaded successfully.", icon="✅")
+                st.toast("Files uploaded successfully.", icon="🆕")
                 clear_cache()
             else:
                 st.error(f"Failed to upload files: {response.text}")
@@ -84,7 +84,7 @@ def dashboard():
             help="Upload files to be processed by the system.",
         )
         if files:
-            toast_upload(files)
+            dialog_upload(files)
 
         with st.container(border=True):
             st.metric(

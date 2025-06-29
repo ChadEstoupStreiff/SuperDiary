@@ -108,7 +108,9 @@ def search_files(
     end_date: datetime,
     subfolder: List[str],
     types: List[str],
+    projects: List[str],
 ):
+    # TODO : Add support for projects filtering
     # MARK: SEARCH FILES
     with st.spinner("Searching files..."):
         request = (
@@ -125,13 +127,14 @@ def search_files(
     if result.status_code == 200:
         st.toast(
             f"Found {len(result.json())} files matching the criteria.",
-            icon="✅",
         )
         st.session_state.explorer_files = {
             "query": text,
             "start_date": start_date,
             "end_date": end_date,
             "types": types,
+            "subfolder": subfolder,
+            "projects": projects,
             "files": result.json(),
         }
     else:
@@ -145,6 +148,8 @@ def search_files(
             "start_date": start_date,
             "end_date": end_date,
             "types": types,
+            "subfolder": subfolder,
+            "projects": projects,
             "files": [],
         }
 
@@ -188,6 +193,15 @@ def explorer():
                 help="Select subfolders to filter files.",
             )
 
+        with cols[3]:
+            projects_list = requests.get("http://back:80/projects").json()
+            projects = st.multiselect(
+                "Projects",
+                options=[p["name"] for p in projects_list],
+                key="projects",
+                help="Select projects to filter files.",
+            )
+
         if st.form_submit_button(
             "Search",
             use_container_width=True,
@@ -199,6 +213,7 @@ def explorer():
                 search_dates[1],
                 subfolder,
                 file_types,
+                projects,
             )
 
     with st.sidebar:
@@ -231,15 +246,32 @@ def explorer():
             datetime.date.today(),
             [],
             [],
+            [],
         )
     if "explorer_files" in st.session_state:
         query_str = f"Found {len(st.session_state.explorer_files['files'])} files beetween {st.session_state.explorer_files['start_date']} and {st.session_state.explorer_files['end_date']}"
-        if st.session_state.explorer_files["query"] is not None:
+        if (
+            st.session_state.explorer_files["query"] is not None
+            and len(st.session_state.explorer_files["query"]) > 0
+        ):
             query_str += f" with query '{st.session_state.explorer_files['query']}'"
-        if st.session_state.explorer_files["types"] is not None:
+        if (
+            st.session_state.explorer_files["types"] is not None
+            and len(st.session_state.explorer_files["types"]) > 0
+        ):
             query_str += (
                 f" and types {', '.join(st.session_state.explorer_files['types'])}"
             )
+        if (
+            st.session_state.explorer_files["subfolder"] is not None
+            and len(st.session_state.explorer_files["subfolder"]) > 0
+        ):
+            query_str += f" and subfolders {', '.join(st.session_state.explorer_files['subfolder'])}"
+        if (
+            st.session_state.explorer_files["projects"] is not None
+            and len(st.session_state.explorer_files["projects"]) > 0
+        ):
+            query_str += f" and projects {', '.join(st.session_state.explorer_files['projects'])}"
         st.caption(query_str)
 
         if len(st.session_state.explorer_files["files"]) > 0:
@@ -249,6 +281,7 @@ def explorer():
                 table = pd.DataFrame(
                     [
                         {
+                            "see": False,
                             "File": os.path.basename(file),
                             "Date": file.split("/")[2],
                             "Subfolder": file.split("/")[3],
@@ -257,12 +290,23 @@ def explorer():
                         for file in files
                     ]
                 )
-                st.dataframe(
+                table = st.data_editor(
                     table,
+                    column_config={
+                        "see": st.column_config.CheckboxColumn(
+                            "🔎",
+                            default=False,
+                        )
+                    },
                     use_container_width=True,
                     hide_index=True,
+                    disabled=["File", "Date", "Subfolder", "Path"],
                     key="lines",
                 )
+                selected_rows = table.query("see == True")
+                if len(selected_rows) > 0:
+                    st.session_state.file_to_see = selected_rows.iloc[0]["Path"]
+                    st.switch_page(PAGE_VIEWER)
 
             # MARK: BOXES
             elif representation_mode == 1:

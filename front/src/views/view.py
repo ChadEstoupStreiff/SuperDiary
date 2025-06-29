@@ -1,17 +1,15 @@
 import datetime
 import mimetypes
 import os
-import time
 
 import requests
 import streamlit as st
-from utils import download_and_display_file
-from views.tasks import tasks as list_tasks
 from pages import PAGE_EXPLORER
-from utils import clear_cache
+from utils import clear_cache, download_and_display_file, toast_for_rerun
+from views.settings import tasks as list_tasks
 
 
-@st.dialog("Delete file")
+@st.dialog("🗑️ Delete file")
 def dialog_delete_file(file):
     # MARK: DELETE FILE
     """
@@ -19,14 +17,14 @@ def dialog_delete_file(file):
     It provides a button to delete the file and a button to cancel the action.
     """
     st.markdown(
-        f"Are you sure you want to delete the file:\n  **{os.path.basename(file)}**?\n   This action cannot be undone."
+        f"Are you sure you want to delete the file:\n  **{os.path.basename(file)}**?\n This action cannot be undone."
     )
     if st.button("Delete 🗑️", use_container_width=True):
         resulst = requests.delete(f"http://back:80/files/delete/{file}")
         if resulst.status_code == 200:
-            st.toast(
+            toast_for_rerun(
                 "File deleted successfully. You will be redirected to the explorer.",
-                icon="✅",
+                icon="🗑️",
             )
             clear_cache()
             st.rerun()
@@ -89,11 +87,10 @@ def see_file(file):
             ):
                 result = requests.post(f"http://back:80/summarize/ask/{file}")
                 if result.status_code == 200:
-                    st.toast(
+                    toast_for_rerun(
                         "Summary task created successfully. It may take some time to process.",
                         icon="✅",
                     )
-                    time.sleep(1)
                     st.rerun()
                 else:
                     st.error("Failed to ask summary.")
@@ -177,7 +174,8 @@ def view():
 
     with cols[1]:
         with st.container(border=True):
-            download_and_display_file(file)
+            with st.spinner("Downloading file..."):
+                download_and_display_file(file)
             mime, _ = mimetypes.guess_type(file)
             if mime is None:
                 st.error("Could not determine the file type. Please check the file.")
@@ -195,11 +193,10 @@ def view():
                             f"http://back:80/transcription/ask/{file}",
                         )
                         if result.status_code == 200:
-                            st.toast(
+                            toast_for_rerun(
                                 "Transcription task created successfully. It may take some time to process.",
                                 icon="✅",
                             )
-                            time.sleep(1)
                             st.rerun()
                         else:
                             st.error("Failed to create transcription task.")
@@ -217,11 +214,10 @@ def view():
                             f"http://back:80/ocr/ask/{file}",
                         )
                         if result.status_code == 200:
-                            st.toast(
+                            toast_for_rerun(
                                 "OCR task created successfully. It may take some time to process.",
                                 icon="✅",
                             )
-                            time.sleep(1)
                             st.rerun()
                         else:
                             st.error("Failed to create OCR task.")

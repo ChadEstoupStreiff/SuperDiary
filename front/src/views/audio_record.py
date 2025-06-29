@@ -28,7 +28,7 @@ def audio_record():
             if response.status_code == 200:
                 st.toast(
                     "Audio recorded and uploaded successfully!",
-                    icon="✅",
+                    icon="🆕",
                 )
                 clear_cache()
             else:

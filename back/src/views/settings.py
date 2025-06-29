@@ -1,10 +1,10 @@
+import json
 import logging
 import traceback
+from typing import Any
 
 from db import Setting, get_db
 from fastapi import APIRouter, HTTPException
-from typing import Any
-import json
 
 router = APIRouter(tags=["Settings"])
 
@@ -20,6 +20,7 @@ default_settings = {
     "summarization_model": "llama3.2:1b",
 }
 
+
 def format_value(value: Any) -> str:
     """
     Format the value based on its type.
@@ -31,6 +32,7 @@ def format_value(value: Any) -> str:
     elif isinstance(value, str):
         return f"str:{value.strip()}"
     return f"json:{json.dumps(value)}"  # Default to JSON format for other types
+
 
 def parse_value(value: str) -> Any:
     """
@@ -44,6 +46,7 @@ def parse_value(value: str) -> Any:
         return value[4:].strip()
     return json.loads(value[5:])  # Default to JSON parsing for other types
 
+
 def get_setting(key: str, default=None):
     """
     Get a setting value by key, returning the default if not found.
@@ -51,7 +54,11 @@ def get_setting(key: str, default=None):
     db = get_db()
     try:
         setting = db.query(Setting).filter(Setting.key == key).first()
-        return parse_value(setting.value) if setting else default_settings.get(key, default)
+        return (
+            parse_value(setting.value)
+            if setting
+            else default_settings.get(key, default)
+        )
     except Exception as e:
         logging.error(f"Error retrieving setting {key}: {str(e)}")
         logging.error(traceback.format_exc())
@@ -60,6 +67,9 @@ def get_setting(key: str, default=None):
         )
     finally:
         db.close()
+
+
+# MARK: SETTINGS
 
 
 @router.get("/settings/{key}")
@@ -89,7 +99,10 @@ async def get_settings():
     """
     db = get_db()
     try:
-        result = {setting.key: parse_value(setting.value) for setting in db.query(Setting).all()}
+        result = {
+            setting.key: parse_value(setting.value)
+            for setting in db.query(Setting).all()
+        }
         for key, value in default_settings.items():
             if key not in result:
                 result[key] = value
@@ -112,7 +125,6 @@ async def set_settings(settings: dict):
     db = get_db()
     try:
         for key, value in settings.items():
-            
             setting = db.query(Setting).filter(Setting.key == key).first()
             if setting:
                 setting.value = format_value(value)

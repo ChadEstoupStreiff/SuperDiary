@@ -7,6 +7,18 @@ PAGE_DASHBOARD = st.Page(
     url_path="dashboard",
     default=True,
 )
+PAGE_CALENDAR = st.Page(
+    "views/calendar.py",
+    title="Calendar",
+    icon="📅",
+    url_path="calendar",
+)
+PAGE_PROJECTS = st.Page(
+    "views/projects.py",
+    title="Projects",
+    icon="🗂️",
+    url_path="projects",
+)
 PAGE_EXPLORER = st.Page(
     "views/explorer.py",
     title="Documents",
@@ -15,7 +27,7 @@ PAGE_EXPLORER = st.Page(
 )
 PAGE_VIEWER = st.Page(
     "views/view.py",
-    title="Viewer",
+    title="Document viewer",
     icon="🔎",
     url_path="view",
 )
@@ -30,12 +42,6 @@ PAGE_AUDIO_RECORD = st.Page(
     title="Audio Record",
     icon="🎤",
     url_path="audio_record",
-)
-PAGE_TASKS = st.Page(
-    "views/tasks.py",
-    title="Tasks",
-    icon="📝",
-    url_path="tasks",
 )
 PAGE_SETTINGS = st.Page(
     "views/settings.py",

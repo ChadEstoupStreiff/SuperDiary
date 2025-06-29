@@ -3,12 +3,11 @@ import json
 import mimetypes
 import os
 import tempfile
+from urllib.parse import quote
 
 import pandas as pd
 import requests
 import streamlit as st
-from urllib.parse import quote
-
 
 map_languauge_extension = {
     "py:": "python",
@@ -261,23 +260,32 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
         )
 
 
-def download_and_display_file(file_name, default_height_if_needed=1000):
-    encoded_file_name = quote(file_name)
+# TODO cache ?
+def download_file(raw_file_name: str):
+    """
+    Download and cache the file content.
+    """
+    encoded_file_name = quote(raw_file_name)
     file_url = f"http://back:80/files/download/{encoded_file_name}"
+    result = requests.get(file_url)
+    return result.content if result.status_code == 200 else None
 
+
+def download_and_display_file(file_name, default_height_if_needed=1000):
     with st.spinner("Downloading file..."):
-        result = requests.get(file_url)
-    if result.status_code == 200:
+        result = download_file(file_name)
+
+    if result is not None:
         file_extension = os.path.splitext(file_name)[1].lower()
         with tempfile.NamedTemporaryFile(
             delete=True, suffix=f".{file_extension}"
         ) as fp:
-            fp.write(result.content)
+            fp.write(result)
             display_file(
-                fp.name, file_url, default_height_if_needed=default_height_if_needed
+                fp.name,
+                f"http://back:80/files/download/{quote(file_name)}",
+                default_height_if_needed,
             )
-    else:
-        st.error(f"Error fetching file: {result.text}")
 
 
 def custom_style():
@@ -293,8 +301,29 @@ def custom_style():
         unsafe_allow_html=True,
     )
 
+
 def clear_cache():
     if "explorer_files" in st.session_state:
         del st.session_state.explorer_files
     if "file_to_see" in st.session_state:
         del st.session_state.file_to_see
+
+
+def toast_for_rerun(message: str, icon: str = None):
+    if "toast_for_rerun" not in st.session_state:
+        st.session_state.toast_for_rerun = []
+    st.session_state.toast_for_rerun.append((message, icon))
+
+
+def generate_tag_visual_markdown(name: str, color: str):
+    def get_contrasting_text_color(hex_color: str) -> str:
+        hex_color = hex_color.lstrip("#")
+        r, g, b = [int(hex_color[i:i+2], 16) for i in (0, 2, 4)]
+        luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b)
+        return "black" if luminance > 128 else "white"
+
+    """
+    Generate a visual representation of a tag with its name and color.
+    """
+    text_color = get_contrasting_text_color(color)
+    return f"""<span style="background-color:{color}; color:{text_color}; padding:4px 8px; border-radius:6px; font-size:0.9em;">{name}</span>"""

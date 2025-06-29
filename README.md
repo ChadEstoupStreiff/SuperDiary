@@ -57,12 +57,12 @@ MIT License © Chad Estoup-Streiff
 
 
 ### TODO / Ideas
+Projects, can have files and calendar records
+Tags on files
+Favorites files ? Will display on top when search
 https://github.com/PaddlePaddle/PaddleOCR  
 
 Bugs:  
 - HEIC images
 - md files dont load
 - search query seems to not work
-- if upload while task is running, will crash (notes for exemple)
-- missing start ocr button
-- clears toasts notif on rerun
