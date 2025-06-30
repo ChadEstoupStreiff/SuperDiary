@@ -1,7 +1,8 @@
 import requests
 import streamlit as st
 from utils import clear_cache
-
+from pages import PAGE_VIEWER
+from utils import toast_for_rerun
 def audio_record():
     audio_data = st.audio_input(
         label="Record Audio",
@@ -15,22 +16,26 @@ def audio_record():
 
     if st.button("Save recorded audio", use_container_width=True):
         if audio_data:
+            file_name = f"audio_{date.strftime('%Y-%m-%d')}.wav"
             files_payload = [
                 (
                     "files",
-                    (f"audio_{date.strftime('%Y-%m-%d')}.wav", audio_data, "audio/wav"),
+                    (file_name, audio_data, "audio/wav"),
                 )
             ]
             response = requests.post(
-                "http://back:80/files/upload?subdirectory=audio&date=" + date,
+                "http://back:80/files/upload?subdirectory=audio&date=" + date.strftime("%Y-%m-%d"),
                 files=files_payload,
             )
             if response.status_code == 200:
-                st.toast(
+                clear_cache()
+
+                toast_for_rerun(
                     "Audio recorded and uploaded successfully!",
                     icon="🆕",
                 )
-                clear_cache()
+                st.session_state.file_to_see = f"/shared/{date.strftime('%Y-%m-%d')}/audio/{file_name}"
+                st.switch_page(PAGE_VIEWER)
             else:
                 st.toast(
                     "Failed to upload audio. Please try again.",
