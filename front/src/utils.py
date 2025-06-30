@@ -318,8 +318,8 @@ def toast_for_rerun(message: str, icon: str = None):
 def generate_tag_visual_markdown(name: str, color: str):
     def get_contrasting_text_color(hex_color: str) -> str:
         hex_color = hex_color.lstrip("#")
-        r, g, b = [int(hex_color[i:i+2], 16) for i in (0, 2, 4)]
-        luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b)
+        r, g, b = [int(hex_color[i : i + 2], 16) for i in (0, 2, 4)]
+        luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
         return "black" if luminance > 128 else "white"
 
     """
@@ -327,3 +327,10 @@ def generate_tag_visual_markdown(name: str, color: str):
     """
     text_color = get_contrasting_text_color(color)
     return f"""<span style="background-color:{color}; color:{text_color}; padding:4px 8px; border-radius:6px; font-size:0.9em;">{name}</span>"""
+
+
+def generate_project_visual_markdown(name: str, color: str):
+    """
+    Generate a visual representation of a project with its name and color.
+    """
+    return f"<span style='color:{color};'>{name}</span>"

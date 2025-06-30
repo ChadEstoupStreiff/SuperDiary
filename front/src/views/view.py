@@ -1,11 +1,18 @@
 import datetime
 import mimetypes
 import os
+from typing import List
 
 import requests
 import streamlit as st
 from pages import PAGE_EXPLORER
-from utils import clear_cache, download_and_display_file, toast_for_rerun
+from utils import (
+    clear_cache,
+    download_and_display_file,
+    generate_tag_visual_markdown,
+    generate_project_visual_markdown,
+    toast_for_rerun,
+)
 from views.settings import tasks as list_tasks
 
 
@@ -30,6 +37,155 @@ def dialog_delete_file(file):
             st.rerun()
         else:
             st.error("Failed to delete the file. Please try again.")
+
+
+@st.dialog("✏️ Edit file details")
+def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
+    # MARK: EDIT FILE DETAILS
+    """
+    This dialog is used to edit the details of a file.
+    It provides fields to edit the file name, subfolder, and date.
+    """
+    file_name = os.path.basename(file)
+    date = file.split("/")[2]
+    subfolder = file.split("/")[3]
+    st.markdown(f"Edit details for file: **{file_name}**")
+
+    new_name = st.text_input(
+        "File Name",
+        value=file_name,
+        help="Enter the new name for the file.",
+    )
+    new_date = st.date_input(
+        "Date",
+        value=datetime.datetime.strptime(date, "%Y-%m-%d").date(),
+        help="Select the new date for the file.",
+    ).strftime("%Y-%m-%d")
+
+    if new_name != file_name:
+        st.warning(
+            f"You are about to change the file name to {new_name}. This action cannot be undone."
+        )
+    if new_date != date:
+        st.warning(
+            f"You are about to change the date to {new_date}. This action cannot be undone."
+        )
+    if st.button("Save Changes", use_container_width=True):
+        if new_name != file_name or new_date != date:
+            result_move = requests.post(
+                f"http://back:80/files/move/{file}?name={new_name}&date={new_date}&subfolder={subfolder}",
+            )
+            if result_move.status_code != 200:
+                st.error(
+                    "Failed to update file details. Please check the file name and date."
+                )
+                return
+        toast_for_rerun(
+            "File details updated successfully.",
+            icon="✅",
+        )
+        clear_cache()
+        st.session_state["file_to_see"] = (
+            "/shared/" + new_date + "/" + subfolder + "/" + new_name
+        )
+        st.rerun()
+    st.divider()
+
+    all_projects = [
+        p for p in requests.get("http://back:80/projects").json() if p not in projects
+    ]
+    all_tags = [t for t in requests.get("http://back:80/tags").json() if t not in tags]
+
+    st.markdown("### Projects")
+    if len(projects) == 0:
+        st.info("This file is not associated with any project.")
+    else:
+        for project in projects:
+            cols = st.columns([1, 3])
+            with cols[0]:
+                st.button(
+                    "Remove",
+                    key=f"remove_project_{project['name']}",
+                    help=f"Click to remove the project {project['name']} from this file.",
+                    use_container_width=True,
+                    on_click=lambda p=project: requests.delete(
+                        f"http://back:80/project/{p['name']}/file?file={file}"
+                    ),
+                )
+            with cols[1]:
+                st.markdown(
+                    generate_project_visual_markdown(project["name"], project["color"]),
+                    unsafe_allow_html=True,
+                )
+
+    new_project = st.selectbox(
+        "Add to project",
+        options=all_projects,
+        format_func=lambda x: x["name"],
+        key="add_project",
+        help="Select a project to add this file to.",
+    )
+    if st.button(
+        "Add Project",
+        use_container_width=True,
+        help="Click to add the selected project to this file.",
+    ):
+        result_add = requests.post(
+            f"http://back:80/project/{new_project['name']}/file?file={file}",
+        )
+        if result_add.status_code == 200:
+            toast_for_rerun(
+                "Project added successfully.",
+                icon="✅",
+            )
+            st.rerun()
+        else:
+            st.error("Failed to add project. Please try again.")
+
+    st.markdown("### Tags")
+    if len(tags) == 0:
+        st.info("This file is not associated with any tags.")
+    else:
+        for tag in tags:
+            cols = st.columns([1, 3])
+            with cols[0]:
+                st.button(
+                    "Remove",
+                    key=f"remove_tag_{tag['name']}",
+                    help=f"Click to remove the tag {tag['name']} from this file.",
+                    use_container_width=True,
+                    on_click=lambda t=tag: requests.delete(
+                        f"http://back:80/tag/{t['name']}/file?file={file}"
+                    ),
+                )
+            with cols[1]:
+                st.markdown(
+                    generate_tag_visual_markdown(tag["name"], tag["color"]),
+                    unsafe_allow_html=True,
+                )
+    new_tag = st.selectbox(
+        "Add Tag",
+        options=all_tags,
+        format_func=lambda x: x["name"],
+        key="add_tag",
+        help="Select a tag to add to this file.",
+    )
+    if st.button(
+        "Add Tag",
+        use_container_width=True,
+        help="Click to add the selected tag to this file.",
+    ):
+        result_add = requests.post(
+            f"http://back:80/tag/{new_tag['name']}/file?file={file}",
+        )
+        if result_add.status_code == 200:
+            toast_for_rerun(
+                "Tag added successfully.",
+                icon="✅",
+            )
+            st.rerun()
+        else:
+            st.error("Failed to add tag. Please try again.")
 
 
 def see_file(file):
@@ -61,11 +217,46 @@ def see_file(file):
     tab_details, tab_summarize, tab_metadata, tab_notes, tab_tasks = st.tabs(
         ["Détails", "Summarize", "Metadata", "Notes", "Tasks"]
     )
+    # MARK: DETAILS
     with tab_details:
-        st.markdown(f"#### {file_name}")
+        st.markdown(f"### {file_name}")
         st.caption(f"**Date:** {date}")
         st.caption(f"**Subfolder:** {subfolder}")
         st.caption(f"**Path:** {file}")
+
+        projects = requests.get(f"http://back:80/projects_of/{file}")
+        if projects.status_code == 200:
+            projects = projects.json()
+        else:
+            projects = []
+        tags = requests.get(f"http://back:80/tags_of/{file}")
+        if tags.status_code == 200:
+            tags = tags.json()
+        else:
+            tags = []
+
+        st.markdown("##### Projects")
+        if len(projects) == 0:
+            st.info("This file is not associated with any project.")
+        else:
+            for project in projects:
+                st.markdown(
+                    generate_project_visual_markdown(project["name"], project["color"]),
+                    unsafe_allow_html=True,
+                )
+
+        st.markdown("##### Tags")
+        if len(tags) == 0:
+            st.info("This file is not associated with any tags.")
+        else:
+            for tag in tags:
+                st.markdown(
+                    generate_tag_visual_markdown(tag["name"], tag["color"]),
+                    unsafe_allow_html=True,
+                )
+
+        if st.button("Edit file details", use_container_width=True):
+            dialog_edit_file(file, projects=projects, tags=tags)
 
     # MARK: SUMMARIZE
     with tab_summarize:

@@ -28,7 +28,7 @@ if __name__ == "__main__":
         PAGE_SETTINGS,
     ]
     if "file_to_see" in st.session_state:
-        pages.insert(3, PAGE_VIEWER)
+        pages.insert(4, PAGE_VIEWER)
 
     pg = st.navigation(
         pages,

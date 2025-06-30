@@ -11,6 +11,8 @@ from controllers.NoteManager import NoteManager
 from controllers.OCRManager import OCRManager
 from controllers.SummarizeManager import SummarizeManager
 from controllers.TranscriptionManager import TranscriptionManager
+from db import get_db
+from db.models import ProjectFile, TagFile
 from fastapi import APIRouter, HTTPException, UploadFile
 from starlette.responses import FileResponse
 from views.settings import get_setting
@@ -46,14 +48,13 @@ async def upload_files(
             os.makedirs(os.path.join("/shared", file_date, subdirectory), exist_ok=True)
 
             file_path = os.path.join("/shared", file_date, subdirectory, file_name)
-            
+
             with open(file_path, "wb") as f:
                 content = await file.read()
                 f.write(content)
             if os.path.exists(file_path):
                 os.utime(file_path, None)
             else:
-
                 mime, _ = mimetypes.guess_type(file_path)
                 if mime.startswith("image/") and get_setting("enable_auto_ocr"):
                     OCRManager.add_file_to_queue(file_path)
@@ -63,7 +64,6 @@ async def upload_files(
                     TranscriptionManager.add_file_to_queue(file_path)
                 if get_setting("enable_auto_summary"):
                     SummarizeManager.add_file_to_queue(file_path)
-
 
         return {"message": f"{len(files)} files uploaded successfully."}
     except Exception as e:
@@ -96,9 +96,7 @@ async def delete_file(file: str):
 
 
 @router.post("/move/{file:path}")
-async def move_file(
-    file: str, subfolder: str, date: datetime = None, new_name: str = None
-):
+async def move_file(file: str, subfolder: str, date: str = None, name: str = None):
     """
     Move a file to a new location.
     """
@@ -108,12 +106,10 @@ async def move_file(
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File {file} does not exist.")
 
-        if new_name is None:
-            new_name = os.path.basename(file)
+        if name is None:
+            name = os.path.basename(file)
         if date is None:
             date = file.split("/")[1]
-        else:
-            date = date.strftime("%Y-%m-%d")
         if subfolder is None:
             subfolder = file.split("/")[2]
 
@@ -121,17 +117,41 @@ async def move_file(
         if not os.path.exists(new_directory):
             os.makedirs(new_directory, exist_ok=True)
 
-        new_file_path = os.path.join(new_directory, new_name)
+        new_file_path = os.path.join(new_directory, name)
         if os.path.exists(new_file_path):
             raise HTTPException(
                 status_code=400,
-                detail=f"File {new_name} already exists in {new_directory}.",
+                detail=f"File {name} already exists in {new_directory}.",
             )
 
         SummarizeManager.move(file_path, new_file_path)
         OCRManager.move(file_path, new_file_path)
         TranscriptionManager.move(file_path, new_file_path)
         NoteManager.move(file_path, new_file_path)
+        db = get_db()
+        try:
+            # Update ProjectFile entries
+            project_files = (
+                db.query(ProjectFile).filter(ProjectFile.file == file_path).all()
+            )
+            for project_file in project_files:
+                project_file.file = new_file_path
+            db.commit()
+
+            # Update TagFile entries
+            tag_files = db.query(TagFile).filter(TagFile.file == file_path).all()
+            for tag_file in tag_files:
+                tag_file.file = new_file_path
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error updating database entries: {str(e)}")
+            logging.error(traceback.format_exc())
+            raise HTTPException(
+                status_code=500, detail=f"Error updating database entries: {str(e)}"
+            )
+        finally:
+            db.close()
         os.rename(file_path, new_file_path)
 
         return {"message": f"File {file} moved to {new_file_path} successfully."}
