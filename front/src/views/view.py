@@ -109,7 +109,7 @@ def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
                     use_container_width=True,
                 ):
                     requests.delete(
-                        f"http://back:80/project/{p['name']}/file?file={file}"
+                        f"http://back:80/project/{project['name']}/file?file={file}"
                     )
                     toast_for_rerun(
                         "Project removed successfully.",
@@ -160,7 +160,7 @@ def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
                     use_container_width=True,
                 ):
                     requests.delete(
-                        f"http://back:80/tag/{t['name']}/file?file={file}"
+                        f"http://back:80/tag/{tag['name']}/file?file={file}"
                     )
                     toast_for_rerun(
                         "Tag removed successfully.",
