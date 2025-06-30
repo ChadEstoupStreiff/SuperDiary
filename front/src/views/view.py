@@ -38,7 +38,6 @@ def dialog_delete_file(file):
         else:
             st.error("Failed to delete the file. Please try again.")
 
-
 @st.dialog("✏️ Edit file details")
 def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
     # MARK: EDIT FILE DETAILS
@@ -103,15 +102,20 @@ def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
         for project in projects:
             cols = st.columns([1, 3])
             with cols[0]:
-                st.button(
+                if st.button(
                     "Remove",
                     key=f"remove_project_{project['name']}",
                     help=f"Click to remove the project {project['name']} from this file.",
                     use_container_width=True,
-                    on_click=lambda p=project: requests.delete(
+                ):
+                    requests.delete(
                         f"http://back:80/project/{p['name']}/file?file={file}"
-                    ),
-                )
+                    )
+                    toast_for_rerun(
+                        "Project removed successfully.",
+                        icon="🗑️",
+                    )
+                    st.rerun()
             with cols[1]:
                 st.markdown(
                     generate_project_visual_markdown(project["name"], project["color"]),
@@ -149,15 +153,20 @@ def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
         for tag in tags:
             cols = st.columns([1, 3])
             with cols[0]:
-                st.button(
+                if st.button(
                     "Remove",
                     key=f"remove_tag_{tag['name']}",
                     help=f"Click to remove the tag {tag['name']} from this file.",
                     use_container_width=True,
-                    on_click=lambda t=tag: requests.delete(
+                ):
+                    requests.delete(
                         f"http://back:80/tag/{t['name']}/file?file={file}"
-                    ),
-                )
+                    )
+                    toast_for_rerun(
+                        "Tag removed successfully.",
+                        icon="🗑️",
+                    )
+                    st.rerun()
             with cols[1]:
                 st.markdown(
                     generate_tag_visual_markdown(tag["name"], tag["color"]),
