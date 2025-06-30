@@ -6,7 +6,7 @@ from controllers.FileManager import FileManager
 from controllers.OCRManager import OCRManager
 from controllers.TranscriptionManager import TranscriptionManager
 from controllers.SummarizeManager import SummarizeManager
-from db import DB
+from db import DB, create_default_values
 from db.models import Base
 from fastapi import FastAPI
 from views.settings import get_setting
@@ -88,6 +88,8 @@ if __name__ == "__main__":
         level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
     )
     Base.metadata.create_all(bind=DB().engine)
+    create_default_values()
+
 
     FileManager.setup()
 

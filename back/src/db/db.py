@@ -39,3 +39,5 @@ class DB:
 
 def get_db():
     return DB().get()
+
+

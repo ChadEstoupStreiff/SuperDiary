@@ -126,6 +126,7 @@ async def add_file_to_tag(tag_name: str, file: str):
     """
     Add a file to a tag.
     """
+    tag_name = tag_name.strip().replace(",", "_")
     db = get_db()
     try:
         tag = db.query(Tag).filter(Tag.name == tag_name).first()

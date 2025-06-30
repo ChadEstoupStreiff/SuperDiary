@@ -6,6 +6,8 @@ from datetime import datetime
 from typing import List
 
 from controllers.SummarizeManager import SummarizeManager
+from db import get_db
+from db.models import ProjectFile, TagFile
 from tqdm import tqdm
 from whoosh import writing
 from whoosh.fields import DATETIME, TEXT, Schema
@@ -88,6 +90,8 @@ class FileManager:
         end_date: str = None,
         subfolder: List[str] = None,
         types: List[list] = None,
+        projects: List[str] = None,
+        tags: List[str] = None,
     ):
         logging.critical(
             f"Search files with text: {text}, start_date: {start_date}, end_date: {end_date}, subfolders: {subfolder}, types: {types}"
@@ -115,18 +119,45 @@ class FileManager:
             )
 
             filtered = []
-            for r in results:
-                r_date = r.get("date")
-                if isinstance(r_date, str):
-                    r_date = datetime.fromisoformat(r_date)
 
-                if (
-                    (start_dt <= r_date if start_dt else True)
-                    and (r_date <= end_dt if end_dt else True)
-                    and (not types or r.get("mime") in types)
-                    and (not subfolder or r.get("subfolder") in subfolder)
-                ):
-                    filtered.append(r.get("file"))
+            if projects or tags:
+                db = get_db()
+            try:
+                for r in results:
+                    r_date = r.get("date")
+                    if isinstance(r_date, str):
+                        r_date = datetime.fromisoformat(r_date)
+
+                    if projects:
+                        file_projects = [
+                            p.project
+                            for p in db.query(ProjectFile)
+                            .filter(ProjectFile.file == r.get("file"))
+                            .all()
+                        ]
+                    if tags:
+                        file_tags = [
+                            t.tag
+                            for t in db.query(TagFile)
+                            .filter(TagFile.file == r.get("file"))
+                            .all()
+                        ]
+
+                    if (
+                        (start_dt <= r_date if start_dt else True)
+                        and (r_date <= end_dt if end_dt else True)
+                        and (not types or r.get("mime") in types)
+                        and (not subfolder or r.get("subfolder") in subfolder)
+                        and (not projects or any(p in file_projects for p in projects))
+                        and (not tags or any(t in file_tags for t in tags))
+                    ):
+                        filtered.append(r.get("file"))
+            except Exception as e:
+                logging.error(f"Error during search: {str(e)}")
+                raise RuntimeError(f"Error during search: {str(e)}")
+            finally:
+                if projects or tags:
+                    db.close()
 
             logging.info(
                 f"FileManager >> Search completed with {len(filtered)} files in {time.time() - start:.2f} seconds."

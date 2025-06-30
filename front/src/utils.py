@@ -8,6 +8,7 @@ from urllib.parse import quote
 import pandas as pd
 import requests
 import streamlit as st
+from typing import List
 
 map_languauge_extension = {
     "py:": "python",
@@ -328,9 +329,28 @@ def generate_tag_visual_markdown(name: str, color: str):
     text_color = get_contrasting_text_color(color)
     return f"""<span style="background-color:{color}; color:{text_color}; padding:4px 8px; border-radius:6px; font-size:0.9em;">{name}</span>"""
 
+def generate_aside_tag_markdown(names: List[str], colors: List[str]):
+    return f"""
+    <div style="display: flex; flex-direction: raw; flex-wrap: wrap; gap: 8px; margin: 6px;">
+        {''.join(generate_tag_visual_markdown(name, color) for name, color in zip(names, colors))}
+    </div>
+    """
 
 def generate_project_visual_markdown(name: str, color: str):
     """
     Generate a visual representation of a project with its name and color.
     """
     return f"<span style='color:{color};'>{name}</span>"
+
+def generate_aside_project_markdown(names: List[str], colors: List[str]):
+    return f"""
+    <div style="display: flex; flex-direction: raw; flex-wrap: wrap; gap: 8px; margin: 6px;">
+        {''.join(generate_project_visual_markdown(name, color) for name, color in zip(names, colors))}
+    </div>
+    """
+
+def spacer(space: int = 30):
+    """
+    Add a spacer to the Streamlit app.
+    """
+    st.markdown(f"""<div style="margin: {space}px"/>""", unsafe_allow_html=True)

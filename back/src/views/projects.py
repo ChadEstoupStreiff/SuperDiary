@@ -81,6 +81,7 @@ async def add_file_to_project(project_name: str, file: str):
     """
     Add a file to a project.
     """
+    project_name = project_name.strip().replace(",", "_")
     db = get_db()
     try:
         project = db.query(Project).filter(Project.name == project_name).first()

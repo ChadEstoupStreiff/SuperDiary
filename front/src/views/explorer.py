@@ -14,6 +14,7 @@ def search_files(
     subfolder: List[str],
     types: List[str],
     projects: List[str],
+    tags: List[str],
 ):
     # TODO : Add support for projects filtering
     # MARK: SEARCH FILES
@@ -27,6 +28,10 @@ def search_files(
             request += f"&subfolder={','.join(subfolder)}"
         if types is not None and len(types) > 0:
             request += f"&types={','.join(types)}"
+        if projects is not None and len(projects) > 0:
+            request += f"&projects={','.join(projects)}"
+        if tags is not None and len(tags) > 0:
+            request += f"&tags={','.join(tags)}"
 
         result = requests.get(request)
     if result.status_code == 200:
@@ -40,6 +45,7 @@ def search_files(
             "types": types,
             "subfolder": subfolder,
             "projects": projects,
+            "tags": tags,
             "files": result.json(),
         }
     else:
@@ -55,6 +61,7 @@ def search_files(
             "types": types,
             "subfolder": subfolder,
             "projects": projects,
+            "tags": tags,
             "files": [],
         }
 
@@ -107,6 +114,15 @@ def explorer():
                 help="Select projects to filter files.",
             )
 
+        with cols[4]:
+            tags_list = requests.get("http://back:80/tags").json()
+            tags = st.multiselect(
+                "Tags",
+                options=[t["name"] for t in tags_list],
+                key="tags",
+                help="Select tags to filter files.",
+            )
+
         if st.form_submit_button(
             "Search",
             use_container_width=True,
@@ -119,6 +135,7 @@ def explorer():
                 subfolder,
                 file_types,
                 projects,
+                tags,
             )
 
     with st.sidebar:
@@ -131,6 +148,7 @@ def explorer():
             None,
             datetime.date.today() - datetime.timedelta(days=7),
             datetime.date.today(),
+            [],
             [],
             [],
             [],
@@ -159,6 +177,11 @@ def explorer():
             and len(st.session_state.explorer_files["projects"]) > 0
         ):
             query_str += f" and projects {', '.join(st.session_state.explorer_files['projects'])}"
+        if (
+            st.session_state.explorer_files["tags"] is not None
+            and len(st.session_state.explorer_files["tags"]) > 0
+        ):
+            query_str += f" and tags {', '.join(st.session_state.explorer_files['tags'])}"
         st.caption(query_str)
 
         if len(st.session_state.explorer_files["files"]) > 0:

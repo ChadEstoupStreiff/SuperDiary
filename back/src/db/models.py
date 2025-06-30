@@ -1,12 +1,11 @@
 from enum import Enum
 
-from sqlalchemy import TEXT, Column, DateTime, Integer, String
-from sqlalchemy import ForeignKey
+from sqlalchemy import TEXT, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import declarative_base, mapped_column
 
 Base = declarative_base()
+
 
 class Setting(Base):
     __tablename__ = "Setting"
@@ -90,17 +89,24 @@ class TranscriptionTask(Base):
     completed = Column(DateTime, nullable=True)
     result = Column(TEXT(16320), nullable=True)
 
+
 class Tag(Base):
     __tablename__ = "Tag"
 
     name = Column(String(64), primary_key=True, index=True)
     color = Column(String(32), nullable=False)
 
+
 class TagFile(Base):
     __tablename__ = "TagFile"
 
     file = Column(String(512), primary_key=True, index=True)
-    tag = mapped_column(ForeignKey("Tag.name"), primary_key=True, index=True)
+    tag = mapped_column(
+        ForeignKey("Tag.name", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+
 
 class Project(Base):
     __tablename__ = "Project"
@@ -109,17 +115,25 @@ class Project(Base):
     description = Column(TEXT(16320), nullable=True)
     color = Column(String(32), nullable=False)
 
+
 class ProjectFile(Base):
     __tablename__ = "ProjectFile"
 
-    project = mapped_column(ForeignKey("Project.name"), primary_key=True, index=True)
+    project = mapped_column(
+        ForeignKey("Project.name", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
     file = Column(String(512), primary_key=True, index=True)
+
 
 class CalendarRecord(Base):
     __tablename__ = "CalendarRecord"
 
     id = Column(String(64), primary_key=True, index=True)
-    project = mapped_column(ForeignKey("Project.name"))
+    project = mapped_column(
+        ForeignKey("Project.name", ondelete="CASCADE", onupdate="CASCADE")
+    )
     title = Column(String(256), nullable=False)
     description = Column(TEXT(16320), nullable=True)
     time_worked = Column(Integer, nullable=False)
@@ -127,4 +141,3 @@ class CalendarRecord(Base):
     end_time = Column(DateTime, nullable=True)
     location = Column(String(256), nullable=True)
     attendees = Column(TEXT(16320), nullable=True)
-

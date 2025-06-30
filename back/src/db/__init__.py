@@ -17,7 +17,8 @@ from db.models import (
     CalendarRecord,
 )
 
-def setup_db():
+
+def create_default_values():
     """
     Set up the database by creating all tables.
     """
@@ -44,5 +45,3 @@ def setup_db():
         print(f"Error setting up database: {str(e)}")
     finally:
         db.close()
-
-setup_db()

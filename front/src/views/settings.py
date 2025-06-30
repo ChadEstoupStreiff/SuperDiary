@@ -356,14 +356,14 @@ def settings():
                 with cols[1]:
                     if st.button(
                         "✏️",
-                        key=f"edit_{project['name']}",
+                        key=f"edit_project_{project['name']}",
                         use_container_width=True,
                         help="✏️ Edit",
                     ):
                         dialog_edit_project(project)
                     if st.button(
                         "🗑️",
-                        key=f"delete_{project['name']}",
+                        key=f"delete_project_{project['name']}",
                         use_container_width=True,
                         help="🗑️ Delete",
                     ):
@@ -390,14 +390,14 @@ def settings():
                 with cols[1]:
                     if st.button(
                         "✏️",
-                        key=f"edit_{tag['name']}",
+                        key=f"edit_tag_{tag['name']}",
                         use_container_width=True,
                         help="✏️ Edit",
                     ):
                         dialog_edit_tag(tag)
                     if st.button(
                         "🗑️",
-                        key=f"delete_{tag['name']}",
+                        key=f"delete_tag_{tag['name']}",
                         use_container_width=True,
                         help="🗑️ Delete",
                     ):

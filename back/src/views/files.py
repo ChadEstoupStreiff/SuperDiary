@@ -237,6 +237,8 @@ async def search_files(
     end_date: str = None,
     subfolder: str = None,
     types: str = None,
+    projects: str = None,
+    tags: str = None,
 ):
     """
     Search for files based on a query.
@@ -247,6 +249,10 @@ async def search_files(
         types = None
     if subfolder is not None and len(subfolder) == 0:
         subfolder = None
+    if projects is not None and len(projects) == 0:
+        projects = None
+    if tags is not None and len(tags) == 0:
+        tags = None
 
     try:
         result = FileManager.search_files(
@@ -255,6 +261,8 @@ async def search_files(
             end_date,
             subfolder.split(",") if subfolder else None,
             types.split(",") if types else None,
+            projects.split(",") if projects else None,
+            tags.split(",") if tags else None,
         )
         result.sort()
         result.reverse()
