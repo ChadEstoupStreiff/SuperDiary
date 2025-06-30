@@ -30,7 +30,7 @@ def dialog_delete_file(file):
         resulst = requests.delete(f"http://back:80/files/delete/{file}")
         if resulst.status_code == 200:
             toast_for_rerun(
-                "File deleted successfully. You will be redirected to the explorer.",
+                "File deleted successfully.",
                 icon="🗑️",
             )
             clear_cache()

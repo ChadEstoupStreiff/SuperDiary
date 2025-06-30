@@ -3,7 +3,7 @@ import json
 
 import requests
 import streamlit as st
-from core.files import display_files, representation_mode_select
+from core.files import display_files
 from utils import clear_cache
 
 
@@ -87,21 +87,24 @@ def dashboard():
             dialog_upload(files)
 
         with st.container(border=True):
-            st.metric(
-                label="Total Files",
-                value=requests.get("http://back:80/files/count").json(),
-                help="Total number of files processed by the system.",
-            )
-            st.metric(
-                label="Total Projects",
-                value=len(requests.get("http://back:80/projects").json()),
-                help="Total number of projects created in the system.",
-            )
-            st.metric(
-                label="Total Tags",
-                value=len(requests.get("http://back:80/tags").json()),
-                help="Total number of tags created in the system.",
-            )
+            metric_cols = st.columns(2)
+            with metric_cols[0]:
+                st.metric(
+                    label="Total Files",
+                    value=requests.get("http://back:80/files/count").json(),
+                    help="Total number of files processed by the system.",
+                )
+            with metric_cols[1]:
+                st.metric(
+                    label="Total Projects",
+                    value=len(requests.get("http://back:80/projects").json()),
+                    help="Total number of projects created in the system.",
+                )
+                st.metric(
+                    label="Total Tags",
+                    value=len(requests.get("http://back:80/tags").json()),
+                    help="Total number of tags created in the system.",
+                )
 
     with cols[0]:
         today = datetime.date.today()
@@ -112,19 +115,22 @@ def dashboard():
         with st.expander("Opened files", expanded=True):
             st.error("In dev...")
 
-        with st.expander("Today files", expanded=True):
+        today_files = requests.get(
+            f"http://back:80/files/search?start_date={today}&end_date={today}"
+        ).json()
+        with st.expander(f"Today files - {len(today_files)} files", expanded=True):
             display_files(
-                requests.get(
-                    f"http://back:80/files/search?start_date={today}&end_date={today}"
-                ).json(),
+                today_files,
                 representation_mode=0,
                 key="today_files",
             )
-        with st.expander("This week files (7d)", expanded=True):
+
+        week_files = requests.get(
+            f"http://back:80/files/search?start_date={today - datetime.timedelta(days=7)}&end_date={today}"
+        ).json()
+        with st.expander(f"Week files (7d) - {len(week_files)} files", expanded=True):
             display_files(
-                requests.get(
-                    f"http://back:80/files/search?start_date={today - datetime.timedelta(days=7)}&end_date={today}"
-                ).json(),
+                week_files,
                 representation_mode=0,
                 key="week_files",
             )
