@@ -1,7 +1,9 @@
+import datetime
 import json
 
 import requests
 import streamlit as st
+from core.files import display_files, representation_mode_select
 from utils import clear_cache
 
 
@@ -60,9 +62,7 @@ def dialog_upload(files):
                 files=files_payload,
             )
             if response.status_code == 200:
-                st.success(
-                    "Files uploaded successfully."
-                )
+                st.success("Files uploaded successfully.")
                 st.toast("Files uploaded successfully.", icon="🆕")
                 clear_cache()
             else:
@@ -91,6 +91,42 @@ def dashboard():
                 label="Total Files",
                 value=requests.get("http://back:80/files/count").json(),
                 help="Total number of files processed by the system.",
+            )
+            st.metric(
+                label="Total Projects",
+                value=len(requests.get("http://back:80/projects").json()),
+                help="Total number of projects created in the system.",
+            )
+            st.metric(
+                label="Total Tags",
+                value=len(requests.get("http://back:80/tags").json()),
+                help="Total number of tags created in the system.",
+            )
+
+    with cols[0]:
+        today = datetime.date.today()
+
+        with st.expander("Added files", expanded=True):
+            st.error("In dev...")
+
+        with st.expander("Opened files", expanded=True):
+            st.error("In dev...")
+
+        with st.expander("Today files", expanded=True):
+            display_files(
+                requests.get(
+                    f"http://back:80/files/search?start_date={today}&end_date={today}"
+                ).json(),
+                representation_mode=0,
+                key="today_files",
+            )
+        with st.expander("This week files (7d)", expanded=True):
+            display_files(
+                requests.get(
+                    f"http://back:80/files/search?start_date={today - datetime.timedelta(days=7)}&end_date={today}"
+                ).json(),
+                representation_mode=0,
+                key="week_files",
             )
 
 

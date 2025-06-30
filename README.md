@@ -57,10 +57,10 @@ MIT License © Chad Estoup-Streiff
 
 
 ### TODO / Ideas
-Projects, can have files and calendar records
-Tags on files
 Favorites files ? Will display on top when search
 https://github.com/PaddlePaddle/PaddleOCR  
+Dashboard -> Recently added
+Dashboard -> Recently opened
 
 Bugs:  
 - HEIC images
