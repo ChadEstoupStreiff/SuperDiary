@@ -41,6 +41,7 @@ def dialog_create_project():
         name = st.text_input(
             "Project Name",
             help="Enter the name of the project.",
+            max_chars=50
         )
         description = st.text_area(
             "Project Description",
@@ -75,6 +76,7 @@ def dialog_edit_project(project):
             "Project Name",
             value=project["name"],
             help="Enter the name of the project.",
+            max_chars=50,
         )
         description = st.text_area(
             "Project Description",
@@ -128,6 +130,7 @@ def dialog_create_tag():
         name = st.text_input(
             "Tag Name",
             help="Enter the name of the tag.",
+            max_chars=20,
         )
         color = st.color_picker(
             "Tag Color",
@@ -156,6 +159,7 @@ def dialog_edit_tag(tag):
             "Tag Name",
             value=tag["name"],
             help="Enter the name of the tag.",
+            max_chars=20,
         )
         color = st.color_picker(
             "Tag Color",

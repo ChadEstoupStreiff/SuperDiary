@@ -93,7 +93,7 @@ class TranscriptionTask(Base):
 class Tag(Base):
     __tablename__ = "Tag"
 
-    name = Column(String(64), primary_key=True, index=True)
+    name = Column(String(20), primary_key=True, index=True)
     color = Column(String(32), nullable=False)
 
 
@@ -111,7 +111,7 @@ class TagFile(Base):
 class Project(Base):
     __tablename__ = "Project"
 
-    name = Column(String(256), primary_key=True, nullable=False)
+    name = Column(String(50), primary_key=True, nullable=False)
     description = Column(TEXT(16320), nullable=True)
     color = Column(String(32), nullable=False)
 

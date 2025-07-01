@@ -65,4 +65,4 @@ Dashboard -> Recently opened
 Bugs:  
 - HEIC images
 - md files dont load
-- search query seems to not work
+- search query seems to not work, only works when full word is written

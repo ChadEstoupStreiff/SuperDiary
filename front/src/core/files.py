@@ -4,7 +4,11 @@ import pandas as pd
 import requests
 import streamlit as st
 from pages import PAGE_VIEWER
-from utils import download_and_display_file
+from utils import (
+    download_and_display_file,
+    generate_aside_project_markdown,
+    generate_aside_tag_markdown,
+)
 
 
 def box_file(file: str, height: int, show_preview: bool, key: str = ""):
@@ -21,10 +25,29 @@ def box_file(file: str, height: int, show_preview: bool, key: str = ""):
         subfolder = file.split("/")[3]
 
         cols = st.columns(2)
-        st.markdown(f"#### {file_name}")
-        st.caption(f"**Date:** {date}")
-        st.caption(f"**Subfolder:** {subfolder}")
-        st.caption(f"**Path:** {file}")
+        st.markdown(f"##### {file_name}")
+        st.caption(
+            f"**📅 Date:** {date}<br/>**📁 Subfolder:** {subfolder}",
+            unsafe_allow_html=True,
+        )
+        projects = requests.get(f"http://back:80/projects_of/{file}").json()
+        tags = requests.get(f"http://back:80/tags_of/{file}").json()
+        if projects:
+            st.markdown(
+                generate_aside_project_markdown(
+                    [p["name"] for p in projects],
+                    [p["color"] for p in projects],
+                ),
+                unsafe_allow_html=True,
+            )
+        if tags:
+            st.markdown(
+                generate_aside_tag_markdown(
+                    [t["name"] for t in tags],
+                    [t["color"] for t in tags],
+                ),
+                unsafe_allow_html=True,
+            )
 
         with cols[0]:
             if st.button(
@@ -47,7 +70,7 @@ def box_file(file: str, height: int, show_preview: bool, key: str = ""):
     return preview
 
 
-def line_file(file: str, show_preview: bool, key:str = ""):
+def line_file(file: str, show_preview: bool, key: str = ""):
     MAX_SUMMARY_LENGTH = 500
 
     # MARK: LINE FILE
@@ -59,9 +82,28 @@ def line_file(file: str, show_preview: bool, key:str = ""):
         cols = st.columns([2, 2, 3, 1] if show_preview else [2, 3, 1])
         with cols[1 if show_preview else 0]:
             st.markdown(f"#### {file_name}")
-            st.caption(f"**Date:** {date}")
-            st.caption(f"**Subfolder:** {subfolder}")
-            st.caption(f"**Path:** {file}")
+            st.caption(
+                f"**📅 Date:** {date}<br/>**📁 Subfolder:** {subfolder}",
+                unsafe_allow_html=True,
+            )
+            projects = requests.get(f"http://back:80/projects_of/{file}").json()
+            tags = requests.get(f"http://back:80/tags_of/{file}").json()
+            if projects:
+                st.markdown(
+                    generate_aside_project_markdown(
+                        [p["name"] for p in projects],
+                        [p["color"] for p in projects],
+                    ),
+                    unsafe_allow_html=True,
+                )
+            if tags:
+                st.markdown(
+                    generate_aside_tag_markdown(
+                        [t["name"] for t in tags],
+                        [t["color"] for t in tags],
+                    ),
+                    unsafe_allow_html=True,
+                )
         with cols[2 if show_preview else 1]:
             result = requests.get(f"http://back:80/summarize/get/{file}")
             if result.status_code == 200 and result.json() is not None:
@@ -105,7 +147,7 @@ def display_files(
     representation_mode: int,
     show_preview: bool = False,
     nbr_of_files_per_line: int = 3,
-    key=""
+    key="",
 ):
     if len(files) == 0:
         st.info("No files found.")
@@ -117,7 +159,22 @@ def display_files(
                     "File": os.path.basename(file),
                     "Date": file.split("/")[2],
                     "Subfolder": file.split("/")[3],
-                    "Path": file,
+                    "Projects": ", ".join(
+                        [
+                            p["name"]
+                            for p in requests.get(
+                                f"http://back:80/projects_of/{file}"
+                            ).json()
+                        ]
+                    ),
+                    "Tags": ", ".join(
+                        [
+                            t["name"]
+                            for t in requests.get(
+                                f"http://back:80/tags_of/{file}"
+                            ).json()
+                        ]
+                    ),
                 }
                 for file in files
             ]
@@ -191,7 +248,7 @@ def representation_mode_select():
         nbr_of_files_per_line = st.slider(
             "Number of files per line",
             min_value=3,
-            max_value=10,
+            max_value=8,
             value=5,
             help="Adjust the number of files displayed per line.",
         )

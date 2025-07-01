@@ -236,10 +236,10 @@ def see_file(file):
     )
     # MARK: DETAILS
     with tab_details:
-        st.markdown(f"### {file_name}")
-        st.caption(f"**Date:** {date}")
-        st.caption(f"**Subfolder:** {subfolder}")
-        st.caption(f"**Path:** {file}")
+        st.markdown(f"#### {file_name}")
+        st.caption(f"**📅 Date:** {date}")
+        st.caption(f"**📁 Subfolder:** {subfolder}")
+        st.caption(f"**🛣️ Path:** {file}")
 
         projects = requests.get(f"http://back:80/projects_of/{file}")
         if projects.status_code == 200:

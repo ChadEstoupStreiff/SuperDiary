@@ -58,10 +58,6 @@ async def get_project_of_file(file: str):
     db = get_db()
     try:
         projects = db.query(Project).join(ProjectFile).filter(ProjectFile.file == file).all()
-        if not projects:
-            raise HTTPException(
-                status_code=404, detail=f"File {file} not found in any project."
-            )
         return [p.__dict__ for p in projects]
     except HTTPException as e:
         raise e
