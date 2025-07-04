@@ -65,3 +65,9 @@ Dashboard -> Recently opened
 Bugs:  
 - HEIC images
 - md files dont load
+
+
+TODO: 
+- Add parameters for research to trick beetween performance and power (like range of tokens, maybe enable fuzzy search ?)
+- Test search on big volume (tokens on summaries may explode search time)
+- ADD NOTE IN RESEARCH FUNCTION

@@ -33,7 +33,9 @@ def search_files(
         if tags is not None and len(tags) > 0:
             request += f"&tags={','.join(tags)}"
 
+        start_time = datetime.datetime.now()
         result = requests.get(request)
+        end_time = datetime.datetime.now()
     if result.status_code == 200:
         st.toast(
             f"Found {len(result.json())} files matching the criteria.",
@@ -47,6 +49,7 @@ def search_files(
             "projects": projects,
             "tags": tags,
             "files": result.json(),
+            "time_spent": end_time - start_time,
         }
     else:
         st.toast(
@@ -63,6 +66,7 @@ def search_files(
             "projects": projects,
             "tags": tags,
             "files": [],
+            "time_spent": -1,
         }
 
 
@@ -154,7 +158,8 @@ def explorer():
             [],
         )
     if "explorer_files" in st.session_state:
-        query_str = f"Found {len(st.session_state.explorer_files['files'])} files beetween {st.session_state.explorer_files['start_date']} and {st.session_state.explorer_files['end_date']}"
+        time_spent = st.session_state.explorer_files.get("time_spent", -1).total_seconds()
+        query_str = f"Found {len(st.session_state.explorer_files['files'])} files in {time_spent:.3f}s beetween {st.session_state.explorer_files['start_date']} and {st.session_state.explorer_files['end_date']}"
         if (
             st.session_state.explorer_files["query"] is not None
             and len(st.session_state.explorer_files["query"]) > 0
