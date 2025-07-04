@@ -10,7 +10,7 @@ from db import get_db
 from db.models import ProjectFile, TagFile
 from tqdm import tqdm
 from whoosh import writing
-from whoosh.fields import DATETIME, ID, NGRAM, Schema
+from whoosh.fields import ID, NGRAM, Schema
 from whoosh.index import create_in
 from whoosh.qparser import MultifieldParser, OrGroup
 from whoosh.query import Every
@@ -26,9 +26,9 @@ class FileManager:
         cls.schema = Schema(
             file=ID(stored=True),  # exact match only, fast and compact
             file_name=NGRAM(minsize=2, maxsize=4, stored=True),  # used in query
-            mime=ID(stored=True),  # filter only
-            date=DATETIME(stored=True, sortable=True),  # filter only
-            subfolder=ID(stored=True),  # filter only
+            # mime=ID(stored=True),  # filter only
+            # date=DATETIME(stored=True, sortable=True),  # filter only
+            # subfolder=ID(stored=True),  # filter only
             keywords=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
             summary=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
         )
@@ -37,10 +37,17 @@ class FileManager:
             os.makedirs("/data/index", exist_ok=True)
         cls.ix = create_in("/data/index", cls.schema)
         logging.info("FileManager >> Setup complete.")
-        cls.index_files()
 
     @classmethod
-    def index_files(cls):
+    def index_files(
+        cls,
+        start_date: str = None,
+        end_date: str = None,
+        subfolders: List[str] = None,
+        types: List[list] = None,
+        projects: List[str] = None,
+        tags: List[str] = None,
+    ):
         start_time = time.time()
         logging.info("FileManager >> Indexing files...")
         if not cls.ix:
@@ -49,32 +56,70 @@ class FileManager:
         writer.mergetype = writing.CLEAR  # clear existing index
         count = 0
 
+        start_dt = (
+            datetime.fromisoformat(start_date.replace("T", " ")) if start_date else None
+        )
+        end_dt = (
+            datetime.fromisoformat(end_date.replace("T", " ")) if end_date else None
+        )
         for dp, _, filenames in tqdm(
             os.walk("/shared"), desc="Indexing files", unit="file"
         ):
-            for filename in filenames:
-                if filename != ".DS_Store":
+            db = get_db()
+            try:
+                for filename in filenames:
                     file = os.path.join(dp, filename)
-                    date = file.split("/")[2]
-                    subfolder = file.split("/")[3]
-                    summary = SummarizeManager.get(file)
-                    if summary is None:
-                        summary = ""
-                        keywords = ""
-                    else:
-                        keywords = summary.get("keywords", [])
-                        summary = summary.get("summary", "")
                     mime_file, _ = mimetypes.guess_type(file)
-                    writer.add_document(
-                        file=file,
-                        file_name=filename,
-                        mime=mime_file or "application/octet-stream",
-                        date=datetime.fromisoformat(date),
-                        subfolder=subfolder,
-                        keywords=",".join(keywords) if keywords else "",
-                        summary=summary,
-                    )
-                    count += 1
+                    mime_file = mime_file or "application/octet-stream"
+                    date = datetime.fromisoformat(file.split("/")[2])
+                    subfolder = file.split("/")[3]
+                    if (
+                        filename != ".DS_Store"
+                        and (start_dt <= date if start_dt else True)
+                        and (date <= end_dt if end_dt else True)
+                        and (not types or mime_file in types)
+                        and (not subfolders or subfolder in subfolders)
+                    ):
+                        if projects:
+                            file_projects = [
+                                p.project
+                                for p in db.query(ProjectFile)
+                                .filter(ProjectFile.file == file)
+                                .all()
+                            ]
+                        if tags:
+                            file_tags = [
+                                t.tag
+                                for t in db.query(TagFile)
+                                .filter(TagFile.file == file)
+                                .all()
+                            ]
+                        if (
+                            not projects or any(p in file_projects for p in projects)
+                        ) and (not tags or any(t in file_tags for t in tags)):
+                            summary = SummarizeManager.get(file)
+                            if summary is None:
+                                summary = ""
+                                keywords = ""
+                            else:
+                                keywords = summary.get("keywords", [])
+                                summary = summary.get("summary", "")
+                            writer.add_document(
+                                file=file,
+                                file_name=filename,
+                                # mime=mime_file or "application/octet-stream",
+                                # date=date,
+                                # subfolder=subfolder,
+                                keywords=",".join(keywords) if keywords else "",
+                                summary=summary,
+                            )
+                            count += 1
+            except Exception as e:
+                logging.error(f"Error during search: {str(e)}")
+                raise RuntimeError(f"Error during search: {str(e)}")
+            finally:
+                if projects or tags:
+                    db.close()
 
         writer.commit()
         logging.info(
@@ -87,18 +132,25 @@ class FileManager:
         text: str = None,
         start_date: str = None,
         end_date: str = None,
-        subfolder: List[str] = None,
+        subfolders: List[str] = None,
         types: List[list] = None,
         projects: List[str] = None,
         tags: List[str] = None,
     ):
         logging.critical(
-            f"Search files with text: {text}, start_date: {start_date}, end_date: {end_date}, subfolders: {subfolder}, types: {types}"
+            f"Search files with text: {text}, start_date: {start_date}, end_date: {end_date}, subfolders: {subfolders}, types: {types}"
         )
         start = time.time()
         if not cls.ix:
             raise RuntimeError("Index not initialised")
-        cls.index_files()
+        cls.index_files(
+            start_date=start_date,
+            end_date=end_date,
+            subfolders=subfolders,
+            types=types,
+            projects=projects,
+            tags=tags,
+        )
 
         with cls.ix.searcher() as searcher:
             parser = MultifieldParser(
@@ -111,61 +163,10 @@ class FileManager:
                 query = Every()
 
             results = searcher.search(query, limit=None)
-
-            start_dt = (
-                datetime.fromisoformat(start_date.replace("T", " "))
-                if start_date
-                else None
-            )
-            end_dt = (
-                datetime.fromisoformat(end_date.replace("T", " ")) if end_date else None
-            )
-
-            filtered = []
-
-            if projects or tags:
-                db = get_db()
-            try:
-                for r in results:
-                    r_date = r.get("date")
-                    if isinstance(r_date, str):
-                        r_date = datetime.fromisoformat(r_date)
-
-                    if projects:
-                        file_projects = [
-                            p.project
-                            for p in db.query(ProjectFile)
-                            .filter(ProjectFile.file == r.get("file"))
-                            .all()
-                        ]
-                    if tags:
-                        file_tags = [
-                            t.tag
-                            for t in db.query(TagFile)
-                            .filter(TagFile.file == r.get("file"))
-                            .all()
-                        ]
-
-                    if (
-                        (start_dt <= r_date if start_dt else True)
-                        and (r_date <= end_dt if end_dt else True)
-                        and (not types or r.get("mime") in types)
-                        and (not subfolder or r.get("subfolder") in subfolder)
-                        and (not projects or any(p in file_projects for p in projects))
-                        and (not tags or any(t in file_tags for t in tags))
-                    ):
-                        filtered.append(r.get("file"))
-            except Exception as e:
-                logging.error(f"Error during search: {str(e)}")
-                raise RuntimeError(f"Error during search: {str(e)}")
-            finally:
-                if projects or tags:
-                    db.close()
-
             logging.info(
-                f"FileManager >> Search completed with {len(filtered)} files in {time.time() - start:.2f} seconds."
+                f"FileManager >> Search completed with {len(results)} files in {time.time() - start:.2f} seconds."
             )
-            return filtered
+            return [r.get("file") for r in results]
 
     @classmethod
     def get_indexed_files(cls):

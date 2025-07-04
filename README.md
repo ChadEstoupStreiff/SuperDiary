@@ -68,6 +68,7 @@ Bugs:
 
 
 TODO: 
+- Either not reindex on each search, of only reindex files that passes filters to gain performance (prefer reindex files that passes filter)
 - Add parameters for research to trick beetween performance and power (like range of tokens, maybe enable fuzzy search ?)
 - Test search on big volume (tokens on summaries may explode search time)
 - ADD NOTE IN RESEARCH FUNCTION
