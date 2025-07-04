@@ -10,7 +10,7 @@ from db import get_db
 from db.models import ProjectFile, TagFile
 from tqdm import tqdm
 from whoosh import writing
-from whoosh.fields import DATETIME, TEXT, Schema
+from whoosh.fields import DATETIME, ID, NGRAM, Schema
 from whoosh.index import create_in
 from whoosh.qparser import MultifieldParser, OrGroup
 from whoosh.query import Every
@@ -24,14 +24,13 @@ class FileManager:
     def setup(cls):
         logging.info("FileManager >> Setting up...")
         cls.schema = Schema(
-            file=TEXT(stored=True),
-            file_name=TEXT(stored=True),
-            mime=TEXT(stored=True),
-            date=DATETIME(stored=True, sortable=True),
-            subfolder=TEXT(stored=True),
-            keywords=TEXT(stored=True),
-            summary=TEXT(stored=True),
-            # content=TEXT(stored=True),  # Use None for raw text
+            file=ID(stored=True),  # exact match only, fast and compact
+            file_name=NGRAM(minsize=2, maxsize=4, stored=True),  # used in query
+            mime=ID(stored=True),  # filter only
+            date=DATETIME(stored=True, sortable=True),  # filter only
+            subfolder=ID(stored=True),  # filter only
+            keywords=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
+            summary=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
         )
 
         if not os.path.exists("/data/index"):
@@ -106,7 +105,11 @@ class FileManager:
                 ["file_name", "keywords", "summary"], schema=cls.schema, group=OrGroup
             )
 
-            query = parser.parse(text) if text else Every()
+            if text:
+                query = parser.parse(text)
+            else:
+                query = Every()
+
             results = searcher.search(query, limit=None)
 
             start_dt = (

@@ -29,7 +29,7 @@ In coming...
 > Install [Docker](https://docs.docker.com/engine/install/) and [docker compose](https://docs.docker.com/compose/install/).  
 #### ⚠️ Make sure you allocated enough RAM to docker (see in settings) ! AI models may crash if not enough RAM.  
 
-Get the app on your computer
+Get the app on your server or computer
 ```bash
 git clone https://github.com/yourusername/super-diary.git
 cd super-diary
@@ -65,4 +65,3 @@ Dashboard -> Recently opened
 Bugs:  
 - HEIC images
 - md files dont load
-- search query seems to not work, only works when full word is written

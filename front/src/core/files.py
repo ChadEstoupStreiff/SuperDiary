@@ -194,7 +194,7 @@ def display_files(
         )
         selected_rows = table.query("see == True")
         if len(selected_rows) > 0:
-            st.session_state.file_to_see = selected_rows.iloc[0]["Path"]
+            st.session_state.file_to_see = f"/shared/{selected_rows.iloc[0]['Date']}/{selected_rows.iloc[0]['Subfolder']}/{selected_rows.iloc[0]['File']}"
             st.switch_page(PAGE_VIEWER)
 
     # MARK: BOXES
