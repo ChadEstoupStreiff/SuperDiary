@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 router = APIRouter(tags=["Settings"])
 
 default_settings = {
+    "search_limit": 50,
     "enable_auto_ocr": True,
     "enable_auto_transcription": True,
     "enable_auto_summary": True,

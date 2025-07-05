@@ -12,6 +12,7 @@ class NoteManager:
         db = get_db()
         note = db.query(Note).filter(Note.file == file).first()
         db.close()
+
         if not note:
             return {
                 "file": file,

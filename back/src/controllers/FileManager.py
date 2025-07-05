@@ -5,10 +5,12 @@ import time
 from datetime import datetime
 from typing import List
 
+from controllers.NoteManager import NoteManager
 from controllers.SummarizeManager import SummarizeManager
 from db import get_db
 from db.models import ProjectFile, TagFile
 from tqdm import tqdm
+from views.settings import get_setting
 from whoosh import writing
 from whoosh.fields import ID, NGRAM, Schema
 from whoosh.index import create_in
@@ -25,12 +27,13 @@ class FileManager:
         logging.info("FileManager >> Setting up...")
         cls.schema = Schema(
             file=ID(stored=True),  # exact match only, fast and compact
-            file_name=NGRAM(minsize=2, maxsize=4, stored=True),  # used in query
+            file_name=NGRAM(minsize=3, maxsize=7, stored=True),  # used in query
             # mime=ID(stored=True),  # filter only
             # date=DATETIME(stored=True, sortable=True),  # filter only
             # subfolder=ID(stored=True),  # filter only
             keywords=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
             summary=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
+            note=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
         )
 
         if not os.path.exists("/data/index"):
@@ -48,8 +51,6 @@ class FileManager:
         projects: List[str] = None,
         tags: List[str] = None,
     ):
-        start_time = time.time()
-        logging.info("FileManager >> Indexing files...")
         if not cls.ix:
             raise Exception("Index not initialized. Call setup() first.")
         writer = cls.ix.writer()
@@ -65,7 +66,6 @@ class FileManager:
         for dp, _, filenames in tqdm(
             os.walk("/shared"), desc="Indexing files", unit="file"
         ):
-            db = get_db()
             try:
                 for filename in filenames:
                     file = os.path.join(dp, filename)
@@ -73,6 +73,7 @@ class FileManager:
                     mime_file = mime_file or "application/octet-stream"
                     date = datetime.fromisoformat(file.split("/")[2])
                     subfolder = file.split("/")[3]
+
                     if (
                         filename != ".DS_Store"
                         and (start_dt <= date if start_dt else True)
@@ -80,20 +81,30 @@ class FileManager:
                         and (not types or mime_file in types)
                         and (not subfolders or subfolder in subfolders)
                     ):
-                        if projects:
-                            file_projects = [
-                                p.project
-                                for p in db.query(ProjectFile)
-                                .filter(ProjectFile.file == file)
-                                .all()
-                            ]
-                        if tags:
-                            file_tags = [
-                                t.tag
-                                for t in db.query(TagFile)
-                                .filter(TagFile.file == file)
-                                .all()
-                            ]
+                        if projects or tags:
+                            db = get_db()
+                        try:
+                            if projects:
+                                file_projects = [
+                                    p.project
+                                    for p in db.query(ProjectFile)
+                                    .filter(ProjectFile.file == file)
+                                    .all()
+                                ]
+                            if tags:
+                                file_tags = [
+                                    t.tag
+                                    for t in db.query(TagFile)
+                                    .filter(TagFile.file == file)
+                                    .all()
+                                ]
+                        except Exception as e:
+                            logging.error(f"Error querying database: {str(e)}")
+                            raise RuntimeError(f"Error querying database: {str(e)}")
+                        finally:
+                            if projects or tags:
+                                db.close()
+
                         if (
                             not projects or any(p in file_projects for p in projects)
                         ) and (not tags or any(t in file_tags for t in tags)):
@@ -104,6 +115,9 @@ class FileManager:
                             else:
                                 keywords = summary.get("keywords", [])
                                 summary = summary.get("summary", "")
+
+                            note = NoteManager.get(file)
+                            note = note.get("note", "") if note else ""
                             writer.add_document(
                                 file=file,
                                 file_name=filename,
@@ -112,19 +126,14 @@ class FileManager:
                                 # subfolder=subfolder,
                                 keywords=",".join(keywords) if keywords else "",
                                 summary=summary,
+                                note=note,
                             )
                             count += 1
             except Exception as e:
                 logging.error(f"Error during search: {str(e)}")
                 raise RuntimeError(f"Error during search: {str(e)}")
-            finally:
-                if projects or tags:
-                    db.close()
 
         writer.commit()
-        logging.info(
-            f"FileManager >> Indexed {count} files in {time.time() - start_time:.2f} seconds."
-        )
 
     @classmethod
     def search_files(
@@ -137,9 +146,6 @@ class FileManager:
         projects: List[str] = None,
         tags: List[str] = None,
     ):
-        logging.critical(
-            f"Search files with text: {text}, start_date: {start_date}, end_date: {end_date}, subfolders: {subfolders}, types: {types}"
-        )
         start = time.time()
         if not cls.ix:
             raise RuntimeError("Index not initialised")
@@ -154,7 +160,9 @@ class FileManager:
 
         with cls.ix.searcher() as searcher:
             parser = MultifieldParser(
-                ["file_name", "keywords", "summary"], schema=cls.schema, group=OrGroup
+                ["file_name", "keywords", "summary", "note"],
+                schema=cls.schema,
+                group=OrGroup,
             )
 
             if text:
@@ -162,10 +170,7 @@ class FileManager:
             else:
                 query = Every()
 
-            results = searcher.search(query, limit=None)
-            logging.info(
-                f"FileManager >> Search completed with {len(results)} files in {time.time() - start:.2f} seconds."
-            )
+            results = searcher.search(query, limit=get_setting("search_limit"))
             return [r.get("file") for r in results]
 
     @classmethod
