@@ -65,9 +65,7 @@ class TranscriptionManager:
                 task.completed = datetime.now()
                 task.result = result
                 if len(result) > 0:
-                    db.query(TranscriptionTask).filter(
-                        TranscriptionTask.file == file
-                    ).delete()
+                    db.query(Transcription).filter(Transcription.file == file).delete()
                     db.add(
                         Transcription(
                             file=file,

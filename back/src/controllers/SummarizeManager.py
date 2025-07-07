@@ -134,7 +134,7 @@ Content:
                 task.state = TaskStateEnum.COMPLETED
                 task.completed = datetime.now()
                 task.result = f"{keywords} - {summary}"
-                db.query(SummaryTask).filter(SummaryTask.file == file).delete()
+                db.query(Summary).filter(Summary.file == file).delete()
                 db.add(
                     Summary(
                         file=file,
@@ -197,7 +197,7 @@ You are an expert summarizer.
 Write a **detailed summary** that captures the **essence**, **key points**, and **main insights** from the file content above.
 
 ! FORMAT !
-Respond ONLY with plain text.  
+Respond ONLY with plain markdown.  
 Do NOT include explanations, notes, or any formatting outside the summary itself.
 """,
             input_text=input,

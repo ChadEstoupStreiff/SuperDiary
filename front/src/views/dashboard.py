@@ -4,7 +4,7 @@ import json
 import requests
 import streamlit as st
 from core.files import display_files
-from utils import clear_cache
+from utils import clear_cache, toast_for_rerun
 
 
 @st.dialog("📤 Upload files")
@@ -62,9 +62,13 @@ def dialog_upload(files):
                 files=files_payload,
             )
             if response.status_code == 200:
-                st.success("Files uploaded successfully.")
-                st.toast("Files uploaded successfully.", icon="🆕")
+                del st.session_state.dashboard_new_files
                 clear_cache()
+                toast_for_rerun(
+                    "Files uploaded successfully!",
+                    icon="🆕",
+                )
+                st.rerun()
             else:
                 st.error(f"Failed to upload files: {response.text}")
                 st.toast(f"Failed to upload files: {response.text}", icon="❌")
@@ -78,12 +82,21 @@ def dashboard():
     cols = st.columns([2, 1])
 
     with cols[1]:
+
+        def on_change_files():
+            st.session_state.dashboard_new_files = True
+
         files = st.file_uploader(
             "Upload files",
             accept_multiple_files=True,
+            on_change=on_change_files,
             help="Upload files to be processed by the system.",
         )
-        if files:
+        if (
+            files
+            and "dashboard_new_files" in st.session_state
+            and st.session_state.dashboard_new_files
+        ):
             dialog_upload(files)
 
         with st.container(border=True):

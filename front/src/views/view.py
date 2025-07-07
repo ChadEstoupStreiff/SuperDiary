@@ -13,8 +13,8 @@ from utils import (
     generate_aside_tag_markdown,
     generate_project_visual_markdown,
     generate_tag_visual_markdown,
-    toast_for_rerun,
     spacer,
+    toast_for_rerun,
 )
 from views.settings import tasks as list_tasks
 
@@ -148,7 +148,9 @@ def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
                         st.rerun()
                 with p_cols[1]:
                     st.markdown(
-                        generate_project_visual_markdown(project["name"], project["color"]),
+                        generate_project_visual_markdown(
+                            project["name"], project["color"]
+                        ),
                         unsafe_allow_html=True,
                     )
 
@@ -288,25 +290,25 @@ def see_file(file):
             keywords = result.json().get("keywords", [])
             st.caption(f"Keywords : {', '.join(keywords)}")
             with st.container(border=True):
-                st.text(summary)
+                st.markdown(summary)
         else:
             st.info(
                 "No summary available for this file. You can create a summary by clicking the button below."
             )
-            if st.button(
-                "Create summary",
-                use_container_width=True,
-                help="Click to create a summary for this file.",
-            ):
-                result = requests.post(f"http://back:80/summarize/ask/{file}")
-                if result.status_code == 200:
-                    toast_for_rerun(
-                        "Summary task created successfully. It may take some time to process.",
-                        icon="✅",
-                    )
-                    st.rerun()
-                else:
-                    st.error("Failed to ask summary.")
+        if st.button(
+            "Ask for summary",
+            use_container_width=True,
+            help="Click to create a summary for this file.",
+        ):
+            result = requests.post(f"http://back:80/summarize/ask/{file}")
+            if result.status_code == 200:
+                toast_for_rerun(
+                    "Summary task created successfully. It may take some time to process.",
+                    icon="✅",
+                )
+                st.rerun()
+            else:
+                st.error("Failed to ask summary.")
 
     # MARK: METADATA
     with tab_metadata:
@@ -401,18 +403,18 @@ def view():
                     st.write(result.json().get("transcription", ""))
                 else:
                     st.error("Failed to load transcription. Please try again later.")
-                    if st.button("Start transcription", use_container_width=True):
-                        result = requests.post(
-                            f"http://back:80/transcription/ask/{file}",
+                if st.button("Ask for transcription", use_container_width=True):
+                    result = requests.post(
+                        f"http://back:80/transcription/ask/{file}",
+                    )
+                    if result.status_code == 200:
+                        toast_for_rerun(
+                            "Transcription task created successfully. It may take some time to process.",
+                            icon="✅",
                         )
-                        if result.status_code == 200:
-                            toast_for_rerun(
-                                "Transcription task created successfully. It may take some time to process.",
-                                icon="✅",
-                            )
-                            st.rerun()
-                        else:
-                            st.error("Failed to create transcription task.")
+                        st.rerun()
+                    else:
+                        st.error("Failed to create transcription task.")
 
             elif mime.startswith("image/"):
                 with st.spinner("Loading OCR..."):
@@ -422,18 +424,18 @@ def view():
                     st.write(result.json().get("ocr", ""))
                 else:
                     st.error("Failed to load OCR. Please try again later.")
-                    if st.button("Start OCR", use_container_width=True):
-                        result = requests.post(
-                            f"http://back:80/ocr/ask/{file}",
+                if st.button("Ask for OCR", use_container_width=True):
+                    result = requests.post(
+                        f"http://back:80/ocr/ask/{file}",
+                    )
+                    if result.status_code == 200:
+                        toast_for_rerun(
+                            "OCR task created successfully. It may take some time to process.",
+                            icon="✅",
                         )
-                        if result.status_code == 200:
-                            toast_for_rerun(
-                                "OCR task created successfully. It may take some time to process.",
-                                icon="✅",
-                            )
-                            st.rerun()
-                        else:
-                            st.error("Failed to create OCR task.")
+                        st.rerun()
+                    else:
+                        st.error("Failed to create OCR task.")
 
 
 if __name__ == "__main__":

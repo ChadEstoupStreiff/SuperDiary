@@ -111,7 +111,7 @@ def line_file(file: str, show_preview: bool, key: str = ""):
                 keywords = result.json().get("keywords", [])
                 st.caption(f"Keywords : {', '.join(keywords)}")
                 with st.container(border=True):
-                    st.text(
+                    st.markdown(
                         summary[:MAX_SUMMARY_LENGTH]
                         + (" ..." if len(summary) > MAX_SUMMARY_LENGTH else "")
                     )

@@ -340,7 +340,7 @@ def generate_project_visual_markdown(name: str, color: str):
     """
     Generate a visual representation of a project with its name and color.
     """
-    return f"<span style='color:{color};'>{name}</span>"
+    return f"<span style='color:{color}; font-weight:bold'>{name}</span>"
 
 def generate_aside_project_markdown(names: List[str], colors: List[str]):
     return f"""

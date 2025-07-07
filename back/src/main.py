@@ -19,6 +19,9 @@ import views.files
 
 app.include_router(views.files.router)
 
+import views.calendar
+app.include_router(views.calendar.router)
+
 import views.ocr
 
 app.include_router(views.ocr.router)

@@ -48,11 +48,13 @@ async def upload_files(
             os.makedirs(os.path.join("/shared", file_date, subdirectory), exist_ok=True)
 
             file_path = os.path.join("/shared", file_date, subdirectory, file_name)
+            file_exists = os.path.exists(file_path)
 
             with open(file_path, "wb") as f:
                 content = await file.read()
                 f.write(content)
-            if os.path.exists(file_path):
+            if file_exists:
+                logging.critical(f"File already exists: {file_path}.")
                 os.utime(file_path, None)
             else:
                 mime, _ = mimetypes.guess_type(file_path)
