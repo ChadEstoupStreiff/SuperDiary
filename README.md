@@ -63,8 +63,7 @@ Dashboard -> Recently added
 Dashboard -> Recently opened
 
 Bugs:  
-- HEIC images
-- md files dont load
+No bugs founded for now :)
 
 
 TODO: 

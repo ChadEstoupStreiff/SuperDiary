@@ -4,13 +4,14 @@ from threading import Thread
 import uvicorn
 from controllers.FileManager import FileManager
 from controllers.OCRManager import OCRManager
-from controllers.TranscriptionManager import TranscriptionManager
 from controllers.SummarizeManager import SummarizeManager
+from controllers.TranscriptionManager import TranscriptionManager
 from db import DB, create_default_values
 from db.models import Base
 from fastapi import FastAPI
-from views.settings import get_setting
+from pillow_heif import register_heif_opener
 from views.ollama import list_models, pull_model
+from views.settings import get_setting
 
 app = FastAPI()
 
@@ -20,6 +21,7 @@ import views.files
 app.include_router(views.files.router)
 
 import views.calendar
+
 app.include_router(views.calendar.router)
 
 import views.ocr
@@ -43,9 +45,11 @@ import views.ollama
 app.include_router(views.ollama.router)
 
 import views.projects
+
 app.include_router(views.projects.router)
 
 import views.tags
+
 app.include_router(views.tags.router)
 
 import views.settings
@@ -93,9 +97,9 @@ if __name__ == "__main__":
     Base.metadata.create_all(bind=DB().engine)
     create_default_values()
 
-
     FileManager.setup()
 
+    register_heif_opener()
     transcription_thread = Thread(target=TranscriptionManager.start_thread)
     transcription_thread.daemon = True  # Daemonize thread
     transcription_thread.start()

@@ -17,3 +17,5 @@ pytesseract==0.3.*
 # langchain
 # langchain-community
 tiktoken
+pillow
+pillow-heif

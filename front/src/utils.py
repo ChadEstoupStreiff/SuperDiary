@@ -312,10 +312,10 @@ def clear_cache():
         del st.session_state.explorer_files
     if "file_to_see" in st.session_state:
         del st.session_state.file_to_see
-    if "notes_name" in st.session_state:
-        del st.session_state.notes_name
-    if "notes_content" in st.session_state:
-        del st.session_state.notes_content
+    if "note_name" in st.session_state:
+        del st.session_state.note_name
+    if "note_content" in st.session_state:
+        del st.session_state.note_content
 
 
 def toast_for_rerun(message: str, icon: str = None):

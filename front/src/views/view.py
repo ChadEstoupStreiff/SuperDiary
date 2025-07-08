@@ -5,7 +5,7 @@ from typing import List
 
 import requests
 import streamlit as st
-from pages import PAGE_EXPLORER
+from pages import PAGE_EXPLORER, PAGE_NOTES
 from utils import (
     clear_cache,
     download_and_display_file,
@@ -17,7 +17,6 @@ from utils import (
     toast_for_rerun,
 )
 from views.settings import tasks as list_tasks
-from pages import PAGE_NOTES
 
 
 @st.dialog("🗑️ Delete file")
@@ -403,10 +402,12 @@ def view():
 
             if mime is None:
                 st.error("Could not determine the file type. Please check the file.")
-            
+
             elif mime.endswith("markdown"):
                 if st.button("📝 Edit in note", use_container_width=True):
-                    st.session_state["notes_name"] = file
+                    st.session_state["note_name"] = file
+                    if "note_content" in st.session_state:
+                        del st.session_state["note_content"]
                     st.switch_page(PAGE_NOTES)
 
             elif mime.startswith("audio/") or mime.startswith("video/"):
@@ -450,7 +451,7 @@ def view():
                         st.rerun()
                     else:
                         st.error("Failed to create OCR task.")
-            
+
             with top:
                 with st.spinner("Downloading file..."):
                     download_and_display_file(file)

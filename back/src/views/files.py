@@ -4,6 +4,7 @@ import mimetypes
 import os
 import traceback
 from datetime import datetime
+from io import BytesIO
 from typing import List
 
 from controllers.FileManager import FileManager
@@ -14,10 +15,14 @@ from controllers.TranscriptionManager import TranscriptionManager
 from db import get_db
 from db.models import ProjectFile, TagFile
 from fastapi import APIRouter, HTTPException, UploadFile
+from PIL import Image
+from pillow_heif import register_heif_opener
 from starlette.responses import FileResponse
 from views.settings import get_setting
 
 router = APIRouter(prefix="/files", tags=["Files"])
+
+register_heif_opener()
 
 
 @router.post("/upload")
@@ -38,7 +43,6 @@ async def upload_files(
             file_name = (
                 file_edit_info.get(file.filename, {})
                 .get("name", file.filename)
-                # .replace(" ", "_")
                 .replace("/", "_")
                 .replace("\\", "_")
                 .replace(":", "-")
@@ -47,23 +51,43 @@ async def upload_files(
 
             os.makedirs(os.path.join("/shared", file_date, subdirectory), exist_ok=True)
 
-            file_path = os.path.join("/shared", file_date, subdirectory, file_name)
+            file_ext = os.path.splitext(file.filename)[1].lower()
+            if file_ext == ".heic":
+                content = await file.read()
+                image = Image.open(BytesIO(content))
+                file_name = os.path.splitext(file_name)[0] + ".png"
+                file_path = os.path.join("/shared", file_date, subdirectory, file_name)
+                image.save(file_path, format="PNG")
+            else:
+                file_path = os.path.join("/shared", file_date, subdirectory, file_name)
+                with open(file_path, "wb") as f:
+                    f.write(await file.read())
+
             file_exists = os.path.exists(file_path)
 
-            with open(file_path, "wb") as f:
-                content = await file.read()
-                f.write(content)
             if file_exists:
                 os.utime(file_path, None)
             else:
+                auto_summary = get_setting("enable_auto_summary")
                 mime, _ = mimetypes.guess_type(file_path)
-                if mime.startswith("image/") and get_setting("enable_auto_ocr"):
+
+                if (
+                    mime
+                    and mime.startswith("image/")
+                    and get_setting("enable_auto_ocr")
+                ):
                     OCRManager.add_file_to_queue(file_path)
+                    if auto_summary:
+                        SummarizeManager.add_file_to_queue(file_path)
+
                 elif (
-                    mime.startswith("audio/") or mime.startswith("video/")
+                    mime and (mime.startswith("audio/") or mime.startswith("video/"))
                 ) and get_setting("enable_auto_transcription"):
                     TranscriptionManager.add_file_to_queue(file_path)
-                if get_setting("enable_auto_summary"):
+                    if auto_summary:
+                        SummarizeManager.add_file_to_queue(file_path)
+
+                elif auto_summary:
                     SummarizeManager.add_file_to_queue(file_path)
 
         return {"message": f"{len(files)} files uploaded successfully."}
@@ -134,9 +158,7 @@ async def move_file(
         db = get_db()
         try:
             # Update ProjectFile entries
-            project_files = (
-                db.query(ProjectFile).filter(ProjectFile.file == file).all()
-            )
+            project_files = db.query(ProjectFile).filter(ProjectFile.file == file).all()
             for project_file in project_files:
                 project_file.file = new_file_path
             db.commit()
@@ -157,7 +179,7 @@ async def move_file(
             db.close()
         os.rename(file, new_file_path)
 
-        return {"message": f"File {file} moved to {new_file_path} successfully."}
+        return new_file_path
     except FileNotFoundError as e:
         logging.error(f"File not found: {str(e)}")
         logging.error(traceback.format_exc())
