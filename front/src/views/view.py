@@ -17,6 +17,7 @@ from utils import (
     toast_for_rerun,
 )
 from views.settings import tasks as list_tasks
+from pages import PAGE_NOTES
 
 
 @st.dialog("🗑️ Delete file")
@@ -376,7 +377,10 @@ def view():
         return
     file = st.session_state.file_to_see
 
-    cols = st.columns(2)
+    with st.sidebar:
+        side_by_side = st.toggle("Side by Side", value=True)
+
+    cols = st.columns(2 if side_by_side else 1)
     with cols[0]:
         # if st.button(
         #     "🔙 Back to Explorer",
@@ -387,13 +391,23 @@ def view():
         #     st.switch_page(PAGE_EXPLORER)
         see_file(file)
 
-    with cols[1]:
+    with cols[1 if side_by_side else 0]:
+        # MARK: FILE PREVIEW
         with st.container(border=True):
-            with st.spinner("Downloading file..."):
-                download_and_display_file(file)
-            mime, _ = mimetypes.guess_type(file)
+            top = st.container()
+
+            if file.endswith(".md") or file.endswith(".markdown"):
+                mime = "text/markdown"
+            else:
+                mime, _ = mimetypes.guess_type(file)
+
             if mime is None:
                 st.error("Could not determine the file type. Please check the file.")
+            
+            elif mime.endswith("markdown"):
+                if st.button("📝 Edit in note", use_container_width=True):
+                    st.session_state["notes_name"] = file
+                    st.switch_page(PAGE_NOTES)
 
             elif mime.startswith("audio/") or mime.startswith("video/"):
                 with st.spinner("Loading transcription..."):
@@ -436,6 +450,10 @@ def view():
                         st.rerun()
                     else:
                         st.error("Failed to create OCR task.")
+            
+            with top:
+                with st.spinner("Downloading file..."):
+                    download_and_display_file(file)
 
 
 if __name__ == "__main__":

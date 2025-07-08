@@ -88,7 +88,7 @@ def summarize_health():
 
 if __name__ == "__main__":
     logging.basicConfig(
-        level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s"
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
     Base.metadata.create_all(bind=DB().engine)
     create_default_values()

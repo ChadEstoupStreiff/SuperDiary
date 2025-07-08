@@ -68,67 +68,68 @@ class FileManager:
         ):
             try:
                 for filename in filenames:
-                    file = os.path.join(dp, filename)
-                    mime_file, _ = mimetypes.guess_type(file)
-                    mime_file = mime_file or "application/octet-stream"
-                    date = datetime.fromisoformat(file.split("/")[2])
-                    subfolder = file.split("/")[3]
-
-                    if (
-                        filename != ".DS_Store"
-                        and (start_dt <= date if start_dt else True)
-                        and (date <= end_dt if end_dt else True)
-                        and (not types or mime_file in types)
-                        and (not subfolders or subfolder in subfolders)
-                    ):
-                        if projects or tags:
-                            db = get_db()
-                        try:
-                            if projects:
-                                file_projects = [
-                                    p.project
-                                    for p in db.query(ProjectFile)
-                                    .filter(ProjectFile.file == file)
-                                    .all()
-                                ]
-                            if tags:
-                                file_tags = [
-                                    t.tag
-                                    for t in db.query(TagFile)
-                                    .filter(TagFile.file == file)
-                                    .all()
-                                ]
-                        except Exception as e:
-                            logging.error(f"Error querying database: {str(e)}")
-                            raise RuntimeError(f"Error querying database: {str(e)}")
-                        finally:
-                            if projects or tags:
-                                db.close()
+                    if filename != ".DS_Store":
+                        file = os.path.join(dp, filename)
+                        mime_file, _ = mimetypes.guess_type(file)
+                        mime_file = mime_file or "application/octet-stream"
+                        date = datetime.fromisoformat(file.split("/")[2])
+                        subfolder = file.split("/")[3]
 
                         if (
-                            not projects or any(p in file_projects for p in projects)
-                        ) and (not tags or any(t in file_tags for t in tags)):
-                            summary = SummarizeManager.get(file)
-                            if summary is None:
-                                summary = ""
-                                keywords = ""
-                            else:
-                                keywords = summary.get("keywords", [])
-                                summary = summary.get("summary", "")
+                            filename != ".DS_Store"
+                            and (start_dt <= date if start_dt else True)
+                            and (date <= end_dt if end_dt else True)
+                            and (not types or mime_file in types)
+                            and (not subfolders or subfolder in subfolders)
+                        ):
+                            if projects or tags:
+                                db = get_db()
+                            try:
+                                if projects:
+                                    file_projects = [
+                                        p.project
+                                        for p in db.query(ProjectFile)
+                                        .filter(ProjectFile.file == file)
+                                        .all()
+                                    ]
+                                if tags:
+                                    file_tags = [
+                                        t.tag
+                                        for t in db.query(TagFile)
+                                        .filter(TagFile.file == file)
+                                        .all()
+                                    ]
+                            except Exception as e:
+                                logging.error(f"Error querying database: {str(e)}")
+                                raise RuntimeError(f"Error querying database: {str(e)}")
+                            finally:
+                                if projects or tags:
+                                    db.close()
 
-                            note = NoteManager.get(file)
-                            note = note.get("note", "") if note else ""
-                            writer.add_document(
-                                file=file,
-                                file_name=filename,
-                                # mime=mime_file or "application/octet-stream",
-                                # date=date,
-                                # subfolder=subfolder,
-                                keywords=",".join(keywords) if keywords else "",
-                                summary=summary,
-                                note=note,
-                            )
-                            count += 1
+                            if (
+                                not projects or any(p in file_projects for p in projects)
+                            ) and (not tags or any(t in file_tags for t in tags)):
+                                summary = SummarizeManager.get(file)
+                                if summary is None:
+                                    summary = ""
+                                    keywords = ""
+                                else:
+                                    keywords = summary.get("keywords", [])
+                                    summary = summary.get("summary", "")
+
+                                note = NoteManager.get(file)
+                                note = note.get("note", "") if note else ""
+                                writer.add_document(
+                                    file=file,
+                                    file_name=filename,
+                                    # mime=mime_file or "application/octet-stream",
+                                    # date=date,
+                                    # subfolder=subfolder,
+                                    keywords=",".join(keywords) if keywords else "",
+                                    summary=summary,
+                                    note=note,
+                                )
+                                count += 1
             except Exception as e:
                 logging.error(f"Error during search: {str(e)}")
                 raise RuntimeError(f"Error during search: {str(e)}")
@@ -146,7 +147,6 @@ class FileManager:
         projects: List[str] = None,
         tags: List[str] = None,
     ):
-        start = time.time()
         if not cls.ix:
             raise RuntimeError("Index not initialised")
         cls.index_files(

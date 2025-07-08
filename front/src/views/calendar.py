@@ -170,8 +170,7 @@ def calendar():
     cols = st.columns(7 if enable_weekends else 5)
     for i in range(7 if enable_weekends else 5):
         with cols[i]:
-            st.write(
-                [
+            st.write(f"""### **{[
                     "Monday",
                     "Tuesday",
                     "Wednesday",
@@ -179,7 +178,7 @@ def calendar():
                     "Friday",
                     "Saturday",
                     "Sunday",
-                ][i]
+                ][i]}**"""
             )
     start_date = datetime.date(selected_year, selected_month + 1, 1)
     start_date_offset = start_date.weekday()

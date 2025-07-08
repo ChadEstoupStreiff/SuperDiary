@@ -68,6 +68,7 @@ Bugs:
 
 
 TODO: 
+- Add edition and deletion of calendar record
 - Add parameters for research to trick beetween performance and power (like range of tokens, maybe enable fuzzy search ?)
 - Test search on big volume (tokens on summaries may explode search time)
 - A robot that looks for files and update summaries if needed (like if the summary is older that file date, in reupload for exemple)

@@ -54,7 +54,6 @@ async def upload_files(
                 content = await file.read()
                 f.write(content)
             if file_exists:
-                logging.critical(f"File already exists: {file_path}.")
                 os.utime(file_path, None)
             else:
                 mime, _ = mimetypes.guess_type(file_path)
@@ -98,22 +97,24 @@ async def delete_file(file: str):
 
 
 @router.post("/move/{file:path}")
-async def move_file(file: str, subfolder: str, date: str = None, name: str = None):
+async def move_file(
+    file: str, subfolder: str = None, date: str = None, name: str = None
+):
     """
     Move a file to a new location.
     """
+    file = file.strip()
 
     try:
-        file_path = os.path.join(file)
-        if not os.path.exists(file_path):
+        if not os.path.exists(file):
             raise FileNotFoundError(f"File {file} does not exist.")
 
         if name is None:
             name = os.path.basename(file)
         if date is None:
-            date = file.split("/")[1]
+            date = file.split("/")[2]
         if subfolder is None:
-            subfolder = file.split("/")[2]
+            subfolder = file.split("/")[3]
 
         new_directory = os.path.join("/shared", date, subfolder)
         if not os.path.exists(new_directory):
@@ -126,22 +127,22 @@ async def move_file(file: str, subfolder: str, date: str = None, name: str = Non
                 detail=f"File {name} already exists in {new_directory}.",
             )
 
-        SummarizeManager.move(file_path, new_file_path)
-        OCRManager.move(file_path, new_file_path)
-        TranscriptionManager.move(file_path, new_file_path)
-        NoteManager.move(file_path, new_file_path)
+        SummarizeManager.move(file, new_file_path)
+        OCRManager.move(file, new_file_path)
+        TranscriptionManager.move(file, new_file_path)
+        NoteManager.move(file, new_file_path)
         db = get_db()
         try:
             # Update ProjectFile entries
             project_files = (
-                db.query(ProjectFile).filter(ProjectFile.file == file_path).all()
+                db.query(ProjectFile).filter(ProjectFile.file == file).all()
             )
             for project_file in project_files:
                 project_file.file = new_file_path
             db.commit()
 
             # Update TagFile entries
-            tag_files = db.query(TagFile).filter(TagFile.file == file_path).all()
+            tag_files = db.query(TagFile).filter(TagFile.file == file).all()
             for tag_file in tag_files:
                 tag_file.file = new_file_path
             db.commit()
@@ -154,7 +155,7 @@ async def move_file(file: str, subfolder: str, date: str = None, name: str = Non
             )
         finally:
             db.close()
-        os.rename(file_path, new_file_path)
+        os.rename(file, new_file_path)
 
         return {"message": f"File {file} moved to {new_file_path} successfully."}
     except FileNotFoundError as e:
