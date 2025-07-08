@@ -63,7 +63,7 @@ Dashboard -> Recently added
 Dashboard -> Recently opened
 
 Bugs:  
-No bugs founded for now :)
+
 
 
 TODO: 

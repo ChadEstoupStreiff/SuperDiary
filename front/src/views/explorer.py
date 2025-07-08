@@ -18,7 +18,7 @@ def search_files(
 ):
     # TODO : Add support for projects filtering
     # MARK: SEARCH FILES
-    with st.spinner("Searching files..."):
+    with st.spinner("Searching files...", show_time=True):
         request = (
             f"http://back:80/files/search?start_date={start_date}&end_date={end_date}"
         )

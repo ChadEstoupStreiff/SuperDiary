@@ -3,12 +3,12 @@ import json
 import mimetypes
 import os
 import tempfile
+from typing import List
 from urllib.parse import quote
 
 import pandas as pd
 import requests
 import streamlit as st
-from typing import List
 
 map_languauge_extension = {
     "py:": "python",
@@ -31,7 +31,6 @@ map_languauge_extension = {
     "kotlin:": "kotlin",
     "swift:": "swift",
 }
-
 mimes = [
     "text/plain",
     "text/markdown",
@@ -100,8 +99,6 @@ mimes = [
     "application/octet-stream",
     "application/x-msdownload",
 ]
-
-# ---------- Friendly labels ----------
 mimes_map = {
     # Text / markup
     "text/plain": "Text",
@@ -171,6 +168,15 @@ mimes_map = {
     "application/octet-stream": "Binary File",
     "application/x-msdownload": "Windows Executable",
 }
+
+
+def get_setting(key: str, default=None):
+    result = requests.get(f"http://back:80/settings/{key}")
+    if result.status_code == 200:
+        return result.json()
+    else:
+        st.error(f"Failed to retrieve setting {key}: {result.text}")
+        return default
 
 
 def display_file(file_path: str, file_url: str, default_height_if_needed: int = 1000):
@@ -261,36 +267,104 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
         )
 
 
-# TODO cache ?
-def download_file(raw_file_name: str):
-    """
-    Download and cache the file content.
-    """
-    encoded_file_name = quote(raw_file_name)
-    file_url = f"http://back:80/files/download/{encoded_file_name}"
-    result = requests.get(file_url)
-    if result.status_code != 200:
-        return None
-    return result.content
-
-
 def download_and_display_file(file_name, default_height_if_needed=1000):
-    with st.spinner("Downloading file..."):
-        result = download_file(file_name)
+    encoded_file_name = quote(file_name)
+    size = requests.get(f"http://back:80/files/metadata/{encoded_file_name}")
+    size = size.json().get("size", 0) / (1024 * 1024) if size.status_code == 200 else -1
+    size_limit = get_setting("auto_display_file_size_limit")
+    if (
+        size < 0
+        or size < size_limit
+        or st.toggle(
+            "This file exceeds the size limit. Display anyway?",
+            value=False,
+            key=f"display_large_file_toggle_{file_name}",
+            help=f"The file is over {size_limit:.1f} MB. Toggle to allow display.",
+        )
+    ):
+        with st.spinner("Displaying file...", show_time=True):
+            file_url = f"http://back:80/files/download/{encoded_file_name}"
+            result = requests.get(file_url)
+            if result.status_code != 200:
+                return None
+            result = result.content
 
-    if result is not None:
-        file_extension = os.path.splitext(file_name)[1].lower()
-        with tempfile.NamedTemporaryFile(
-            delete=True, suffix=f".{file_extension}"
-        ) as fp:
-            fp.write(result)
-            fp.flush()
-            fp.seek(0)
-            display_file(
-                fp.name,
-                f"http://back:80/files/download/{quote(file_name)}",
-                default_height_if_needed,
+            if result is not None:
+                file_extension = os.path.splitext(file_name)[1].lower()
+                with tempfile.NamedTemporaryFile(
+                    delete=True, suffix=f".{file_extension}"
+                ) as fp:
+                    fp.write(result)
+                    fp.flush()
+                    fp.seek(0)
+                    display_file(
+                        fp.name,
+                        f"http://back:80/files/download/{quote(file_name)}",
+                        default_height_if_needed,
+                    )
+
+
+def download_file_button(file: str):
+    file_name = os.path.basename(file)
+    with st.spinner("Preparing file...", show_time=True):
+        response = requests.get(f"http://back:80/files/download/{file}")
+    if response.status_code == 200:
+        with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+            tmp_file.write(response.content)
+            tmp_file.flush()
+            tmp_file.seek(0)
+            st.download_button(
+                "📥",
+                tmp_file.read(),
+                file_name=file_name,
+                help="Click to download the file.",
+                use_container_width=True,
+                key=f"see_download_{file}",
             )
+
+
+def generate_tag_visual_markdown(name: str, color: str):
+    def get_contrasting_text_color(hex_color: str) -> str:
+        hex_color = hex_color.lstrip("#")
+        r, g, b = [int(hex_color[i : i + 2], 16) for i in (0, 2, 4)]
+        luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        return "black" if luminance > 128 else "white"
+
+    """
+    Generate a visual representation of a tag with its name and color.
+    """
+    text_color = get_contrasting_text_color(color)
+    return f"""<span style="background-color:{color}; color:{text_color}; padding:4px 8px; border-radius:6px; font-size:0.9em;">{name}</span>"""
+
+
+def generate_aside_tag_markdown(names: List[str], colors: List[str]):
+    return f"""
+    <div style="display: flex; flex-direction: raw; flex-wrap: wrap; gap: 8px; margin: 6px;">
+        {''.join(generate_tag_visual_markdown(name, color) for name, color in zip(names, colors))}
+    </div>
+    """
+
+
+def generate_project_visual_markdown(name: str, color: str):
+    """
+    Generate a visual representation of a project with its name and color.
+    """
+    return f"<span style='color:{color}; font-weight:bold'>{name}</span>"
+
+
+def generate_aside_project_markdown(names: List[str], colors: List[str]):
+    return f"""
+    <div style="display: flex; flex-direction: raw; flex-wrap: wrap; gap: 8px; margin: 6px;">
+        {''.join(generate_project_visual_markdown(name, color) for name, color in zip(names, colors))}
+    </div>
+    """
+
+
+def spacer(space: int = 30):
+    """
+    Add a spacer to the Streamlit app.
+    """
+    st.markdown(f"""<div style="margin: {space}px"/>""", unsafe_allow_html=True)
 
 
 def custom_style():
@@ -307,6 +381,12 @@ def custom_style():
     )
 
 
+def toast_for_rerun(message: str, icon: str = None):
+    if "toast_for_rerun" not in st.session_state:
+        st.session_state.toast_for_rerun = []
+    st.session_state.toast_for_rerun.append((message, icon))
+
+
 def clear_cache():
     if "explorer_files" in st.session_state:
         del st.session_state.explorer_files
@@ -316,49 +396,3 @@ def clear_cache():
         del st.session_state.note_name
     if "note_content" in st.session_state:
         del st.session_state.note_content
-
-
-def toast_for_rerun(message: str, icon: str = None):
-    if "toast_for_rerun" not in st.session_state:
-        st.session_state.toast_for_rerun = []
-    st.session_state.toast_for_rerun.append((message, icon))
-
-
-def generate_tag_visual_markdown(name: str, color: str):
-    def get_contrasting_text_color(hex_color: str) -> str:
-        hex_color = hex_color.lstrip("#")
-        r, g, b = [int(hex_color[i : i + 2], 16) for i in (0, 2, 4)]
-        luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-        return "black" if luminance > 128 else "white"
-
-    """
-    Generate a visual representation of a tag with its name and color.
-    """
-    text_color = get_contrasting_text_color(color)
-    return f"""<span style="background-color:{color}; color:{text_color}; padding:4px 8px; border-radius:6px; font-size:0.9em;">{name}</span>"""
-
-def generate_aside_tag_markdown(names: List[str], colors: List[str]):
-    return f"""
-    <div style="display: flex; flex-direction: raw; flex-wrap: wrap; gap: 8px; margin: 6px;">
-        {''.join(generate_tag_visual_markdown(name, color) for name, color in zip(names, colors))}
-    </div>
-    """
-
-def generate_project_visual_markdown(name: str, color: str):
-    """
-    Generate a visual representation of a project with its name and color.
-    """
-    return f"<span style='color:{color}; font-weight:bold'>{name}</span>"
-
-def generate_aside_project_markdown(names: List[str], colors: List[str]):
-    return f"""
-    <div style="display: flex; flex-direction: raw; flex-wrap: wrap; gap: 8px; margin: 6px;">
-        {''.join(generate_project_visual_markdown(name, color) for name, color in zip(names, colors))}
-    </div>
-    """
-
-def spacer(space: int = 30):
-    """
-    Add a spacer to the Streamlit app.
-    """
-    st.markdown(f"""<div style="margin: {space}px"/>""", unsafe_allow_html=True)

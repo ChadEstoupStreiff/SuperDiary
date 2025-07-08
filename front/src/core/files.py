@@ -6,6 +6,7 @@ import streamlit as st
 from pages import PAGE_VIEWER
 from utils import (
     download_and_display_file,
+    download_file_button,
     generate_aside_project_markdown,
     generate_aside_tag_markdown,
 )
@@ -59,14 +60,7 @@ def box_file(file: str, height: int, show_preview: bool, key: str = ""):
                 st.session_state.file_to_see = file
                 st.switch_page(PAGE_VIEWER)
         with cols[1]:
-            st.download_button(
-                "📥",
-                f"http://back:80/files/download/{file}",
-                file_name=file_name,
-                help="Click to download the file.",
-                use_container_width=True,
-                key=f"{key}_download_{file}",
-            )
+            download_file_button(file)
     return preview
 
 
@@ -126,14 +120,7 @@ def line_file(file: str, show_preview: bool, key: str = ""):
             ):
                 st.session_state.file_to_see = file
                 st.switch_page(PAGE_VIEWER)
-            st.download_button(
-                "📥",
-                f"http://back:80/files/download/{file}",
-                file_name=file_name,
-                help="Click to download the file.",
-                use_container_width=True,
-                key=f"{key}_download_{file}",
-            )
+            download_file_button(file)
         if show_preview:
             return cols[0].container(
                 border=True,

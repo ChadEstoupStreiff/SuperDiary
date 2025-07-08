@@ -58,7 +58,7 @@ def notes():
 
     # MARK: NOTE CONTENT
     if "note_content" not in st.session_state and "note_name" in st.session_state:
-        with st.spinner("Loading note..."):
+        with st.spinner("Loading note...", show_time=True):
             file = st.session_state["note_name"]
             st.session_state["note_name"] = file
             note_content = requests.get(f"http://back:80/files/download/{file}")

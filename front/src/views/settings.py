@@ -280,6 +280,13 @@ def settings():
 
             top = st.container()
 
+            settings["auto_display_file_size_limit"] = st.number_input(
+                "Auto display file size limit (MB), -1 to disable",
+                min_value=-1,
+                value=settings.get("auto_display_file_size_limit", 10),
+                help="Set the maximum file size (in MB) for automatic display in the viewer.",
+            )
+
             with st.expander("Summarization Settings", expanded=True):
                 settings["enable_auto_summary"] = st.toggle(
                     "Enable auto Summarization",
@@ -425,7 +432,7 @@ def settings():
                         "See available models at this link: https://ollama.com/library"
                     )
                     if st.button("Pull Model", use_container_width=True):
-                        with st.spinner("Pulling model..."):
+                        with st.spinner("Pulling model...", show_time=True):
                             if model_pull_name:
                                 result = requests.post(
                                     f"http://back:80/ollama/pull/{model_pull_name}"

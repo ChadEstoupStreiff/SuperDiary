@@ -14,8 +14,7 @@ python-docx
 
 faster_whisper
 pytesseract==0.3.*
-# langchain
-# langchain-community
+
 tiktoken
 pillow
 pillow-heif

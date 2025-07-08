@@ -19,6 +19,7 @@ default_settings = {
     # "summarization_model": "llama3.2:3b",
     # "summarization_model": "llama3.1:8b",
     "summarization_model": "llama3.2:1b",
+    "auto_display_file_size_limit": 10, # 20Mb
 }
 
 
@@ -82,7 +83,7 @@ async def get_setting_value(key: str):
         value = get_setting(key)
         if value is None:
             raise HTTPException(status_code=404, detail=f"Setting {key} not found.")
-        return {key: value}
+        return value
     except HTTPException as e:
         raise e
     except Exception as e:

@@ -9,10 +9,12 @@ from pages import PAGE_EXPLORER, PAGE_NOTES
 from utils import (
     clear_cache,
     download_and_display_file,
+    download_file_button,
     generate_aside_project_markdown,
     generate_aside_tag_markdown,
     generate_project_visual_markdown,
     generate_tag_visual_markdown,
+    get_setting,
     spacer,
     toast_for_rerun,
 )
@@ -216,14 +218,7 @@ def see_file(file):
 
     col1, col2 = st.columns(2)
     with col1:
-        st.download_button(
-            "📥",
-            f"http://back:80/files/download/{file}",
-            file_name=file_name,
-            help="Click to download the file.",
-            use_container_width=True,
-            key=f"see_download_{file}",
-        )
+        download_file_button(file)
     with col2:
         if st.button(
             "🗑️",
@@ -411,7 +406,7 @@ def view():
                     st.switch_page(PAGE_NOTES)
 
             elif mime.startswith("audio/") or mime.startswith("video/"):
-                with st.spinner("Loading transcription..."):
+                with st.spinner("Loading transcription...", show_time=True):
                     result = requests.get(f"http://back:80/transcription/get/{file}")
                 if result.status_code == 200 and result.json() is not None:
                     st.subheader("Transcription")
@@ -432,7 +427,7 @@ def view():
                         st.error("Failed to create transcription task.")
 
             elif mime.startswith("image/"):
-                with st.spinner("Loading OCR..."):
+                with st.spinner("Loading OCR...", show_time=True):
                     result = requests.get(f"http://back:80/ocr/get/{file}")
                 if result.status_code == 200 and result.json() is not None:
                     st.subheader("OCR")
@@ -453,8 +448,7 @@ def view():
                         st.error("Failed to create OCR task.")
 
             with top:
-                with st.spinner("Downloading file..."):
-                    download_and_display_file(file)
+                download_and_display_file(file)
 
 
 if __name__ == "__main__":

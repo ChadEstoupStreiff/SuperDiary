@@ -52,7 +52,7 @@ def dialog_upload(files):
         help="Click to upload the selected files.",
         use_container_width=True,
     ):
-        with st.spinner("Saving files..."):
+        with st.spinner("Saving files...", show_time=True):
             files_payload = [("files", (file.name, file, file.type)) for file in files]
             request = f"http://back:80/files/upload?subdirectory=uploads&file_edit_info={json.dumps(file_edit_info)}"
             if not toggle_edit_date:
