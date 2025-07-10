@@ -6,6 +6,7 @@ import traceback
 from datetime import datetime
 
 from db import TaskStateEnum, Transcription, TranscriptionTask, get_db
+from sqlalchemy import and_
 
 
 class TranscriptionManager:
@@ -41,7 +42,12 @@ class TranscriptionManager:
             try:
                 task = (
                     db.query(TranscriptionTask)
-                    .filter(TranscriptionTask.file == file)
+                    .filter(
+                        and_(
+                            TranscriptionTask.file == file,
+                            TranscriptionTask.state == TaskStateEnum.PENDING,
+                        )
+                    )
                     .order_by(TranscriptionTask.added.desc())
                     .first()
                 )

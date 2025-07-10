@@ -1,4 +1,5 @@
 import datetime
+import json
 import mimetypes
 import os
 from typing import List
@@ -14,7 +15,6 @@ from utils import (
     generate_aside_tag_markdown,
     generate_project_visual_markdown,
     generate_tag_visual_markdown,
-    get_setting,
     spacer,
     toast_for_rerun,
 )
@@ -406,6 +406,7 @@ def view():
                     st.switch_page(PAGE_NOTES)
 
             elif mime.startswith("audio/") or mime.startswith("video/"):
+                # MARK: TRANSCRIPTION
                 with st.spinner("Loading transcription...", show_time=True):
                     result = requests.get(f"http://back:80/transcription/get/{file}")
                 if result.status_code == 200 and result.json() is not None:
@@ -427,25 +428,67 @@ def view():
                         st.error("Failed to create transcription task.")
 
             elif mime.startswith("image/"):
-                with st.spinner("Loading OCR...", show_time=True):
+                # MARK: OCR
+
+                with st.spinner("Loading OCR & BLIP...", show_time=True):
                     result = requests.get(f"http://back:80/ocr/get/{file}")
+                
                 if result.status_code == 200 and result.json() is not None:
-                    st.subheader("OCR")
-                    st.write(result.json().get("ocr", ""))
+                    blip_result = result.json().get("blip", "")
+                    if blip_result:
+                        st.write(blip_result)
+                    else:
+                        st.info(
+                            "No BLIP description available. You can create a BLIP description by clicking the button below."
+                        )
+                    with st.container(border=True):
+                        st.subheader("OCR")
+                        ocr_result = result.json().get("ocr", "")
+                        try:
+                            ocr_json = json.loads(ocr_result)
+                            ocr_cols = st.columns(2)
+                            with ocr_cols[0]:
+                                show_score = st.toggle(
+                                    "Show OCR confidence score",
+                                    value=False,
+                                    key="show_ocr_score",
+                                )
+                            with ocr_cols[1]:
+                                show_json = st.toggle(
+                                    "Show OCR JSON",
+                                    value=False,
+                                    key="show_ocr_json",
+                                )
+
+                            st.divider()
+
+                            for item in ocr_json:
+                                st.write(
+                                    f"{(item[1][1]*100):.2f}% : {item[1][0]}"
+                                    if show_score
+                                    else item[1][0]
+                                )
+
+                            if show_json:
+                                st.json(ocr_json)
+
+                        except json.JSONDecodeError:
+                            st.write(ocr_result)
                 else:
                     st.error("Failed to load OCR. Please try again later.")
-                if st.button("Ask for OCR", use_container_width=True):
+
+                if st.button("Ask for OCR & BLIP", use_container_width=True):
                     result = requests.post(
                         f"http://back:80/ocr/ask/{file}",
                     )
                     if result.status_code == 200:
                         toast_for_rerun(
-                            "OCR task created successfully. It may take some time to process.",
+                            "OCR & BLIP task created successfully. It may take some time to process.",
                             icon="✅",
                         )
                         st.rerun()
                     else:
-                        st.error("Failed to create OCR task.")
+                        st.error("Failed to create OCR & BLIP task.")
 
             with top:
                 download_and_display_file(file)

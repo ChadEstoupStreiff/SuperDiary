@@ -11,8 +11,9 @@ import docx
 from controllers.OCRManager import OCRManager
 from controllers.TranscriptionManager import TranscriptionManager
 from db import Summary, SummaryTask, TaskStateEnum, get_db
-from ollama import request_ollama
 from PyPDF2 import PdfReader
+from sqlalchemy import and_
+from tools.ollama import request_ollama
 from views.settings import get_setting
 
 
@@ -61,12 +62,15 @@ class SummarizeManager:
                 # MARK: Image
                 if mime.startswith("image/"):
                     logging.info("SUMMARY >> Attempting to get OCR.")
-                    ocr = OCRManager.get(file)
-                    if ocr is None:
+                    result = OCRManager.get(file)
+                    if result is None:
                         logging.info("SUMMARY >> No OCR found, re-adding to queue.")
                         cls.queue.put(file)
                         continue
-                    ocr = ocr.get("ocr")
+                    ocr = "\n".join(
+                        [item[1][0] for item in json.loads(result.get("ocr"))]
+                    )
+                    blip = result.get("blip")
 
                 # MARK: Audio and Video
                 elif mime.startswith("audio/") or mime.startswith("video/"):
@@ -104,7 +108,12 @@ class SummarizeManager:
 
                 task = (
                     db.query(SummaryTask)
-                    .filter(SummaryTask.file == file)
+                    .filter(
+                        and_(
+                            SummaryTask.file == file,
+                            SummaryTask.state == TaskStateEnum.PENDING,
+                        )
+                    )
                     .order_by(SummaryTask.added.desc())
                     .first()
                 )
@@ -122,6 +131,7 @@ File Extension: {file_extension}
 MIME Type: {mime if mime else "Not available"}
 
 OCR: {ocr if ocr else "Not available"}
+BLIP: {blip if blip else "Not available"}
 Transcription: {transcription if transcription else "Not available"}
 Content:
 {content if content else "Not available"}
@@ -201,7 +211,9 @@ Respond ONLY with plain markdown.
 Do NOT include explanations, notes, or any formatting outside the summary itself.
 """,
             input_text=input,
-        )
+        ).strip()
+        if summary.startswith("```") and summary.endswith("```"):
+            summary = summary[3:-3].strip()
         return (keywords, summary)
 
     @classmethod

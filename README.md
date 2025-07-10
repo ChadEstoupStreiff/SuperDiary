@@ -62,8 +62,11 @@ https://github.com/PaddlePaddle/PaddleOCR
 Dashboard -> Recently added
 Dashboard -> Recently opened
 
-Bugs:  
+TODO page on projects ? notes ?
+Pin file to dashboard ?
 
+Bugs:  
+- auto launch of tasks seems to now work
 
 
 TODO: 

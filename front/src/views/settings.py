@@ -241,7 +241,7 @@ def tasks(
         fetch_display_tasks("summarize", file)
 
     if list_ocr:
-        with st.expander("OCR Tasks", expanded=True):
+        with st.expander("OCR & BLIP Tasks", expanded=True):
             fetch_display_tasks("ocr", file)
 
     if list_transcription:
@@ -300,14 +300,14 @@ def settings():
                     help="Select the model to use for summarization.",
                 )
 
-            with st.expander("OCR Settings", expanded=True):
+            with st.expander("OCR & BLIP Settings", expanded=True):
                 st.caption(
-                    "Note: The OCR feature is only available for image files (e.g., png, jpg, jpeg, bmp, webp)."
+                    "Note: The OCR & BLIP feature is only available for image files (e.g., png, jpg, jpeg, bmp, webp)."
                 )
                 settings["enable_auto_ocr"] = st.toggle(
-                    "Enable auto OCR Processing",
+                    "Enable auto OCR & BLIP Processing",
                     value=settings["enable_auto_ocr"],
-                    help="Enable automatic OCR processing of image files when uploaded.",
+                    help="Enable automatic OCR & BLIP processing of image files when uploaded.",
                 )
 
             with st.expander("Transcription Settings", expanded=True):

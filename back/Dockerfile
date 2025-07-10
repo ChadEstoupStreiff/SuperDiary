@@ -1,18 +1,17 @@
 FROM python:3.9.16-bullseye
 
 # UPDATE
-RUN pip install --upgrade pip
 RUN apt-get update -y
 RUN apt-get upgrade -y
-RUN apt update
-RUN apt install tesseract-ocr -y
-RUN apt install tesseract-ocr-eng tesseract-ocr-fra -y
+RUN pip install --upgrade pip
 
+# RUN apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra -y
+RUN apt-get install -y libgl1
 
-# requirements
 WORKDIR /
 COPY requirements.txt /requirements.txt
 RUN pip3 install -r requirements.txt
+
 
 COPY src /app
 EXPOSE 80

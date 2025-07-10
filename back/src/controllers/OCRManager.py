@@ -6,6 +6,7 @@ import traceback
 from datetime import datetime
 
 from db import OCR, OCRTask, TaskStateEnum, get_db
+from sqlalchemy import and_
 
 
 class OCRManager:
@@ -41,13 +42,35 @@ class OCRManager:
 
             db = get_db()
             try:
-                task = db.query(OCRTask).filter(OCRTask.file == file).first()
+                task = (
+                    db.query(OCRTask)
+                    .filter(
+                        and_(
+                            OCRTask.file == file, OCRTask.state == TaskStateEnum.PENDING
+                        )
+                    )
+                    .first()
+                )
                 task.state = TaskStateEnum.IN_PROGRESS
                 db.commit()
 
+                logging.info(f"OCR >> Processing BLIP for file: {file}")
+                blip_proc = subprocess.run(
+                    ["python3", "/app/ocr_blip.py", file],
+                    capture_output=True,
+                    text=True,
+                )
+                if blip_proc.returncode != 0:
+                    raise RuntimeError(
+                        f"BLIP subprocess failed with code {blip_proc.returncode}: {blip_proc.stderr.strip()}"
+                    )
+                blip_result = blip_proc.stdout.strip().capitalize()
+                logging.info(f"OCR >> BLIP Result for file {file}: {blip_result}")
+
                 logging.info(f"OCR >> Processing for file: {file}")
                 proc = subprocess.run(
-                    ["python3", "/app/tesseract.py", file],
+                    # ["python3", "/app/ocr_tesseract.py", file],
+                    ["python3", "/app/ocr_paddle.py", file],
                     capture_output=True,
                     text=True,
                 )
@@ -56,11 +79,12 @@ class OCRManager:
                         f"Subprocess failed with code {proc.returncode}: {proc.stderr.strip()}"
                     )
                 result = proc.stdout.strip()
+                result = result[result.find("[") : result.rfind("]") + 1]
                 logging.info(f"OCR >> Result for file {file}: {result}")
 
                 task.state = TaskStateEnum.COMPLETED
                 task.completed = datetime.now()
-                task.result = result
+                task.result = f"{blip_result} - {result}"
                 if len(result) > 0:
                     db.query(OCR).filter(OCR.file == file).delete()
                     db.add(
@@ -68,6 +92,7 @@ class OCRManager:
                             file=file,
                             date=datetime.now(),
                             ocr=result,
+                            blip=blip_result,
                         )
                     )
                     db.commit()
@@ -132,6 +157,7 @@ class OCRManager:
             "file": ocr.file,
             "date": ocr.date,
             "ocr": ocr.ocr,
+            "blip": ocr.blip,
         }
 
     @classmethod

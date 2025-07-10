@@ -50,20 +50,22 @@ async def upload_files(
             )
 
             os.makedirs(os.path.join("/shared", file_date, subdirectory), exist_ok=True)
-
             file_ext = os.path.splitext(file.filename)[1].lower()
+
+            file_path = (
+                os.path.join("/shared", file_date, subdirectory, os.path.splitext(file_name)[0] + ".png")
+                if file_ext == ".heic"
+                else os.path.join("/shared", file_date, subdirectory, file_name)
+            )
+            file_exists = os.path.exists(file_path)
+            
             if file_ext == ".heic":
                 content = await file.read()
                 image = Image.open(BytesIO(content))
-                file_name = os.path.splitext(file_name)[0] + ".png"
-                file_path = os.path.join("/shared", file_date, subdirectory, file_name)
                 image.save(file_path, format="PNG")
             else:
-                file_path = os.path.join("/shared", file_date, subdirectory, file_name)
                 with open(file_path, "wb") as f:
                     f.write(await file.read())
-
-            file_exists = os.path.exists(file_path)
 
             if file_exists:
                 os.utime(file_path, None)

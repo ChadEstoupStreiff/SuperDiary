@@ -11,10 +11,22 @@ whoosh
 
 PyPDF2
 python-docx
-
-faster_whisper
-pytesseract==0.3.*
-
-tiktoken
 pillow
 pillow-heif
+
+# TRANSCRIPTION
+faster_whisper
+
+# OCR
+# pytesseract==0.3.*
+paddleocr
+paddlepaddle
+
+# BLIP
+transformers
+accelerate
+torch
+torchvision
+
+# LLM
+tiktoken

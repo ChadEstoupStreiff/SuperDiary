@@ -36,6 +36,7 @@ class OCR(Base):
     file = Column(String(512), primary_key=True, index=True)
     date = Column(DateTime, nullable=False)
     ocr = Column(TEXT(16320), nullable=False)
+    blip = Column(TEXT(16320), nullable=True)
 
 
 class OCRTask(Base):
@@ -115,6 +116,8 @@ class Project(Base):
     name = Column(String(50), primary_key=True, nullable=False)
     description = Column(TEXT(16320), nullable=True)
     color = Column(String(32), nullable=False)
+    todo = Column(TEXT(16320), nullable=True)
+    notes = Column(TEXT(16320), nullable=True)
 
 
 class ProjectFile(Base):
