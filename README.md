@@ -2,24 +2,27 @@
 
 # Super Diary
 
-**Super Diary** is a powerful, AI-enhanced web application for organizing, searching, and extracting content from your documents. Inspired by tools like Paperless, it leverages state-of-the-art models to unlock the full potential of your file collection.
+**Super Diary** is a powerful, AI-enhanced web application for organizing, searching, and extracting content from your documents.  
+Inspired by tools like *Paperless*, it leverages state-of-the-art models to unlock the full potential of your file collection.
 
 ## 🚀 Features
 
-- 🔍 **Smart Search**: Find files using natural language queries.
+- 🔍 **Smart Search**: Find files using a powerful search engine that understands context. It searches *within* your documents using the app’s full suite of AI tools.
 - 🧠 **AI Extraction**:
-  - **Whisper** for audio transcription
-  - **Tesseract** for OCR on images and PDFs
-  - **LLMs** (llama3) for text understanding, summarization, tagging, and Q&A
-- 📂 **Universal File Support**: Text, PDF, images, audio, and more.
-- 🔒 **Local-first**: You control your data.
+  - **LLMs** (llama3) for text understanding, summarization, tagging, and Q&A.
+  - **Whisper** for audio transcription.
+  - **PaddleOCR** for OCR on images.
+  - **BLIP** for image understanding and captioning on images.
+- 📂 **Universal File Support**: Text, PDF, images, audio, markdown, and more.
+- 🔒 **Local-First**: Your data stays yours. All processing (including AI) is done locally—unless you opt to use ChatGPT or Gemini.
+- 💻 **Lightweight & Powerful**: Runs on any machine with at least 8 GB RAM—even without a GPU!
 
 ## 📦 Tech Stack
 
 - **Back**: Python / FastAPI / SQLAlchemy  
 - **Front**: Streamlit  
-- **AI**: Whisper, Tesseract, Hugging Face LLMs  
-- **Infra**: Docker for deployment
+- **AI**: Llama3, Whisper, PaddleOCR, BLIP  
+- **Infra**: Docker for deployment  
 
 ## 📷 Preview  
 In coming...
@@ -66,6 +69,11 @@ TODO page on projects ? notes ?
 Pin file to dashboard ?
 
 Bugs:  
+<<<<<<< HEAD
+=======
+- auto launch of tasks seems to now work
+- Button refractor ?
+>>>>>>> 28e80c4208f9b8e46b74f83d498a56b6c1055a8a
 
 
 TODO: 
