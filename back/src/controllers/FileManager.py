@@ -41,7 +41,7 @@ class FileManager:
         logging.info("FileManager >> Setup complete.")
 
     @classmethod
-    def index_files(
+    def list_files(
         cls,
         start_date: str = None,
         end_date: str = None,
@@ -50,11 +50,7 @@ class FileManager:
         projects: List[str] = None,
         tags: List[str] = None,
     ):
-        if not cls.ix:
-            raise Exception("Index not initialized. Call setup() first.")
-        writer = cls.ix.writer()
-        writer.mergetype = writing.CLEAR  # clear existing index
-        count = 0
+        files = []
 
         start_dt = (
             datetime.fromisoformat(start_date.replace("T", " ")) if start_date else None
@@ -62,10 +58,13 @@ class FileManager:
         end_dt = (
             datetime.fromisoformat(end_date.replace("T", " ")) if end_date else None
         )
-        for dp, _, filenames in tqdm(
-            os.walk("/shared"), desc="Indexing files", unit="file"
-        ):
-            try:
+
+        if projects or tags:
+            db = get_db()
+        try:
+            for dp, _, filenames in tqdm(
+                os.walk("/shared"), desc="Indexing files", unit="file"
+            ):
                 for filename in filenames:
                     if filename != ".DS_Store":
                         file = os.path.join(dp, filename)
@@ -81,58 +80,75 @@ class FileManager:
                             and (not types or mime_file in types)
                             and (not subfolders or subfolder in subfolders)
                         ):
-                            if projects or tags:
-                                db = get_db()
-                            try:
-                                if projects:
-                                    file_projects = [
-                                        p.project
-                                        for p in db.query(ProjectFile)
-                                        .filter(ProjectFile.file == file)
-                                        .all()
-                                    ]
-                                if tags:
-                                    file_tags = [
-                                        t.tag
-                                        for t in db.query(TagFile)
-                                        .filter(TagFile.file == file)
-                                        .all()
-                                    ]
-                            except Exception as e:
-                                logging.error(f"Error querying database: {str(e)}")
-                                raise RuntimeError(f"Error querying database: {str(e)}")
-                            finally:
-                                if projects or tags:
-                                    db.close()
+                            if projects:
+                                file_projects = [
+                                    p.project
+                                    for p in db.query(ProjectFile)
+                                    .filter(ProjectFile.file == file)
+                                    .all()
+                                ]
+                            if tags:
+                                file_tags = [
+                                    t.tag
+                                    for t in db.query(TagFile)
+                                    .filter(TagFile.file == file)
+                                    .all()
+                                ]
 
                             if (
                                 not projects
                                 or any(p in file_projects for p in projects)
                             ) and (not tags or any(t in file_tags for t in tags)):
-                                summary = SummarizeManager.get(file)
-                                if summary is None:
-                                    summary = ""
-                                    keywords = ""
-                                else:
-                                    keywords = summary.get("keywords", [])
-                                    summary = summary.get("summary", "")
+                                files.append(file)
+        except Exception as e:
+            logging.error(f"Error querying database: {str(e)}")
+            raise RuntimeError(f"Error querying database: {str(e)}")
+        finally:
+            if projects or tags:
+                db.close()
 
-                                note = NoteManager.get(file)
-                                note = note.get("note", "") if note else ""
-                                writer.add_document(
-                                    file=file,
-                                    file_name=filename,
-                                    # mime=mime_file or "application/octet-stream",
-                                    # date=date,
-                                    # subfolder=subfolder,
-                                    keywords=",".join(keywords) if keywords else "",
-                                    summary=summary,
-                                    note=note,
-                                )
-                                count += 1
-            except Exception as e:
-                logging.error(f"Error during search: {str(e)}")
-                raise RuntimeError(f"Error during search: {str(e)}")
+        return files
+
+    @classmethod
+    def index_files(
+        cls,
+        files,
+    ):
+        if not cls.ix:
+            raise Exception("Index not initialized. Call setup() first.")
+        writer = cls.ix.writer()
+        writer.mergetype = writing.CLEAR  # clear existing index
+        count = 0
+
+        for file in files:
+            filename = os.path.basename(file)
+            dp = os.path.dirname(file)
+
+            file = os.path.join(dp, filename)
+            mime_file = guess_mime(file)
+            mime_file = mime_file or "application/octet-stream"
+
+            summary = SummarizeManager.get(file)
+            if summary is None:
+                summary = ""
+                keywords = ""
+            else:
+                keywords = summary.get("keywords", [])
+                summary = summary.get("summary", "")
+
+            note = NoteManager.get(file)
+            note = note.get("note", "") if note else ""
+            writer.add_document(
+                file=file,
+                file_name=filename,
+                # mime=mime_file or "application/octet-stream",
+                # date=date,
+                # subfolder=subfolder,
+                keywords=",".join(keywords) if keywords else "",
+                summary=summary,
+                note=note,
+            )
+            count += 1
 
         writer.commit()
 
@@ -147,9 +163,7 @@ class FileManager:
         projects: List[str] = None,
         tags: List[str] = None,
     ):
-        if not cls.ix:
-            raise RuntimeError("Index not initialised")
-        cls.index_files(
+        files = cls.list_files(
             start_date=start_date,
             end_date=end_date,
             subfolders=subfolders,
@@ -157,21 +171,28 @@ class FileManager:
             projects=projects,
             tags=tags,
         )
+        if text:
+            text = text.strip()
+            if not cls.ix:
+                raise RuntimeError("Index not initialised")
+            cls.index_files(files)
 
-        with cls.ix.searcher() as searcher:
-            parser = MultifieldParser(
-                ["file_name", "keywords", "summary", "note"],
-                schema=cls.schema,
-                group=OrGroup,
-            )
+            with cls.ix.searcher() as searcher:
+                parser = MultifieldParser(
+                    ["file_name", "keywords", "summary", "note"],
+                    schema=cls.schema,
+                    group=OrGroup,
+                )
 
-            if text:
-                query = parser.parse(text)
-            else:
-                query = Every()
+                if text:
+                    query = parser.parse(text)
+                else:
+                    query = Every()
 
-            results = searcher.search(query, limit=get_setting("search_limit"))
-            return [r.get("file") for r in results]
+                results = searcher.search(query, limit=get_setting("search_limit"))
+                return [r.get("file") for r in results]
+        else:
+            return files
 
     @classmethod
     def get_indexed_files(cls):

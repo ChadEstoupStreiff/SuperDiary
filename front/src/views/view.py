@@ -234,7 +234,7 @@ def see_file(file):
             dialog_delete_file(file)
 
     tab_details, tab_metadata, tab_notes, tab_summarize, tab_tasks = st.tabs(
-        ["Détails", "Metadata", "Notes", "Summary", "Tasks"]
+        ["📋 Détails", "🧾 Metadata", "📝 Notes", "🧠 Summary", "⏳ Tasks"]
     )
     # MARK: DETAILS
     with tab_details:
