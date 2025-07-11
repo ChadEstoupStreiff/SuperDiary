@@ -15,6 +15,7 @@ from db.models import (
     Tag,
     TagFile,
     CalendarRecord,
+    StockPile,
 )
 
 

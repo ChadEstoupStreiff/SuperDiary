@@ -214,31 +214,35 @@ def display_files(
                     download_and_display_file(files[i], default_height_if_needed=250)
 
 
-def representation_mode_select():
+def representation_mode_select(aside: bool = False, aside_offset: int = 0):
+    cols = st.columns([1, 1, 1, aside_offset]) if aside else st.columns(1)
     representation_options = ["🧮 Table", "🃏 Cards", "🏷️ List"]
-    representation_mode = st.segmented_control(
-        "Representation",
-        options=range(len(representation_options)),
-        format_func=lambda x: representation_options[x],
-        default=1,
-        key="representation",
-    )
+    with cols[0]:
+        representation_mode = st.segmented_control(
+            "Representation",
+            options=range(len(representation_options)),
+            format_func=lambda x: representation_options[x],
+            default=1,
+            key="representation",
+        )
     if representation_mode is None:
         representation_mode = 1
-    if representation_mode in [1, 2]:
-        show_preview = st.toggle(
-            "Show file preview",
-            value=False,
-            help="Toggle to show or hide file previews.",
-        )
-    if representation_mode == 1:
-        nbr_of_files_per_line = st.slider(
-            "Number of files per line",
-            min_value=3,
-            max_value=8,
-            value=5,
-            help="Adjust the number of files displayed per line.",
-        )
+    with cols[1 if aside else 0]:
+        if representation_mode in [1, 2]:
+            show_preview = st.toggle(
+                "Show file preview",
+                value=False,
+                help="Toggle to show or hide file previews.",
+            )
+    with cols[2 if aside else 0]:
+        if representation_mode == 1:
+            nbr_of_files_per_line = st.slider(
+                "Number of files per line",
+                min_value=3,
+                max_value=8,
+                value=5,
+                help="Adjust the number of files displayed per line.",
+            )
 
     return (
         representation_mode,

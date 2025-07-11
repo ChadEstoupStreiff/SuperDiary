@@ -1,9 +1,10 @@
+import datetime
 import logging
 import traceback
 
 from db import CalendarRecord, get_db
 from fastapi import APIRouter, HTTPException
-import datetime
+
 router = APIRouter(prefix="/calendar", tags=["Calendar"])
 
 
@@ -73,7 +74,9 @@ async def create_calendar_record(
         record = CalendarRecord(
             project=project,
             date=date,
-            start_time=datetime.datetime.strptime(start_time, "%H:%M:%S") if start_time else None,
+            start_time=datetime.datetime.strptime(start_time, "%H:%M:%S")
+            if start_time
+            else None,
             time_spent=time_spent,
             title=title,
             description=description,

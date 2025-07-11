@@ -1,7 +1,6 @@
 import datetime
 import json
 import tempfile
-from pathlib import Path
 
 import requests
 import streamlit as st
@@ -74,7 +73,7 @@ def notes():
                     f"Note '{file}' not found. Starting with a new note.",
                     icon="❌",
                 )
-    
+
     # MARK: DETAILS
     if "note_name" in st.session_state:
         opened_note = st.session_state["note_name"]
@@ -153,7 +152,7 @@ def notes():
             note_date = opened_note.split("/")[2]
             note_subdir = opened_note.split("/")[3]
             note_filename = opened_note.split("/")[-1]
-            
+
             with st.sidebar:
                 with tempfile.NamedTemporaryFile(
                     mode="w+", delete=True, suffix=".md"

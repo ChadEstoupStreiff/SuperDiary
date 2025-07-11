@@ -1,6 +1,5 @@
 import json
 import logging
-import mimetypes
 import os
 import traceback
 from datetime import datetime
@@ -18,11 +17,49 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from PIL import Image
 from pillow_heif import register_heif_opener
 from starlette.responses import FileResponse
+from utils import guess_mime
 from views.settings import get_setting
+from views.stockpile import StockPile, get_recent_added
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
 register_heif_opener()
+
+
+def add_recent_added_file(file: str):
+    try:
+        recent_added_files = get_recent_added()
+    except HTTPException:
+        recent_added_files = []
+
+    if file in recent_added_files:
+        recent_added_files.remove(file)
+    if len(recent_added_files) >= 10:
+        recent_added_files.pop()
+    recent_added_files.insert(0, file)
+
+    db = get_db()
+    try:
+        stockpile_item = (
+            db.query(StockPile).filter(StockPile.key == "recentadded").first()
+        )
+        if stockpile_item:
+            stockpile_item.value = json.dumps(recent_added_files)
+        else:
+            stockpile_item = StockPile(
+                key="recentadded", value=json.dumps(recent_added_files)
+            )
+            db.add(stockpile_item)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error adding recent added file {file}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, detail=f"Error adding recent added file: {str(e)}"
+        )
+    finally:
+        db.close()
 
 
 @router.post("/upload")
@@ -53,12 +90,17 @@ async def upload_files(
             file_ext = os.path.splitext(file.filename)[1].lower()
 
             file_path = (
-                os.path.join("/shared", file_date, subdirectory, os.path.splitext(file_name)[0] + ".png")
+                os.path.join(
+                    "/shared",
+                    file_date,
+                    subdirectory,
+                    os.path.splitext(file_name)[0] + ".png",
+                )
                 if file_ext == ".heic"
                 else os.path.join("/shared", file_date, subdirectory, file_name)
             )
             file_exists = os.path.exists(file_path)
-            
+
             if file_ext == ".heic":
                 content = await file.read()
                 image = Image.open(BytesIO(content))
@@ -67,11 +109,13 @@ async def upload_files(
                 with open(file_path, "wb") as f:
                     f.write(await file.read())
 
+            add_recent_added_file(file_path)
+
             if file_exists:
                 os.utime(file_path, None)
             else:
                 auto_summary = get_setting("enable_auto_summary")
-                mime, _ = mimetypes.guess_type(file_path)
+                mime = guess_mime(file_path)
 
                 if (
                     mime
@@ -194,10 +238,9 @@ async def get_file(file: str):
     Get a file by its path. Returns correct media type for browser rendering.
     """
     if os.path.exists(file):
-        # media_type, _ = mimetypes.guess_type(file)
         return FileResponse(
             file,
-            media_type="application/octet-stream",
+            media_type=guess_mime(file),
             filename=os.path.basename(file),
         )
     else:
@@ -219,8 +262,7 @@ async def get_file_metadata(file: str):
             "created": datetime.fromtimestamp(os.path.getctime(file_path)).isoformat(),
             "modified": datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat(),
             "path": file_path,
-            "mime_type": mimetypes.guess_type(file_path)[0]
-            or "application/octet-stream",
+            "mime_type": guess_mime(file_path),
         }
         return metadata
     except FileNotFoundError as e:

@@ -11,25 +11,27 @@ import requests
 import streamlit as st
 
 map_languauge_extension = {
-    "py:": "python",
-    "js:": "javascript",
-    "ts:": "typescript",
-    "java:": "java",
-    "c:": "c",
-    "cpp:": "cpp",
-    "csharp:": "csharp",
-    "html:": "html",
-    "css:": "css",
-    "yaml:": "yaml",
-    "bash:": "bash",
-    "sh:": "bash",
-    "sql:": "sql",
-    "php:": "php",
-    "ruby:": "ruby",
-    "go:": "go",
-    "rust:": "rust",
-    "kotlin:": "kotlin",
-    "swift:": "swift",
+    "py": "python",
+    "js": "javascript",
+    "ts": "typescript",
+    "java": "java",
+    "c": "c",
+    "cpp": "cpp",
+    "csharp": "csharp",
+    "html": "html",
+    "css": "css",
+    "yaml": "yaml",
+    "bash": "bash",
+    "sh": "bash",
+    "sql": "sql",
+    "php": "php",
+    "ruby": "ruby",
+    "go": "go",
+    "rust": "rust",
+    "kotlin": "kotlin",
+    "swift": "swift",
+    "env": "env",
+    "toml": "toml",
 }
 mimes = [
     "text/plain",
@@ -182,6 +184,7 @@ def get_setting(key: str, default=None):
 def display_file(file_path: str, file_url: str, default_height_if_needed: int = 1000):
     file_url = file_url.replace("http://back:80", "http://localhost:8400")
     file_extension = file_path.split(".")[-1].lower()
+    mime = guess_mime(file_path)
 
     if not os.path.exists(file_path):
         st.error(f"File {file_path} does not exist.")
@@ -206,38 +209,17 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
             with open(file_path, "rb") as file:
                 file_bytes = file.read()
 
-                if (
-                    file_extension == "png"
-                    or file_extension == "jpg"
-                    or file_extension == "jpeg"
-                    or file_extension == "bmp"
-                    or file_extension == "webp"
-                    or file_extension == "gif"
-                ):
-                    st.image(file_bytes, use_container_width=True)
 
-                elif file_extension == "txt":
-                    st.code(
-                        file_bytes.decode("utf-8"),
-                    )
+                if file_extension == "md" or file_extension == "markdown":
+                    st.markdown(file_bytes.decode("utf-8"), unsafe_allow_html=True)
 
                 elif file_extension == "json":
                     st.json(json.loads(file_bytes.decode("utf-8")))
 
-                elif file_extension == "mp3" or file_extension == "wav":
-                    st.audio(file_bytes, format="audio/wav")
-
-                elif (
-                    file_extension == "mp4"
-                    or file_extension == "avi"
-                    or file_extension == "mov"
-                ):
-                    st.video(file_bytes, format="video/mp4")
-
-                elif file_extension == "md" or file_extension == "markdown":
-                    st.markdown(file_bytes.decode("utf-8"), unsafe_allow_html=True)
-
                 elif file_extension in map_languauge_extension:
+                    st.markdown(
+                        f"Code: `{map_languauge_extension[file_extension]}`",
+                    )
                     language = map_languauge_extension[file_extension]
                     st.code(
                         file_bytes.decode("utf-8"),
@@ -256,6 +238,20 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
                         f'<embed src="{data_uri}" width="100%" height="{default_height_if_needed}px" />',
                         unsafe_allow_html=True,
                     )
+
+                elif mime.startswith("image/"):
+                    st.image(file_bytes, use_container_width=True)
+
+                elif mime.startswith("text/"):
+                    st.code(
+                        file_bytes.decode("utf-8"),
+                    )
+
+                elif mime.startswith("audio/"):
+                    st.audio(file_bytes, format="audio/wav")
+
+                elif mime.startswith("video/"):
+                    st.video(file_bytes, format="video/mp4")
 
                 else:
                     st.error(
@@ -396,3 +392,29 @@ def clear_cache():
         del st.session_state.note_name
     if "note_content" in st.session_state:
         del st.session_state.note_content
+
+
+def guess_mime(file_name: str) -> str:
+    """
+    Guess the MIME type of a file based on its name, with custom overrides.
+    """
+    ext = file_name.lower().split('.')[-1]
+
+    custom_mime = {
+        "md": "text/markdown",
+        "markdown": "text/markdown",
+        "env": "text/env",
+        "yaml": "text/x-yaml",
+        "yml": "text/x-yaml",
+        "toml": "text/toml",
+        "ipynb": "application/x-ipynb+json",
+        "jsonl": "application/x-ndjson",
+        "log": "text/log",
+        "logs": "text/log",
+    }
+
+    if ext in custom_mime:
+        return custom_mime[ext]
+
+    mime, _ = mimetypes.guess_type(file_name)
+    return mime or "application/octet-stream"

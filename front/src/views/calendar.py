@@ -106,28 +106,29 @@ def box_date(date):
         + f" - **{len(records)}** records, **{len(files)}** files, **{sum([r['time_spent'] for r in records])}** hours",
         expanded=False,
     ):
-        tabs = st.tabs([f"📅 Records: {len(records)}", f"📁 Files: {len(files)}"])
-        with tabs[0]:
-            st.error(
-                f"Error fetching records: {error_records}"
-            ) if error_records else None
-            if records:
-                with st.container(height=500):
-                    for record in records:
-                        box_calendar_record(record, show_date=False)
-            else:
-                st.info("No records found for this date.")
-        with tabs[1]:
-            st.error(f"Error fetching files: {error_files}") if error_files else None
-            if files:
-                display_files(
-                    files,
-                    representation_mode=0,
-                    show_preview=False,
-                    key=f"files_for_date_{date}",
-                )
-            else:
-                st.info("No files found for this date.")
+        with st.container(height=500):
+            tabs = st.tabs([f"📅 Records: {len(records)}", f"📁 Files: {len(files)}"])
+            with tabs[0]:
+                st.error(
+                    f"Error fetching records: {error_records}"
+                ) if error_records else None
+                if records:
+                    with st.container(height=500):
+                        for record in records:
+                            box_calendar_record(record, show_date=False)
+                else:
+                    st.info("No records found for this date.")
+            with tabs[1]:
+                st.error(f"Error fetching files: {error_files}") if error_files else None
+                if files:
+                    display_files(
+                        files,
+                        representation_mode=0,
+                        show_preview=False,
+                        key=f"files_for_date_{date}",
+                    )
+                else:
+                    st.info("No files found for this date.")
 
 
 def calendar():

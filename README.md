@@ -66,10 +66,10 @@ TODO page on projects ? notes ?
 Pin file to dashboard ?
 
 Bugs:  
-- auto launch of tasks seems to now work
 
 
 TODO: 
+- quick search (exclude summary), normal search, deep search (include file content)
 - Add edition and deletion of calendar record
 - Add parameters for research to trick beetween performance and power (like range of tokens, maybe enable fuzzy search ?)
 - Test search on big volume (tokens on summaries may explode search time)

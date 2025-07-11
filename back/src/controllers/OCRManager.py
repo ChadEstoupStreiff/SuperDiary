@@ -85,17 +85,17 @@ class OCRManager:
                 task.state = TaskStateEnum.COMPLETED
                 task.completed = datetime.now()
                 task.result = f"{blip_result} - {result}"
-                if len(result) > 0:
-                    db.query(OCR).filter(OCR.file == file).delete()
-                    db.add(
-                        OCR(
-                            file=file,
-                            date=datetime.now(),
-                            ocr=result,
-                            blip=blip_result,
-                        )
+
+                db.query(OCR).filter(OCR.file == file).delete()
+                db.add(
+                    OCR(
+                        file=file,
+                        date=datetime.now(),
+                        ocr=result,
+                        blip=blip_result,
                     )
-                    db.commit()
+                )
+                db.commit()
                 logging.info(f"OCR >> Completed processing for file: {file}")
             except Exception as e:
                 db.rollback()

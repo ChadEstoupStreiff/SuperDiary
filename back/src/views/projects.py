@@ -1,3 +1,4 @@
+import json
 import logging
 import traceback
 
@@ -57,7 +58,9 @@ async def get_project_of_file(file: str):
     """
     db = get_db()
     try:
-        projects = db.query(Project).join(ProjectFile).filter(ProjectFile.file == file).all()
+        projects = (
+            db.query(Project).join(ProjectFile).filter(ProjectFile.file == file).all()
+        )
         return [p.__dict__ for p in projects]
     except HTTPException as e:
         raise e
@@ -119,7 +122,7 @@ async def remove_file_from_project(project_name: str, file: str):
                 status_code=404,
                 detail=f"File {file} not found in project {project_name}.",
             )
-        
+
         db.commit()
         return {"message": "File removed from project successfully."}
     except Exception as e:
@@ -254,6 +257,110 @@ async def delete_project(project_name: str):
         logging.error(traceback.format_exc())
         raise HTTPException(
             status_code=500, detail=f"Error deleting project {project_name}: {str(e)}"
+        )
+    finally:
+        db.close()
+
+
+@router.get("/project/{project_name}/notes")
+async def get_project_notes(project_name: str):
+    """
+    Get all notes associated with a specific project.
+    """
+    db = get_db()
+    try:
+        project = db.query(Project).filter(Project.name == project_name).first()
+        if not project:
+            raise HTTPException(
+                status_code=404, detail=f"Project {project_name} not found."
+            )
+
+        return project.notes
+    except Exception as e:
+        logging.error(f"Error retrieving notes for project {project_name}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving notes for project {project_name}: {str(e)}",
+        )
+    finally:
+        db.close()
+
+
+@router.post("/project/{project_name}/notes")
+async def set_project_notes(project_name: str, notes: str):
+    """
+    Set notes for a specific project.
+    """
+    db = get_db()
+    try:
+        project = db.query(Project).filter(Project.name == project_name).first()
+        if not project:
+            raise HTTPException(
+                status_code=404, detail=f"Project {project_name} not found."
+            )
+
+        project.notes = notes
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error setting notes for project {project_name}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error setting notes for project {project_name}: {str(e)}",
+        )
+    finally:
+        db.close()
+
+
+@router.get("/project/{project_name}/todo")
+async def get_project_todo(project_name: str):
+    """
+    Get all TODO items associated with a specific project.
+    """
+    db = get_db()
+    try:
+        project = db.query(Project).filter(Project.name == project_name).first()
+        if not project:
+            raise HTTPException(
+                status_code=404, detail=f"Project {project_name} not found."
+            )
+
+        return json.loads(project.todo)
+    except Exception as e:
+        logging.error(f"Error retrieving TODO for project {project_name}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving TODO for project {project_name}: {str(e)}",
+        )
+    finally:
+        db.close()
+
+
+@router.post("/project/{project_name}/todo")
+async def set_project_todo(project_name: str, todo: str):
+    """
+    Set TODO items for a specific project.
+    """
+    db = get_db()
+    try:
+        project = db.query(Project).filter(Project.name == project_name).first()
+        if not project:
+            raise HTTPException(
+                status_code=404, detail=f"Project {project_name} not found."
+            )
+
+        project.todo = todo
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error setting TODO for project {project_name}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error setting TODO for project {project_name}: {str(e)}",
         )
     finally:
         db.close()

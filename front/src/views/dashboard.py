@@ -122,31 +122,47 @@ def dashboard():
     with cols[0]:
         today = datetime.date.today()
 
-        with st.expander("Added files", expanded=True):
-            st.error("In dev...")
+        sub_cols = st.columns(2)
+        with sub_cols[0]:
+            added_files = requests.get("http://back:80/stockpile/recentadded").json()
+            with st.expander("Added files", expanded=True):
+                display_files(
+                    added_files,
+                    representation_mode=0,
+                    key="recent_added_files",
+                )
 
-        with st.expander("Opened files", expanded=True):
-            st.error("In dev...")
+        with sub_cols[1]:
+            opened_files = requests.get("http://back:80/stockpile/recentopened").json()
+            with st.expander("Opened files", expanded=True):
+                display_files(
+                    opened_files,
+                    representation_mode=0,
+                    key="recent_opened_files",
+                )
 
-        today_files = requests.get(
-            f"http://back:80/files/search?start_date={today}&end_date={today}"
-        ).json()
-        with st.expander(f"Today files - {len(today_files)} files", expanded=True):
-            display_files(
-                today_files,
-                representation_mode=0,
-                key="today_files",
-            )
+        sub_cols = st.columns(2)
+        with sub_cols[0]:
+            today_files = requests.get(
+                f"http://back:80/files/search?start_date={today}&end_date={today}"
+            ).json()
+            with st.expander(f"Today files - {len(today_files)} files", expanded=True):
+                display_files(
+                    today_files,
+                    representation_mode=0,
+                    key="today_files",
+                )
 
-        week_files = requests.get(
-            f"http://back:80/files/search?start_date={today - datetime.timedelta(days=7)}&end_date={today}"
-        ).json()
-        with st.expander(f"Week files (7d) - {len(week_files)} files", expanded=True):
-            display_files(
-                week_files,
-                representation_mode=0,
-                key="week_files",
-            )
+        with sub_cols[1]:
+            week_files = requests.get(
+                f"http://back:80/files/search?start_date={today - datetime.timedelta(days=7)}&end_date={today}"
+            ).json()
+            with st.expander(f"Week files (7d) - {len(week_files)} files", expanded=True):
+                display_files(
+                    week_files,
+                    representation_mode=0,
+                    key="week_files",
+                )
 
 
 if __name__ == "__main__":

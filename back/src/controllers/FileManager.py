@@ -1,7 +1,5 @@
 import logging
-import mimetypes
 import os
-import time
 from datetime import datetime
 from typing import List
 
@@ -10,6 +8,7 @@ from controllers.SummarizeManager import SummarizeManager
 from db import get_db
 from db.models import ProjectFile, TagFile
 from tqdm import tqdm
+from utils import guess_mime
 from views.settings import get_setting
 from whoosh import writing
 from whoosh.fields import ID, NGRAM, Schema
@@ -70,7 +69,7 @@ class FileManager:
                 for filename in filenames:
                     if filename != ".DS_Store":
                         file = os.path.join(dp, filename)
-                        mime_file, _ = mimetypes.guess_type(file)
+                        mime_file = guess_mime(file)
                         mime_file = mime_file or "application/octet-stream"
                         date = datetime.fromisoformat(file.split("/")[2])
                         subfolder = file.split("/")[3]
@@ -107,7 +106,8 @@ class FileManager:
                                     db.close()
 
                             if (
-                                not projects or any(p in file_projects for p in projects)
+                                not projects
+                                or any(p in file_projects for p in projects)
                             ) and (not tags or any(t in file_tags for t in tags)):
                                 summary = SummarizeManager.get(file)
                                 if summary is None:

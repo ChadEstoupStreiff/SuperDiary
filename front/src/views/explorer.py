@@ -1,146 +1,15 @@
 import datetime
-from typing import List
 
-import requests
 import streamlit as st
+from core.explorer import search_engine, search_files
 from core.files import display_files, representation_mode_select
-from utils import mimes, mimes_map
-
-
-def search_files(
-    text: str,
-    start_date: datetime,
-    end_date: datetime,
-    subfolder: List[str],
-    types: List[str],
-    projects: List[str],
-    tags: List[str],
-):
-    # TODO : Add support for projects filtering
-    # MARK: SEARCH FILES
-    with st.spinner("Searching files...", show_time=True):
-        request = (
-            f"http://back:80/files/search?start_date={start_date}&end_date={end_date}"
-        )
-        if text is not None:
-            request += f"&text={text}"
-        if subfolder is not None and len(subfolder) > 0:
-            request += f"&subfolder={','.join(subfolder)}"
-        if types is not None and len(types) > 0:
-            request += f"&types={','.join(types)}"
-        if projects is not None and len(projects) > 0:
-            request += f"&projects={','.join(projects)}"
-        if tags is not None and len(tags) > 0:
-            request += f"&tags={','.join(tags)}"
-
-        start_time = datetime.datetime.now()
-        result = requests.get(request)
-        end_time = datetime.datetime.now()
-    if result.status_code == 200:
-        st.toast(
-            f"Found {len(result.json())} files matching the criteria.",
-        )
-        st.session_state.explorer_files = {
-            "query": text,
-            "start_date": start_date,
-            "end_date": end_date,
-            "types": types,
-            "subfolder": subfolder,
-            "projects": projects,
-            "tags": tags,
-            "files": result.json(),
-            "time_spent": end_time - start_time,
-        }
-    else:
-        st.toast(
-            f"Failed to search files: {result.text}",
-            icon="❌",
-        )
-        st.error(f"Failed to search files: {result.text}")
-        st.session_state.explorer_files = {
-            "query": text,
-            "start_date": start_date,
-            "end_date": end_date,
-            "types": types,
-            "subfolder": subfolder,
-            "projects": projects,
-            "tags": tags,
-            "files": [],
-            "time_spent": -1,
-        }
 
 
 def explorer():
     # MARK: SEARCH FORM
-    with st.form("file_search_form", clear_on_submit=False):
-        search_text = st.text_input(
-            "Search files",
-            placeholder="Enter file name, content or keyword...",
-            key="search_files",
-        )
-        cols = st.columns(5)
-        with cols[0]:
-            search_dates = st.date_input(
-                "Search by date",
-                value=(
-                    datetime.date.today() - datetime.timedelta(days=7),
-                    datetime.date.today(),
-                ),
-                key="search_dates",
-                help="Select a date to filter files.",
-            )
-        with cols[1]:
-            file_types = st.multiselect(
-                "File Types",
-                options=mimes,
-                format_func=lambda x: mimes_map[x],
-                key="file_types",
-                help="Select file types to filter files.",
-            )
-        with cols[2]:
-            subfolder = st.multiselect(
-                "Subfolders",
-                options=[
-                    "uploads",
-                    "notes",
-                    "audio",
-                ],
-                key="subfolders",
-                help="Select subfolders to filter files.",
-            )
-
-        with cols[3]:
-            projects_list = requests.get("http://back:80/projects").json()
-            projects = st.multiselect(
-                "Projects",
-                options=[p["name"] for p in projects_list],
-                key="projects",
-                help="Select projects to filter files.",
-            )
-
-        with cols[4]:
-            tags_list = requests.get("http://back:80/tags").json()
-            tags = st.multiselect(
-                "Tags",
-                options=[t["name"] for t in tags_list],
-                key="tags",
-                help="Select tags to filter files.",
-            )
-
-        if st.form_submit_button(
-            "Search",
-            use_container_width=True,
-            help="Click to search files based on the criteria.",
-        ):
-            search_files(
-                search_text if len(search_text) > 0 else None,
-                search_dates[0],
-                search_dates[1],
-                subfolder,
-                file_types,
-                projects,
-                tags,
-            )
+    search_result = search_engine()
+    if search_result is not None:
+        st.session_state.explorer_files = search_result
 
     with st.sidebar:
         representation_mode, show_preview, nbr_of_files_per_line = (
@@ -148,7 +17,7 @@ def explorer():
         )
 
     if "explorer_files" not in st.session_state:
-        search_files(
+        search_result = search_files(
             None,
             datetime.date.today() - datetime.timedelta(days=7),
             datetime.date.today(),
@@ -157,8 +26,13 @@ def explorer():
             [],
             [],
         )
+        if search_result is not None:
+            st.session_state.explorer_files = search_result
+
     if "explorer_files" in st.session_state:
-        time_spent = st.session_state.explorer_files.get("time_spent", -1).total_seconds()
+        time_spent = st.session_state.explorer_files.get(
+            "time_spent", -1
+        ).total_seconds()
         query_str = f"Found {len(st.session_state.explorer_files['files'])} files in {time_spent:.3f}s beetween {st.session_state.explorer_files['start_date']} and {st.session_state.explorer_files['end_date']}"
         if (
             st.session_state.explorer_files["query"] is not None
@@ -186,7 +60,9 @@ def explorer():
             st.session_state.explorer_files["tags"] is not None
             and len(st.session_state.explorer_files["tags"]) > 0
         ):
-            query_str += f" and tags {', '.join(st.session_state.explorer_files['tags'])}"
+            query_str += (
+                f" and tags {', '.join(st.session_state.explorer_files['tags'])}"
+            )
         st.caption(query_str)
 
         if len(st.session_state.explorer_files["files"]) > 0:

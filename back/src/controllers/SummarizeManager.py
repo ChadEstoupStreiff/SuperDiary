@@ -1,6 +1,5 @@
 import json
 import logging
-import mimetypes
 import os
 import queue
 import time
@@ -14,6 +13,7 @@ from db import Summary, SummaryTask, TaskStateEnum, get_db
 from PyPDF2 import PdfReader
 from sqlalchemy import and_
 from tools.ollama import request_ollama
+from utils import guess_mime
 from views.settings import get_setting
 
 
@@ -52,9 +52,11 @@ class SummarizeManager:
                 logging.info(f"SUMMARY >> Processing file: {file}")
                 transcription = None
                 ocr = None
+                blip = None
                 content = None
                 file_extension = file.split(".")[-1].lower()
-                mime, _ = mimetypes.guess_type(file)
+                mime = guess_mime(file)
+
                 logging.info(
                     f"SUMMARY >> File extension: {file_extension}, MIME type: {mime}"
                 )
@@ -128,12 +130,12 @@ class SummarizeManager:
                         input=f"""
 File Name: {os.path.basename(file)}
 File Extension: {file_extension}
-MIME Type: {mime if mime else "Not available"}
+MIME Type: {mime if mime else "Unkown"}
 
-OCR: {ocr if ocr else "Not available"}
-BLIP: {blip if blip else "Not available"}
-Transcription: {transcription if transcription else "Not available"}
 Content:
+{"CAPTION: " + blip if blip else ""}
+{"OCR: " + ocr if ocr else ""}
+{"Transcription: " + transcription if transcription else ""}
 {content if content else "Not available"}
 """
                     )
@@ -204,7 +206,7 @@ Example: keyword1, keyword2, keyword3, ...
 ! TASK !
 You are an expert summarizer.
 
-Write a **detailed summary** that captures the **essence**, **key points**, and **main insights** from the file content above.
+Write a **detailed summary** from the CONTENT of the file above.
 
 ! FORMAT !
 Respond ONLY with plain markdown.  

@@ -17,6 +17,7 @@ from utils import (
     generate_tag_visual_markdown,
     spacer,
     toast_for_rerun,
+    guess_mime
 )
 from views.settings import tasks as list_tasks
 
@@ -214,7 +215,11 @@ def see_file(file):
     date = file.split("/")[2]
     subfolder = file.split("/")[3]
     file_name = os.path.basename(file)
-    mime, _ = mimetypes.guess_type(file)
+    mime = guess_mime(file)
+
+    requests.post(
+        f"http://back:80/stockpile/recentopened?file={file}",
+    )
 
     col1, col2 = st.columns(2)
     with col1:
@@ -228,8 +233,8 @@ def see_file(file):
         ):
             dialog_delete_file(file)
 
-    tab_details, tab_summarize, tab_metadata, tab_notes, tab_tasks = st.tabs(
-        ["Détails", "Summarize", "Metadata", "Notes", "Tasks"]
+    tab_details, tab_metadata, tab_summarize, tab_notes, tab_tasks = st.tabs(
+        ["Détails", "Metadata", "Summarize", "Notes", "Tasks"]
     )
     # MARK: DETAILS
     with tab_details:
@@ -390,10 +395,7 @@ def view():
         with st.container(border=True):
             top = st.container()
 
-            if file.endswith(".md") or file.endswith(".markdown"):
-                mime = "text/markdown"
-            else:
-                mime, _ = mimetypes.guess_type(file)
+            mime = guess_mime(file)
 
             if mime is None:
                 st.error("Could not determine the file type. Please check the file.")
@@ -432,7 +434,7 @@ def view():
 
                 with st.spinner("Loading OCR & BLIP...", show_time=True):
                     result = requests.get(f"http://back:80/ocr/get/{file}")
-                
+
                 if result.status_code == 200 and result.json() is not None:
                     blip_result = result.json().get("blip", "")
                     if blip_result:

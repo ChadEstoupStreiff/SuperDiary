@@ -52,6 +52,10 @@ import views.tags
 
 app.include_router(views.tags.router)
 
+import views.stockpile
+
+app.include_router(views.stockpile.router)
+
 import views.settings
 
 app.include_router(views.settings.router)
