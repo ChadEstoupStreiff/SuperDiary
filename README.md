@@ -70,6 +70,7 @@ Pin file to dashboard ?
 
 Bugs:  
 - auto launch of tasks seems to now work
+- Button refractor ?
 
 
 TODO: 
