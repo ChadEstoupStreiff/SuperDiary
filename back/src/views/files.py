@@ -308,6 +308,7 @@ async def search_files(
     types: str = None,
     projects: str = None,
     tags: str = None,
+    search_mode: int = 0, # 0: FAST, 1: NORMAL, 2: DEEP
 ):
     """
     Search for files based on a query.
@@ -332,6 +333,7 @@ async def search_files(
             types.split(",") if types else None,
             projects.split(",") if projects else None,
             tags.split(",") if tags else None,
+            search_mode=search_mode,
         )
         result.sort()
         result.reverse()

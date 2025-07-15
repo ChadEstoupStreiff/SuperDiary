@@ -1,4 +1,5 @@
 import logging
+import time
 from threading import Thread
 
 import uvicorn
@@ -10,11 +11,26 @@ from db import DB, create_default_values
 from db.models import Base
 from fastapi import FastAPI
 from pillow_heif import register_heif_opener
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from views.ollama import list_models, pull_model
 from views.settings import get_setting
 
 app = FastAPI()
 
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        duration = time.time() - start_time
+        if duration > 0.1:
+            logging.critical(
+                f"{request.method} {request.url.path} {response.status_code} - {duration:.3f} ms"
+            )
+        return response
+
+
+app.add_middleware(LoggingMiddleware)
 
 import views.files
 

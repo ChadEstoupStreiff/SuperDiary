@@ -1,19 +1,16 @@
 import json
 import logging
-import os
 import queue
 import time
 import traceback
 from datetime import datetime
 
-import docx
 from controllers.OCRManager import OCRManager
 from controllers.TranscriptionManager import TranscriptionManager
 from db import Summary, SummaryTask, TaskStateEnum, get_db
-from PyPDF2 import PdfReader
 from sqlalchemy import and_
 from tools.ollama import request_ollama
-from utils import guess_mime
+from utils import guess_mime, read_content
 from views.settings import get_setting
 
 
@@ -50,18 +47,8 @@ class SummarizeManager:
             db = get_db()
             try:
                 logging.info(f"SUMMARY >> Processing file: {file}")
-                transcription = None
-                ocr = None
-                blip = None
-                content = None
-                file_extension = file.split(".")[-1].lower()
+
                 mime = guess_mime(file)
-
-                logging.info(
-                    f"SUMMARY >> File extension: {file_extension}, MIME type: {mime}"
-                )
-
-                # MARK: Image
                 if mime.startswith("image/"):
                     logging.info("SUMMARY >> Attempting to get OCR.")
                     result = OCRManager.get(file)
@@ -69,12 +56,6 @@ class SummarizeManager:
                         logging.info("SUMMARY >> No OCR found, re-adding to queue.")
                         cls.queue.put(file)
                         continue
-                    ocr = "\n".join(
-                        [item[1][0] for item in json.loads(result.get("ocr"))]
-                    )
-                    blip = result.get("blip")
-
-                # MARK: Audio and Video
                 elif mime.startswith("audio/") or mime.startswith("video/"):
                     logging.info("SUMMARY >> Attempting to get transcription.")
                     transcription = TranscriptionManager.get(file)
@@ -84,29 +65,6 @@ class SummarizeManager:
                         )
                         cls.queue.put(file)
                         continue
-                    transcription = transcription.get("transcription")
-
-                # MARK: Text and JSON
-                elif mime is None or mime.startswith("text") or mime.endswith("json"):
-                    logging.info("SUMMARY >> Attempting to read text content.")
-                    with open(file, "r", encoding="utf-8", errors="ignore") as f:
-                        content = f.read()
-
-                # MARK: PDF
-                elif mime == "application/pdf":
-                    logging.info("SUMMARY >> Attempting to read PDF content.")
-                    content = "\n".join(
-                        page.extract_text() or "" for page in PdfReader(file).pages
-                    )
-
-                # MARK: Word
-                elif mime in (
-                    "application/msword",
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                ):
-                    logging.info("SUMMARY >> Attempting to read DOCX content.")
-                    doc = docx.Document(file)
-                    content = "\n".join(p.text for p in doc.paragraphs)
 
                 task = (
                     db.query(SummaryTask)
@@ -121,24 +79,15 @@ class SummarizeManager:
                 )
                 task.state = TaskStateEnum.IN_PROGRESS
                 db.commit()
+
+                content = read_content(file)
+
                 # MARK: Prompt
-                if transcription is None and ocr is None and content is None:
+                if content is None:
                     raise Exception(f"Can't summarize this type of file: {file}")
                 else:
                     logging.info("SUMMARY >> Asking LLM for summary.")
-                    keywords, summary = cls.make_summary(
-                        input=f"""
-File Name: {os.path.basename(file)}
-File Extension: {file_extension}
-MIME Type: {mime if mime else "Unkown"}
-
-Content:
-{"CAPTION: " + blip if blip else ""}
-{"OCR: " + ocr if ocr else ""}
-{"Transcription: " + transcription if transcription else ""}
-{content if content else "Not available"}
-"""
-                    )
+                    keywords, summary = cls.make_summary(input=content)
                 logging.info(
                     f"SUMMARY >> Result for file {file}: {keywords} - {summary}"
                 )

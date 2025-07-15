@@ -157,7 +157,9 @@ def dashboard():
             week_files = requests.get(
                 f"http://back:80/files/search?start_date={today - datetime.timedelta(days=7)}&end_date={today}"
             ).json()
-            with st.expander(f"Week files (7d) - {len(week_files)} files", expanded=True):
+            with st.expander(
+                f"Week files (7d) - {len(week_files)} files", expanded=True
+            ):
                 display_files(
                     week_files,
                     representation_mode=0,

@@ -10,15 +10,16 @@ def search_files(
     text: str,
     start_date: datetime,
     end_date: datetime,
-    subfolder: List[str],
-    types: List[str],
-    projects: List[str],
-    tags: List[str],
+    subfolder: List[str] = None,
+    types: List[str] = None,
+    projects: List[str] = None,
+    tags: List[str] = None,
+    search_mode: int = 0,
 ):
     # MARK: SEARCH FILES
     with st.spinner("Searching files...", show_time=True):
         request = (
-            f"http://back:80/files/search?start_date={start_date}&end_date={end_date}"
+            f"http://back:80/files/search?start_date={start_date}&end_date={end_date}&search_mode={search_mode}"
         )
         if text is not None:
             request += f"&text={text}"
@@ -154,5 +155,6 @@ def search_engine():
                 file_types,
                 projects,
                 tags,
+                search_mode,
             )
     return None

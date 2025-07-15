@@ -21,10 +21,6 @@ def explorer():
             None,
             datetime.date.today() - datetime.timedelta(days=7),
             datetime.date.today(),
-            [],
-            [],
-            [],
-            [],
         )
         if search_result is not None:
             st.session_state.explorer_files = search_result

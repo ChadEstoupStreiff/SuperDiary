@@ -69,14 +69,11 @@ TODO page on projects ? notes ?
 Pin file to dashboard ?
 
 Bugs:  
-<<<<<<< HEAD
-=======
 - auto launch of tasks seems to now work
-- Button refractor ?
->>>>>>> 28e80c4208f9b8e46b74f83d498a56b6c1055a8a
 
 
 TODO: 
+- Button refractor ?
 - quick search (exclude summary), normal search, deep search (include file content)
 - Add edition and deletion of calendar record
 - Add parameters for research to trick beetween performance and power (like range of tokens, maybe enable fuzzy search ?)

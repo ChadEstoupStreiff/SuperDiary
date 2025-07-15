@@ -8,7 +8,7 @@ from controllers.SummarizeManager import SummarizeManager
 from db import get_db
 from db.models import ProjectFile, TagFile
 from tqdm import tqdm
-from utils import guess_mime
+from utils import guess_mime, read_content
 from views.settings import get_setting
 from whoosh import writing
 from whoosh.fields import ID, NGRAM, Schema
@@ -30,9 +30,10 @@ class FileManager:
             # mime=ID(stored=True),  # filter only
             # date=DATETIME(stored=True, sortable=True),  # filter only
             # subfolder=ID(stored=True),  # filter only
-            keywords=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
-            summary=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
-            note=NGRAM(minsize=3, maxsize=5, stored=True),  # used in query
+            keywords=NGRAM(minsize=3, maxsize=5, stored=False),  # used in query
+            summary=NGRAM(minsize=3, maxsize=5, stored=False),  # used in query
+            note=NGRAM(minsize=3, maxsize=5, stored=False),  # used in query
+            content=NGRAM(minsize=3, maxsize=5, stored=False),  # used in query
         )
 
         if not os.path.exists("/data/index"):
@@ -110,10 +111,7 @@ class FileManager:
         return files
 
     @classmethod
-    def index_files(
-        cls,
-        files,
-    ):
+    def index_files(cls, files, search_mode: int = 0):
         if not cls.ix:
             raise Exception("Index not initialized. Call setup() first.")
         writer = cls.ix.writer()
@@ -128,13 +126,22 @@ class FileManager:
             mime_file = guess_mime(file)
             mime_file = mime_file or "application/octet-stream"
 
-            summary = SummarizeManager.get(file)
-            if summary is None:
-                summary = ""
-                keywords = ""
-            else:
-                keywords = summary.get("keywords", [])
-                summary = summary.get("summary", "")
+            content = ""
+            summary = ""
+            keywords = []
+
+            summary_keywords = SummarizeManager.get(file)
+            if summary_keywords is not None:
+                # Always keywords
+                keywords = summary_keywords.get("keywords", [])
+
+                if search_mode != 0:
+                    # Summary only if search mode is NORMAL or DEEP
+                    summary = summary_keywords.get("summary", "")
+
+            if search_mode == 2:
+                # Read content only if search mode is DEEP
+                content = read_content(file, force_read=True)
 
             note = NoteManager.get(file)
             note = note.get("note", "") if note else ""
@@ -147,6 +154,7 @@ class FileManager:
                 keywords=",".join(keywords) if keywords else "",
                 summary=summary,
                 note=note,
+                content=content,
             )
             count += 1
 
@@ -162,6 +170,7 @@ class FileManager:
         types: List[list] = None,
         projects: List[str] = None,
         tags: List[str] = None,
+        search_mode: int = 0,
     ):
         files = cls.list_files(
             start_date=start_date,
@@ -175,7 +184,7 @@ class FileManager:
             text = text.strip()
             if not cls.ix:
                 raise RuntimeError("Index not initialised")
-            cls.index_files(files)
+            cls.index_files(files, search_mode=search_mode)
 
             with cls.ix.searcher() as searcher:
                 parser = MultifieldParser(
