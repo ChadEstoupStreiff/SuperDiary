@@ -18,9 +18,7 @@ def search_files(
 ):
     # MARK: SEARCH FILES
     with st.spinner("Searching files...", show_time=True):
-        request = (
-            f"http://back:80/files/search?start_date={start_date}&end_date={end_date}&search_mode={search_mode}"
-        )
+        request = f"http://back:80/files/search?start_date={start_date}&end_date={end_date}&search_mode={search_mode}"
         if text is not None:
             request += f"&text={text}"
         if subfolder is not None and len(subfolder) > 0:
@@ -69,14 +67,14 @@ def search_files(
         }
 
 
-def search_engine():
+def search_engine(nbr_columns: int = 6):
     with st.form("file_search_form", clear_on_submit=False):
         search_text = st.text_input(
             "Search files",
             placeholder="Enter file name, content or keyword...",
             key="search_files",
         )
-        cols = st.columns(6)
+        cols = st.columns(nbr_columns)
         with cols[0]:
             search_dates = st.date_input(
                 "Search by date",
@@ -87,7 +85,7 @@ def search_engine():
                 key="search_dates",
                 help="Select a date to filter files.",
             )
-        with cols[1]:
+        with cols[1 % nbr_columns]:
             file_types = st.multiselect(
                 "File Types",
                 options=mimes,
@@ -95,7 +93,7 @@ def search_engine():
                 key="file_types",
                 help="Select file types to filter files.",
             )
-        with cols[2]:
+        with cols[2 % nbr_columns]:
             subfolder = st.multiselect(
                 "Subfolders",
                 options=[
@@ -107,7 +105,7 @@ def search_engine():
                 help="Select subfolders to filter files.",
             )
 
-        with cols[3]:
+        with cols[3 % nbr_columns]:
             projects_list = requests.get("http://back:80/projects").json()
             projects = st.multiselect(
                 "Projects",
@@ -116,7 +114,7 @@ def search_engine():
                 help="Select projects to filter files.",
             )
 
-        with cols[4]:
+        with cols[4 % nbr_columns]:
             tags_list = requests.get("http://back:80/tags").json()
             tags = st.multiselect(
                 "Tags",
@@ -125,18 +123,18 @@ def search_engine():
                 help="Select tags to filter files.",
             )
 
-        with cols[5]:
+        with cols[5 % nbr_columns]:
             representation_options = [
-                "Quick",
-                "Normal",
-                "Deep",
+                "⚡️",
+                "🔍",
+                "🧠",
             ]
             search_mode = st.segmented_control(
                 "Search mode",
                 options=range(len(representation_options)),
                 format_func=lambda x: representation_options[x],
                 default=1,
-                help="Choose the search mode. Quick Search is fast but less accurate — it only looks at keywords and notes. Normal Search also includes summaries. Deep Search is the most thorough (and slowest), scanning the full file content.",
+                help="Choose the search mode (⚡️ Quick, 🔍 Normal, 🧠 Deep). Quick Search is fast but less accurate — it only looks at keywords and notes. Normal Search also includes summaries. Deep Search is the most thorough (and slowest), scanning the full file content.",
                 key="search_mode",
             )
             if search_mode is None:

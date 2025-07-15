@@ -152,3 +152,29 @@ class CalendarRecord(Base):
     description = Column(TEXT(130560), nullable=True)
     location = Column(String(512), nullable=True)
     attendees = Column(TEXT(130560), nullable=True)
+
+
+class ChatSession(Base):
+    __tablename__ = "ChatSession"
+
+    id = Column(
+        String(255), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
+    )
+    title = Column(String(512), nullable=False)
+    description = Column(TEXT(130560), nullable=True)
+    date = Column(DateTime, nullable=False)
+
+class ChatMessage(Base):
+    __tablename__ = "ChatMessage"
+
+    id = Column(
+        String(255), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
+    )
+    session_id = mapped_column(
+        ForeignKey("ChatSession.id", ondelete="CASCADE", onupdate="CASCADE")
+    )
+    date = Column(DateTime, nullable=False)
+    user = Column(String(32), nullable=False)  # e.g., 'user', 'assistant'
+
+    files = Column(TEXT(130560), nullable=True)
+    content = Column(TEXT(130560), nullable=False)

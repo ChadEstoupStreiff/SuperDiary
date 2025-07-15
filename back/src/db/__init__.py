@@ -16,6 +16,8 @@ from db.models import (
     TagFile,
     CalendarRecord,
     StockPile,
+    ChatSession,
+    ChatMessage,
 )
 
 

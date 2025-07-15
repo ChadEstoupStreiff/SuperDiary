@@ -3,6 +3,7 @@ import time
 from threading import Thread
 
 import uvicorn
+from controllers.ChatManager import ChatManager
 from controllers.FileManager import FileManager
 from controllers.OCRManager import OCRManager
 from controllers.SummarizeManager import SummarizeManager
@@ -17,6 +18,7 @@ from views.ollama import list_models, pull_model
 from views.settings import get_setting
 
 app = FastAPI()
+
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -71,6 +73,10 @@ app.include_router(views.tags.router)
 import views.stockpile
 
 app.include_router(views.stockpile.router)
+
+import views.chat
+
+app.include_router(views.chat.router)
 
 import views.settings
 
@@ -132,8 +138,11 @@ if __name__ == "__main__":
     ocr_thread.daemon = True  # Daemonize thread
     ocr_thread.start()
 
+    chat_thread = Thread(target=ChatManager.start_thread)
+    chat_thread.daemon = True  # Daemonize thread
+    chat_thread.start()
+
     if len(list_models()) == 0:
         pull_model(get_setting("summarization_model"))
 
     uvicorn.run(app, host="0.0.0.0", port=80)
-    ocr_thread.join()  # Wait for the OCR thread to finish

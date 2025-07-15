@@ -2,10 +2,11 @@ import streamlit as st
 from pages import (
     PAGE_AUDIO_RECORD,
     PAGE_CALENDAR,
-    PAGE_PROJECTS,
+    PAGE_CHAT,
     PAGE_DASHBOARD,
     PAGE_EXPLORER,
     PAGE_NOTES,
+    PAGE_PROJECTS,
     PAGE_SETTINGS,
     PAGE_VIEWER,
 )
@@ -25,6 +26,7 @@ if __name__ == "__main__":
         PAGE_EXPLORER,
         PAGE_NOTES,
         PAGE_AUDIO_RECORD,
+        PAGE_CHAT,
         PAGE_SETTINGS,
     ]
     if "file_to_see" in st.session_state:

@@ -95,5 +95,5 @@ Content:
 {"CAPTION: " + blip if blip else ""}
 {"OCR: " + ocr if ocr else ""}
 {"Transcription: " + transcription if transcription else ""}
-{content if content else "Not available"}
+{content if content else ""}
 """

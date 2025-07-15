@@ -43,6 +43,12 @@ PAGE_AUDIO_RECORD = st.Page(
     icon="🎤",
     url_path="audio_record",
 )
+PAGE_CHAT = st.Page(
+    "views/chat.py",
+    title="Chat",
+    icon="💬",
+    url_path="chat",
+)
 PAGE_SETTINGS = st.Page(
     "views/settings.py",
     title="Settings",
