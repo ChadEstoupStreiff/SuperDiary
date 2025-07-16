@@ -3,7 +3,7 @@ import copy
 import pandas as pd
 import requests
 import streamlit as st
-from utils import generate_tag_visual_markdown, toast_for_rerun
+from utils import generate_tag_visual_markdown, spacer, toast_for_rerun
 
 
 # MARK: Settings func
@@ -283,7 +283,15 @@ def chose_ai_menu(default_ai_type: str, default_model: str, key: str = "ai_menu"
             help="Select the LLaMA model to use.",
         )
     elif ai_type == "ChatGPT":
-        chatgpt_models = ["gpt-4o", "gpt-4", "gpt-3.5-turbo"]
+        chatgpt_models = [
+            "gpt-4.1-nano",
+            "gpt-4.1-mini",
+            "gpt-3.5-turbo",
+            "gpt-4.1",
+            "gpt-4o",
+            "gpt-4",
+            "gpt-4.5-preview",
+        ]
         model = st.selectbox(
             "ChatGPT Model",
             options=chatgpt_models,
@@ -295,7 +303,16 @@ def chose_ai_menu(default_ai_type: str, default_model: str, key: str = "ai_menu"
         )
 
     elif ai_type == "Gemini":
-        gemini_models = ["gemini-1.5-pro", "gemini-1.5-flash"]
+        gemini_models = [
+            "gemini-1.5-flash-8B",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+        ]
         model = st.selectbox(
             "Gemini Model",
             options=gemini_models,
@@ -392,6 +409,15 @@ def settings():
                     index=transcription_models.index(settings["transcription_model"]),
                     horizontal=True,
                 )
+                st.markdown("""
+| Model       | Speed     | RAM Needed        | WER (English) |
+|-------------|-----------|-------------------|---------------|
+| tiny        | Fastest   | ~1–2 GB           | ~14–15%       |
+| base        | Very fast | ~2–3 GB           | ~10–11%       |
+| small       | Fast      | ~4–5 GB           | ~6–7%         |
+| medium      | Slower    | ~7–8 GB           | ~4–5%         |
+| large-v3    | Slowest   | ~10–12 GB         | ~2.7%         |
+""")
                 st.caption(
                     "Note: The higher the model, the more accurate the transcription, but it requires more resources, make sure you have enough RAM."
                 )
@@ -474,6 +500,79 @@ def settings():
             ["Local Llama", "OpenAI ChatGPT", "Google Gemini"]
         )
 
+        spacer()
+        st.divider()
+        sort_type = st.radio(
+            "Sort models by",
+            options=["Type", "Capabilities", "Pricing"],
+            index=0,
+            horizontal=True,
+            help="Choose how to sort the models in the list.",
+        )
+        if sort_type == "Type":
+            st.markdown("""| Model                 | Type      | Capabilities                                                                 | Input/Output **\$ per 1M tokens** |
+|-----------------------|-----------|------------------------------------------------------------------------------|----------------------------------|
+| llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
+| llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
+| llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| gemini-1.5-flash-8B   | Gemini    | Fastest lightweight model, ideal for repetitive/simple workflows            | **\$0.0375–0.075 / \$0.15–0.30** |
+| gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
+| gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
+| gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |
+| gemini-2.5-flash-lite | Gemini    | Lightweight 2.5 model, tuned for efficiency                                 | **\$0.10 / \$0.40**              |
+| gemini-2.5-flash      | Gemini    | Hybrid reasoning model for speed and broad media support                    | **\$0.30 / \$2.50**              |
+| gemini-1.5-pro        | Gemini    | Complex reasoning, 2M token context, strong at coding and data analysis     | **\$1.25–2.50 / \$5.00–10.00**   |
+| gemini-2.5-pro        | Gemini    | Premium model for advanced reasoning, coding, and analysis                  | **\$1.25–2.50 / \$10.00–15.00**  |
+| gpt-4.1-nano          | ChatGPT   | Ultra-light model for micro-tasks                                           | **\$0.10 / \$0.40**              |
+| gpt-4.1-mini          | ChatGPT   | Efficient model with faster latency and reduced cost                        | **\$0.40 / \$1.60**              |
+| gpt-3.5-turbo         | ChatGPT   | Fast, general-purpose model for basic conversation and summarization        | **\$1.00 / \$2.00**              |
+| gpt-4.1               | ChatGPT   | Stronger reasoning, faster than GPT-4, versatile                            | **\$2.00 / \$8.00**              |
+| gpt-4o                | ChatGPT   | Top-tier multimodal model (text, image, audio), fast with high accuracy     | **\$2.50 / \$10.00**             |
+| gpt-4                | ChatGPT   | High-quality reasoning and understanding, best for difficult tasks          | **\$30.00 / \$60.00**            |
+| gpt-4.5-preview       | ChatGPT   | Experimental cutting-edge model, very high performance and cost             | **\$75.00 / \$150.00**           |""")
+        elif sort_type == "Capabilities":
+            st.markdown("""| Model                 | Type      | Capabilities                                                                 | Input/Output **\$ per 1M tokens** |
+|-----------------------|-----------|------------------------------------------------------------------------------|----------------------------------|
+| llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
+| gpt-4.1-nano          | ChatGPT   | Ultra-light model for micro-tasks                                           | **\$0.10 / \$0.40**              |
+| llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
+| gemini-1.5-flash-8B   | Gemini    | Fastest lightweight model, ideal for repetitive/simple workflows            | **\$0.0375–0.075 / \$0.15–0.30** |
+| gpt-3.5-turbo         | ChatGPT   | Fast, general-purpose model for basic conversation and summarization        | **\$1.00 / \$2.00**              |
+| gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
+| llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| gemini-2.5-flash-lite | Gemini    | Lightweight 2.5 model, tuned for efficiency                                 | **\$0.10 / \$0.40**              |
+| gpt-4.1-mini          | ChatGPT   | Efficient model with faster latency and reduced cost                        | **\$0.40 / \$1.60**              |
+| gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
+| gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |
+| gemini-2.5-flash      | Gemini    | Hybrid reasoning model for speed and broad media support                    | **\$0.30 / \$2.50**              |
+| gpt-4.1               | ChatGPT   | Stronger reasoning, faster than GPT-4, versatile                            | **\$2.00 / \$8.00**              |
+| gemini-1.5-pro        | Gemini    | Complex reasoning, 2M token context, strong at coding and data analysis     | **\$1.25–2.50 / \$5.00–10.00**   |
+| gemini-2.5-pro        | Gemini    | Premium model for advanced reasoning, coding, and analysis                  | **\$1.25–2.50 / \$10.00–15.00**  |
+| gpt-4o                | ChatGPT   | Top-tier multimodal model (text, image, audio), fast with high accuracy     | **\$2.50 / \$10.00**             |
+| gpt-4                | ChatGPT   | High-quality reasoning and understanding, best for difficult tasks          | **\$30.00 / \$60.00**            |
+| gpt-4.5-preview       | ChatGPT   | Experimental cutting-edge model, very high performance and cost             | **\$75.00 / \$150.00**           |""")
+        elif sort_type == "Pricing":
+            st.markdown("""| Model                 | Type      | Capabilities                                                                 | Input/Output **\$ per 1M tokens** |
+|-----------------------|-----------|------------------------------------------------------------------------------|----------------------------------|
+| llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
+| llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
+| llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| gemini-1.5-flash-8B   | Gemini    | Fastest lightweight model, ideal for repetitive/simple workflows            | **\$0.0375–0.075 / \$0.15–0.30** |
+| gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
+| gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
+| gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |
+| gemini-2.5-flash-lite | Gemini    | Lightweight 2.5 model, tuned for efficiency                                 | **\$0.10 / \$0.40**              |
+| gpt-4.1-nano          | ChatGPT   | Ultra-light model for micro-tasks                                           | **\$0.10 / \$0.40**              |
+| gpt-4.1-mini          | ChatGPT   | Efficient model with faster latency and reduced cost                        | **\$0.40 / \$1.60**              |
+| gpt-3.5-turbo         | ChatGPT   | Fast, general-purpose model for basic conversation and summarization        | **\$1.00 / \$2.00**              |
+| gemini-2.5-flash      | Gemini    | Hybrid reasoning model for speed and broad media support                    | **\$0.30 / \$2.50**              |
+| gemini-1.5-pro        | Gemini    | Complex reasoning, 2M token context, strong at coding and data analysis     | **\$1.25–2.50 / \$5.00–10.00**   |
+| gemini-2.5-pro        | Gemini    | Premium model for advanced reasoning, coding, and analysis                  | **\$1.25–2.50 / \$10.00–15.00**  |
+| gpt-4.1               | ChatGPT   | Stronger reasoning, faster than GPT-4, versatile                            | **\$2.00 / \$8.00**              |
+| gpt-4o                | ChatGPT   | Top-tier multimodal model (text, image, audio), fast with high accuracy     | **\$2.50 / \$10.00**             |
+| gpt-4                | ChatGPT   | High-quality reasoning and understanding, best for difficult tasks          | **\$30.00 / \$60.00**            |
+| gpt-4.5-preview       | ChatGPT   | Experimental cutting-edge model, very high performance and cost             | **\$75.00 / \$150.00**           |""")
+
         with st.expander("LLM Settings", expanded=True):
             with tab_llama:
                 cols = st.columns(2)
@@ -535,22 +634,25 @@ def settings():
                 if new_gemini_api_key != gemini_api_key:
                     settings["gemini_api_key"] = new_gemini_api_key
                     apply_settings(settings)
-            
+
             if len(openai_api_key) > 0:
                 with tab_chatgpt:
                     with st.spinner("Checking OpenAI key...", show_time=True):
                         try:
-                            headers = {
-                                "Authorization": f"Bearer {openai_api_key}"
-                            }
-                            response = requests.get("https://api.openai.com/v1/models", headers=headers, timeout=10)
+                            headers = {"Authorization": f"Bearer {openai_api_key}"}
+                            response = requests.get(
+                                "https://api.openai.com/v1/models",
+                                headers=headers,
+                                timeout=10,
+                            )
                             if response.status_code == 200:
-                                st.toast("OpenAI API key is valid.", icon="✅")
+                                st.success("OpenAI API key is valid.", icon="✅")
                             else:
+                                st.error("OpenAI API key is invalid.", icon="❌")
                                 st.toast("OpenAI API key is invalid.", icon="❌")
                         except requests.RequestException as e:
                             st.toast(f"OpenAI check failed: {e}", icon="⚠️")
-            
+
             if len(gemini_api_key) > 0:
                 with tab_gemini:
                     with st.spinner("Checking Gemini key...", show_time=True):
@@ -558,8 +660,9 @@ def settings():
                             url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_api_key}"
                             response = requests.get(url, timeout=10)
                             if response.status_code == 200:
-                                st.toast("Google Gemini API key is valid.", icon="✅")
+                                st.success("Google Gemini API key is valid.", icon="✅")
                             else:
+                                st.error("Google Gemini API key is invalid.", icon="❌")
                                 st.toast("Google Gemini API key is invalid.", icon="❌")
                         except requests.RequestException as e:
                             st.toast(f"Gemini check failed: {e}", icon="⚠️")
@@ -571,30 +674,6 @@ def settings():
             list_ocr=True,
             list_transcription=True,
         )
-
-    with st.sidebar:
-
-        st.markdown("""## LLM Models
-| Model              | Type      | Capabilities                        | Input/Output \$ / Token |
-|--------------------|-----------|-------------------------------------|--------------------|
-| gpt-4o             | ChatGPT   | Multimodal, fast, top performance   | \$0.005 / \$0.015    |
-| gpt-4              | ChatGPT   | Strong reasoning                    | \$0.03 / \$0.06      |
-| gpt-3.5-turbo      | ChatGPT   | Simple tasks, fast                  | \$0.001 / \$0.002    |
-| gemini-1.5-pro     | Gemini    | Complex reasoning                   | ~\$0.007 / ~\$0.021  |
-| gemini-1.5-flash   | Gemini    | Very fast, interactive              | ~\$0.002 / ~\$0.006  |
-| llama3-70b         | LLaMA     | Strong, open-source                 | Free               |
-| llama3-8b          | LLaMA     | Balanced, open-source               | Free               |
-| llama3-1b          | LLaMA     | Ultra-lightweight                   | Free               |""")
-
-        st.markdown("""## Transcription Models
-| Model       | Speed     | RAM Needed        | WER (English) |
-|-------------|-----------|-------------------|---------------|
-| tiny        | Fastest   | ~1–2 GB           | ~14–15%       |
-| base        | Very fast | ~2–3 GB           | ~10–11%       |
-| small       | Fast      | ~4–5 GB           | ~6–7%         |
-| medium      | Slower    | ~7–8 GB           | ~4–5%         |
-| large-v3    | Slowest   | ~10–12 GB         | ~2.7%         |
-""")
 
 
 if __name__ == "__main__":
