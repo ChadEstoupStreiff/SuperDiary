@@ -57,6 +57,9 @@ services:
     volumes:
       - ${DATA_PATH}/shared:/shared
       - .env:/.env
+      - ${DATA_PATH}/whisper_cache:/root/.cache
+      - ${DATA_PATH}/paddle:/root/.paddle
+      - ${DATA_PATH}/paddleocr:/root/.paddleocr
     depends_on:
       - back_db
     ports:

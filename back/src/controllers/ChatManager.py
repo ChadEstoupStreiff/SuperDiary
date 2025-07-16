@@ -72,9 +72,14 @@ Message: {msg['content']}
             # Simulate processing time
             # After processing, reset running chat
             prompt, files = cls.generate_prompt(chat_id)
-            ai_type, model, chat_answer = request_llm(
-                "chat", prompt, stream_callback=cls.stream_callback
-            )
+            try:
+                ai_type, model, chat_answer = request_llm(
+                    "chat", prompt, stream_callback=cls.stream_callback
+                )
+            except Exception as e:
+                ai_type = "Error"
+                model = ""
+                chat_answer = f"Error: {e}"
 
             db = get_db()
             try:

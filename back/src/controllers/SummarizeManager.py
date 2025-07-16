@@ -145,7 +145,7 @@ Example: keyword1, keyword2, keyword3, ...
             keywords = json.loads(keywords)
         else:
             keywords = [w.strip() for w in keywords.split(",")]
-
+        
         _, _, summary = request_llm(
             setting_prefix="summarization",
             prompt=""""! FILE CONTENT START !

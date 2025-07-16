@@ -5,7 +5,7 @@ import time
 import requests
 import streamlit as st
 from core.explorer import search_engine
-from utils import toast_for_rerun, generate_badges_html, spacer
+from utils import generate_badges_html, spacer, toast_for_rerun
 
 
 @st.dialog("🆕 New Chat")
@@ -69,6 +69,7 @@ def dialog_search_files():
             else:
                 st.warning("No files selected.")
 
+
 @st.dialog("✏️ Edit Chat")
 def dialog_edit_chat():
     if "chat_session" not in st.session_state:
@@ -88,6 +89,7 @@ def dialog_edit_chat():
             load_chat_session(st.session_state.chat_session)
         else:
             st.error(f"Failed to update chat. {response.text}")
+
 
 def clear_chat():
     del st.session_state.chat_session
@@ -136,22 +138,24 @@ def is_chat_running(session_id):
         st.toast(f"Error checking chat status: {e}", icon="❌")
         return False
 
+
 def stream_thinking(session_id):
     data = ""
     while True:
-        time.sleep(0.2)
+        time.sleep(
+            0.2 if len(data) == 0 else 0.05
+        )  # Adjust sleep time for smoother streaming
         running_info = is_chat_running(session_id)
-        
+
         if running_info.get("state") == "not_running":
-            load_chat_session(
-                session_id, silent=True
-            )
+            load_chat_session(session_id, silent=True)
 
         part_data = running_info.get("answer", "")
         if part_data != data:
-            part_data = part_data[len(data):]
+            part_data = part_data[len(data) :]
             data += part_data
             yield part_data
+
 
 def chat():
     with st.sidebar:
@@ -192,10 +196,17 @@ def chat():
                 dialog_edit_chat()
             st.divider()
 
-            if st.button("📁 Search for files", use_container_width=True):
-                if "chat_search_files" in st.session_state:
-                    del st.session_state.chat_search_files
-                dialog_search_files()
+            cols = st.columns(2)
+            with cols[0]:
+                if st.button("📁 Search for files", use_container_width=True):
+                    if "chat_search_files" in st.session_state:
+                        del st.session_state.chat_search_files
+                    dialog_search_files()
+            with cols[1]:
+                if st.button("🗑️ Clear files", use_container_width=True):
+                    st.session_state.chat_files = []
+                    toast_for_rerun("Cleared all files from the chat.", icon="🗑️")
+                    st.rerun()
 
             if len(st.session_state.chat_files) == 0:
                 st.markdown("No files attached to this chat.")
@@ -234,9 +245,7 @@ def chat():
         if is_chat_running(st.session_state.chat_session).get("state") != "not_running":
             with st.chat_message("assistant"):
                 with st.spinner("Thinking...", show_time=True):
-                    st.write_stream(
-                        stream_thinking(st.session_state.chat_session)
-                    )
+                    st.write_stream(stream_thinking(st.session_state.chat_session))
 
         prompt = st.chat_input(
             "Ask a question.", disabled=len(st.session_state.chat_files) == 0
@@ -244,10 +253,7 @@ def chat():
         if prompt:
             response = requests.post(
                 f"http://back:80/chat/{st.session_state.chat_session}/message",
-                json={
-                    "content": prompt,
-                    "files": st.session_state.chat_files
-                }
+                json={"content": prompt, "files": st.session_state.chat_files},
             )
             if response.status_code == 200:
                 st.session_state.chat_messages.append(response.json())
