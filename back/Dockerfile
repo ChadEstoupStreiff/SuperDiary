@@ -1,4 +1,5 @@
-FROM python:3.9.16-bullseye
+FROM python:3.12-slim-bookworm
+
 
 # UPDATE
 RUN apt-get update -y
@@ -6,7 +7,10 @@ RUN apt-get upgrade -y
 RUN pip install --upgrade pip
 
 # RUN apt install tesseract-ocr tesseract-ocr-eng tesseract-ocr-fra -y
-RUN apt-get install -y libgl1
+RUN apt-get install -y libgl1 \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config
 
 WORKDIR /
 COPY requirements.txt /requirements.txt

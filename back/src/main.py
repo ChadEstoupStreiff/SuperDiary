@@ -142,7 +142,7 @@ if __name__ == "__main__":
     chat_thread.daemon = True  # Daemonize thread
     chat_thread.start()
 
-    if len(list_models()) == 0:
-        pull_model(get_setting("summarization_model"))
+    # if len(list_models()) == 0:
+    #     pull_model(get_setting("summarization_model"))
 
     uvicorn.run(app, host="0.0.0.0", port=80)
