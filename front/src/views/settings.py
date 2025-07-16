@@ -1,3 +1,5 @@
+import copy
+
 import pandas as pd
 import requests
 import streamlit as st
@@ -19,7 +21,9 @@ def apply_settings(settings):
         json=settings,
     )
     if result.status_code == 200:
-        st.toast("Settings applied successfully!", icon="✅")
+        # st.toast("Settings applied successfully!", icon="✅")
+        toast_for_rerun("Settings applied successfully!", icon="✅")
+        st.rerun()
     else:
         st.toast(
             "Failed to apply settings. Please try again later.",
@@ -39,9 +43,7 @@ def dialog_create_project():
     """
     with st.form("create_project_form"):
         name = st.text_input(
-            "Project Name",
-            help="Enter the name of the project.",
-            max_chars=50
+            "Project Name", help="Enter the name of the project.", max_chars=50
         )
         description = st.text_area(
             "Project Description",
@@ -249,6 +251,63 @@ def tasks(
             fetch_display_tasks("transcription", file)
 
 
+def chose_ai_menu(default_ai_type: str, default_model: str, key: str = "ai_menu"):
+    import requests
+    import streamlit as st
+
+    ai_type_options = ["llama", "ChatGPT", "Gemini"]
+    ai_type = st.radio(
+        "AI type",
+        ai_type_options,
+        index=ai_type_options.index(default_ai_type),
+        horizontal=True,
+        key=f"{key}_type",
+        help="Select the AI type to use for this setting.",
+    )
+
+    model = default_model
+    if ai_type == "llama":
+        result = requests.get("http://back:80/ollama/list")
+        installed_models = (
+            [m["name"] for m in result.json()] if result.status_code == 200 else []
+        )
+        if not installed_models:
+            st.error("Failed to fetch installed LLaMA models.")
+        model = st.selectbox(
+            "LLaMA Model",
+            options=installed_models,
+            index=installed_models.index(default_model)
+            if default_model in installed_models
+            else 0,
+            key=f"{key}_model",
+            help="Select the LLaMA model to use.",
+        )
+    elif ai_type == "ChatGPT":
+        chatgpt_models = ["gpt-4o", "gpt-4", "gpt-3.5-turbo"]
+        model = st.selectbox(
+            "ChatGPT Model",
+            options=chatgpt_models,
+            index=chatgpt_models.index(default_model)
+            if default_model in chatgpt_models
+            else 0,
+            key=f"{key}_model",
+            help="Select the OpenAI ChatGPT model to use.",
+        )
+
+    elif ai_type == "Gemini":
+        gemini_models = ["gemini-1.5-pro", "gemini-1.5-flash"]
+        model = st.selectbox(
+            "Gemini Model",
+            options=gemini_models,
+            index=gemini_models.index(default_model)
+            if default_model in gemini_models
+            else 0,
+            key=f"{key}_model",
+            help="Select the Google Gemini model to use.",
+        )
+    return ai_type, model
+
+
 def settings():
     """
     Settings page for the application.
@@ -275,29 +334,36 @@ def settings():
 
     with settings_tabs[0]:
         # MARK: Application Settings
-        with st.form("settings_form"):
-            settings = load_settings()
+        loaded_settings = load_settings()
+        settings = copy.deepcopy(loaded_settings)
 
-            top = st.container()
+        settings["auto_display_file_size_limit"] = st.number_input(
+            "Auto display file size limit (MB), -1 to disable",
+            min_value=-1,
+            value=settings.get("auto_display_file_size_limit", 10),
+            help="Set the maximum file size (in MB) for automatic display in the viewer.",
+        )
 
-            settings["auto_display_file_size_limit"] = st.number_input(
-                "Auto display file size limit (MB), -1 to disable",
-                min_value=-1,
-                value=settings.get("auto_display_file_size_limit", 10),
-                help="Set the maximum file size (in MB) for automatic display in the viewer.",
-            )
+        cols = st.columns(2)
+        with cols[0]:
+            with st.expander("Chat Settings", expanded=True):
+                settings["chat_type"], settings["chat_model"] = chose_ai_menu(
+                    settings["chat_type"], settings["chat_model"], key="chat"
+                )
 
+        with cols[1]:
             with st.expander("Summarization Settings", expanded=True):
                 settings["enable_auto_summary"] = st.toggle(
                     "Enable auto Summarization",
                     value=settings["enable_auto_summary"],
                     help="Enable automatic summarization of text files when uploaded.",
                 )
-                settings["summarization_model"] = st.selectbox(
-                    "Summarization model",
-                    options=installed_models if installed_models else [],
-                    index=installed_models.index(settings["summarization_model"]),
-                    help="Select the model to use for summarization.",
+                settings["summarization_type"], settings["summarization_model"] = (
+                    chose_ai_menu(
+                        settings["summarization_type"],
+                        settings["summarization_model"],
+                        key="summarization",
+                    )
                 )
 
             with st.expander("OCR & BLIP Settings", expanded=True):
@@ -329,21 +395,9 @@ def settings():
                 st.caption(
                     "Note: The higher the model, the more accurate the transcription, but it requires more resources, make sure you have enough RAM."
                 )
-                st.markdown("""
-| Model       | Speed     | RAM Needed        | WER (English) |
-|-------------|-----------|-------------------|---------------|
-| tiny        | Fastest   | ~1–2 GB           | ~14–15%       |
-| base        | Very fast | ~2–3 GB           | ~10–11%       |
-| small       | Fast      | ~4–5 GB           | ~6–7%         |
-| medium      | Slower    | ~7–8 GB           | ~4–5%         |
-| large-v3    | Slowest   | ~10–12 GB         | ~2.7%         |
-""")
 
-            with top:
-                if st.form_submit_button("Apply Settings", use_container_width=True):
-                    apply_settings(settings)
-            if st.form_submit_button("Apply settings", use_container_width=True):
-                apply_settings(settings)
+        if settings != loaded_settings:
+            apply_settings(settings)
 
     # MARK: Projects Management
     with settings_tabs[1]:
@@ -457,9 +511,58 @@ def settings():
                     for model in installed_models:
                         st.badge(model)
             with tab_chatgpt:
-                st.error("In dev...")
+                openai_api_key = settings.get("openai_api_key", "")
+                new_openai_api_key = st.text_input(
+                    "OpenAI API Key",
+                    value=openai_api_key,
+                    type="password",
+                    help="Enter your OpenAI API key to use ChatGPT models.",
+                    key="openai_api_key",
+                )
+                if new_openai_api_key != openai_api_key:
+                    settings["openai_api_key"] = new_openai_api_key
+                    apply_settings(settings)
+
             with tab_gemini:
-                st.error("In dev...")
+                gemini_api_key = settings.get("gemini_api_key", "")
+                new_gemini_api_key = st.text_input(
+                    "Google Gemini API Key",
+                    value=gemini_api_key,
+                    type="password",
+                    help="Enter your Google Gemini API key to use Gemini models.",
+                    key="gemini_api_key",
+                )
+                if new_gemini_api_key != gemini_api_key:
+                    settings["gemini_api_key"] = new_gemini_api_key
+                    apply_settings(settings)
+            
+            if len(openai_api_key) > 0:
+                with tab_chatgpt:
+                    with st.spinner("Checking OpenAI key...", show_time=True):
+                        try:
+                            headers = {
+                                "Authorization": f"Bearer {openai_api_key}"
+                            }
+                            response = requests.get("https://api.openai.com/v1/models", headers=headers, timeout=10)
+                            if response.status_code == 200:
+                                st.toast("OpenAI API key is valid.", icon="✅")
+                            else:
+                                st.toast("OpenAI API key is invalid.", icon="❌")
+                        except requests.RequestException as e:
+                            st.toast(f"OpenAI check failed: {e}", icon="⚠️")
+            
+            if len(gemini_api_key) > 0:
+                with tab_gemini:
+                    with st.spinner("Checking Gemini key...", show_time=True):
+                        try:
+                            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_api_key}"
+                            response = requests.get(url, timeout=10)
+                            if response.status_code == 200:
+                                st.toast("Google Gemini API key is valid.", icon="✅")
+                            else:
+                                st.toast("Google Gemini API key is invalid.", icon="❌")
+                        except requests.RequestException as e:
+                            st.toast(f"Gemini check failed: {e}", icon="⚠️")
 
     # MARK: Tasks
     with settings_tabs[4]:
@@ -468,6 +571,30 @@ def settings():
             list_ocr=True,
             list_transcription=True,
         )
+
+    with st.sidebar:
+
+        st.markdown("""## LLM Models
+| Model              | Type      | Capabilities                        | Input/Output \$ / Token |
+|--------------------|-----------|-------------------------------------|--------------------|
+| gpt-4o             | ChatGPT   | Multimodal, fast, top performance   | \$0.005 / \$0.015    |
+| gpt-4              | ChatGPT   | Strong reasoning                    | \$0.03 / \$0.06      |
+| gpt-3.5-turbo      | ChatGPT   | Simple tasks, fast                  | \$0.001 / \$0.002    |
+| gemini-1.5-pro     | Gemini    | Complex reasoning                   | ~\$0.007 / ~\$0.021  |
+| gemini-1.5-flash   | Gemini    | Very fast, interactive              | ~\$0.002 / ~\$0.006  |
+| llama3-70b         | LLaMA     | Strong, open-source                 | Free               |
+| llama3-8b          | LLaMA     | Balanced, open-source               | Free               |
+| llama3-1b          | LLaMA     | Ultra-lightweight                   | Free               |""")
+
+        st.markdown("""## Transcription Models
+| Model       | Speed     | RAM Needed        | WER (English) |
+|-------------|-----------|-------------------|---------------|
+| tiny        | Fastest   | ~1–2 GB           | ~14–15%       |
+| base        | Very fast | ~2–3 GB           | ~10–11%       |
+| small       | Fast      | ~4–5 GB           | ~6–7%         |
+| medium      | Slower    | ~7–8 GB           | ~4–5%         |
+| large-v3    | Slowest   | ~10–12 GB         | ~2.7%         |
+""")
 
 
 if __name__ == "__main__":

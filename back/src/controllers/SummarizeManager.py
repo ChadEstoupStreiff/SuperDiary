@@ -9,7 +9,7 @@ from controllers.OCRManager import OCRManager
 from controllers.TranscriptionManager import TranscriptionManager
 from db import Summary, SummaryTask, TaskStateEnum, get_db
 from sqlalchemy import and_
-from tools.ollama import request_ollama
+from tools.ai import request_llm
 from utils import guess_mime, read_content
 from views.settings import get_setting
 
@@ -122,9 +122,8 @@ class SummarizeManager:
 
     @classmethod
     def make_summary(cls, input):
-        model = get_setting("summarization_model")
-        keywords = request_ollama(
-            model=model,
+        _, _, keywords = request_llm(
+            setting_prefix="summarization",
             prompt=""""! FILE CONTENT START !
 {input}
 ! FILE CONTENT END !
@@ -140,14 +139,15 @@ Do NOT use JSON, code blocks, quotes, or formatting.
 Example: keyword1, keyword2, keyword3, ...
 """,
             input_text=input,
+            max_tokens=2048,
         )
         if keywords.startswith("[") and keywords.endswith("]"):
             keywords = json.loads(keywords)
         else:
             keywords = [w.strip() for w in keywords.split(",")]
 
-        summary = request_ollama(
-            model=model,
+        _, _, summary = request_llm(
+            setting_prefix="summarization",
             prompt=""""! FILE CONTENT START !
 {input}
 ! FILE CONTENT END !
@@ -162,6 +162,7 @@ Respond ONLY with plain markdown.
 Do NOT include explanations, notes, or any formatting outside the summary itself.
 """,
             input_text=input,
+            max_tokens=2048,
         ).strip()
         if summary.startswith("```") and summary.endswith("```"):
             summary = summary[3:-3].strip()

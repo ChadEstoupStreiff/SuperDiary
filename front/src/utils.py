@@ -356,6 +356,27 @@ def generate_aside_project_markdown(names: List[str], colors: List[str]):
     """
 
 
+def generate_badges_html(file_list, color: str = "rgba(61, 157, 243, 0.3)"):
+    style = (
+        f"background-color: {color};"
+        "color: rgb(96, 180, 255);"
+        "font-size: 0.875rem;"
+        "border-radius: 0.25rem;"
+        "padding: 0px 0.25rem;"
+        "margin: 0px 1px;"
+        "white-space: nowrap;"
+        "overflow: hidden;"
+        "text-overflow: ellipsis;"
+        "margin: 3px 5px;"
+        "max-width: 100%;"
+        "display: inline-block;"
+        "vertical-align: middle;"
+        "font-family: 'Source Sans Pro', sans-serif;"
+    )
+    tag_template = f'<span style="{style}" class="is-badge">{{}}</span>'
+    tags_html = "".join([tag_template.format(file) for file in file_list])
+    return f'<div style="display:flex; flex-wrap:wrap;">{tags_html}</div>'
+
 def spacer(space: int = 30):
     """
     Add a spacer to the Streamlit app.

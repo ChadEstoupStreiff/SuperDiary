@@ -9,6 +9,8 @@ from fastapi import APIRouter, HTTPException
 router = APIRouter(tags=["Settings"])
 
 default_settings = {
+    # "summarization_model": "llama3.2:3b",
+    # "summarization_model": "llama3.1:8b",
     "search_limit": 50,
     "enable_auto_ocr": True,
     "enable_auto_transcription": True,
@@ -16,10 +18,12 @@ default_settings = {
     "transcription_type": "llama",
     "transcription_model": "small",
     "summarization_type": "llama",
-    # "summarization_model": "llama3.2:3b",
-    # "summarization_model": "llama3.1:8b",
     "summarization_model": "llama3.2:1b",
-    "auto_display_file_size_limit": 10, # 20Mb
+    "chat_type": "llama",
+    "chat_model": "llama3.2:1b",
+    "auto_display_file_size_limit": 10,  # 20Mb
+    "openai_api_key": "",
+    "gemini_api_key": "",
 }
 
 

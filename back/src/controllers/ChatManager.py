@@ -3,15 +3,18 @@ import logging
 import queue
 import time
 from datetime import datetime
+from typing import List
 
 from db import ChatMessage, ChatSession, get_db
 from fastapi import HTTPException
+from tools.ai import request_llm
 from utils import read_content
 
 
 class ChatManager:
     queue = queue.Queue()
     running_chat = None
+    running_answer = ""
 
     def start_thread():
         ChatManager.loop()
@@ -29,12 +32,20 @@ class ChatManager:
         ]
 
         chat_texts = [
-            f"{msg['user']}: {msg['content']}" for msg in messages
+            f"""
+--- Message ---
+User: {msg['user']}
+Date: {msg['date'].strftime('%Y-%m-%d %H:%M:%S')}
+Files: {', '.join(json.loads(msg['files'])) if msg['files'] else 'None'}
+Message: {msg['content']}
+"""
+            for msg in messages
         ]
 
         prompt = (
-            "You are given a conversation and some files provided by the user. "
-            "Use the file contents if relevant to answer the user's latest question.\n\n"
+            "You are given a conversation and some files provided by the user.\n"
+            "You are an AI Chat BOT that can answer questions based on the conversation and files.\n"
+            "Use the file contents if relevant to ANSWER the user's LATEST prompt.\n\n"
             + "\n".join(file_texts)
             + "\n\n--- Conversation ---\n"
             + "\n".join(chat_texts)
@@ -43,27 +54,34 @@ class ChatManager:
         return prompt, files
 
     @classmethod
+    def stream_callback(cls, data):
+        if cls.running_answer is not None:
+            cls.running_answer += data
+        else:
+            cls.running_answer = data
+
+    @classmethod
     def loop(cls):
         time.sleep(10)
         while True:
             chat_id = cls.queue.get()
             cls.running_chat = chat_id
-            logging.info(f"CHAT >> Processing chat session: {chat_id}")
+            cls.running_answer = ""
+            logging.critical(f"CHAT >> Processing chat session: {chat_id}")
 
             # Simulate processing time
             # After processing, reset running chat
-            time.sleep(10)
             prompt, files = cls.generate_prompt(chat_id)
-            logging.critical(prompt)
-            chat_name = "ChatGPT"
-            chat_answer = "Maybe one day I will be able to answer this question."
+            ai_type, model, chat_answer = request_llm(
+                "chat", prompt, stream_callback=cls.stream_callback
+            )
 
             db = get_db()
             try:
                 db.add(
                     ChatMessage(
                         session_id=chat_id,
-                        user=chat_name,
+                        user=f"{ai_type} - {model}",
                         content=chat_answer,
                         files=json.dumps(files) if files else None,
                         date=datetime.now(),
@@ -77,6 +95,7 @@ class ChatManager:
             finally:
                 db.close()
                 cls.running_chat = None
+                cls.running_answer = ""
 
     @classmethod
     def add_to_queue(cls, chat_id):
@@ -84,7 +103,19 @@ class ChatManager:
 
     @classmethod
     def is_running(cls, chat_id):
-        return cls.running_chat == chat_id or chat_id in cls.queue.queue
+        if cls.running_chat == chat_id:
+            return {
+                "state": "running",
+                "answer": cls.running_answer,
+            }
+        elif chat_id in cls.queue.queue:
+            return {
+                "state": "queued",
+            }
+        else:
+            return {
+                "state": "not_running",
+            }
 
     @classmethod
     def list_chats(cls):
@@ -109,6 +140,23 @@ class ChatManager:
             return {"id": new_session.id, "title": new_session.title}
         except Exception as e:
             logging.error(f"Error creating chat session: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+        finally:
+            db.close()
+
+    @classmethod
+    def edit_chat(cls, session_id: str, title: str, description: str):
+        db = get_db()
+        try:
+            session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+            if not session:
+                raise HTTPException(status_code=404, detail="Chat session not found")
+            session.title = title
+            session.description = description
+            db.commit()
+            return {"id": session.id, "title": session.title}
+        except Exception as e:
+            logging.error(f"Error editing chat session: {str(e)}")
             raise HTTPException(status_code=500, detail="Internal Server Error")
         finally:
             db.close()
@@ -148,15 +196,15 @@ class ChatManager:
             db.close()
 
     @classmethod
-    def add_message(cls, session_id: str, content: str, files: list = None):
-        if not cls.is_running(session_id):
+    def add_message(cls, session_id: str, content: str, files: List[str] = None):
+        if cls.is_running(session_id).get("state") == "not_running":
             db = get_db()
             try:
                 new_message = ChatMessage(
                     session_id=session_id,
                     user="user",
                     content=content,
-                    files=files if files else None,
+                    files=json.dumps(files) if files else None,
                     date=datetime.now(),
                 )
                 db.add(new_message)

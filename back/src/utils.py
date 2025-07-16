@@ -29,10 +29,10 @@ def guess_mime(file_name: str) -> str:
     }
 
     if ext in custom_mime:
-        return custom_mime[ext]
+        return custom_mime[ext].strip()
 
     mime, _ = mimetypes.guess_type(file_name)
-    return mime or "application/octet-stream"
+    return mime.strip() or "application/octet-stream"
 
 
 def read_content(file: str, force_read: bool = False) -> str:
@@ -40,9 +40,6 @@ def read_content(file: str, force_read: bool = False) -> str:
     Read the content of a file and return it as a string.
     """
     content = None
-    ocr = None
-    blip = None
-    transcription = None
 
     mime = guess_mime(file)
     # MARK: Image
@@ -51,6 +48,8 @@ def read_content(file: str, force_read: bool = False) -> str:
         if result is not None:
             ocr = "\n".join([item[1][0] for item in json.loads(result.get("ocr"))])
             blip = result.get("blip")
+            if ocr and blip:
+                content = f"CAPTION: {blip}\nOCR: {ocr}"
 
     # MARK: Audio and Video
     elif mime.startswith("audio/") or mime.startswith("video/"):
@@ -58,9 +57,11 @@ def read_content(file: str, force_read: bool = False) -> str:
         transcription = TranscriptionManager.get(file)
         if transcription is not None:
             transcription = transcription.get("transcription")
+            if transcription:
+                content = f"Transcription: {transcription}"
 
     # MARK: Text and JSON
-    elif mime is None or mime.startswith("text") or mime.endswith("json"):
+    elif mime.startswith("text") or mime.endswith("json"):
         logging.info("SUMMARY >> Attempting to read text content.")
         with open(file, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
@@ -83,7 +84,7 @@ def read_content(file: str, force_read: bool = False) -> str:
         with open(file, "r") as f:
             content = f.read()
 
-    if content is None and ocr is None and transcription is None and blip is None:
+    if content is None:
         logging.warning(f"Unable to read content from file: {file}")
         return None
     return f"""
@@ -92,8 +93,5 @@ File Extension: {os.path.splitext(file)[1]}
 MIME Type: {mime if mime else "Unkown"}
 
 Content:
-{"CAPTION: " + blip if blip else ""}
-{"OCR: " + ocr if ocr else ""}
-{"Transcription: " + transcription if transcription else ""}
-{content if content else ""}
+{content if content else "Can' read"}
 """
