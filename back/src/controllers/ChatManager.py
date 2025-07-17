@@ -45,7 +45,7 @@ class ChatManager:
             for file in files
         ]
         calendar_texts = [
-            f"--- Calendar Event:\n{read_calendar(event) or '[Event could not be read]'}\n"
+            f"--- Calendar Event: ---\n{read_calendar(event) or '[Event could not be read]'}\n"
             for event in calendars
         ]
 
@@ -70,6 +70,8 @@ Message: {msg['content']}
             + "\n\n--- Conversation ---\n"
             + "\n".join(chat_texts)
         )
+        while "\n\n" in prompt:
+            prompt = prompt.replace("\n\n", "\n")
 
         return prompt, files, calendars
 
@@ -89,7 +91,6 @@ Message: {msg['content']}
             cls.running_answer = ""
 
             prompt, files, calendars = cls.generate_prompt(chat_id)
-            logging.critical(f"Prompt: {prompt}")
             try:
                 ai_type, model, chat_answer = request_llm(
                     "chat", prompt, stream_callback=cls.stream_callback
