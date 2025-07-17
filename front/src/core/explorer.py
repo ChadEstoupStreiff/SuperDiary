@@ -156,3 +156,4 @@ def search_engine(nbr_columns: int = 6):
                 search_mode,
             )
     return None
+

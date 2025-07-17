@@ -4,7 +4,9 @@ import time
 
 import requests
 import streamlit as st
-from core.explorer import search_engine
+from core.calendar import box_calendar_record
+from core.calendar import search_engine as calendar_search_engine
+from core.explorer import search_engine as file_search_engine
 from utils import generate_badges_html, spacer, toast_for_rerun
 
 
@@ -31,9 +33,9 @@ def dialog_new_chat():
                 st.error("Failed to create chat.")
 
 
-@st.dialog("📁 Search files")
+@st.dialog("📁 Search files", width="large")
 def dialog_search_files():
-    result = search_engine(nbr_columns=2)
+    result = file_search_engine(nbr_columns=3)
     if result:
         st.session_state.chat_search_files = result["files"]
 
@@ -49,11 +51,7 @@ def dialog_search_files():
         for file in st.session_state.chat_search_files:
             filename = os.path.basename(file)
             if st.checkbox(filename, value=default_value, key=file):
-                if file not in selected:
-                    selected.append(file)
-            else:
-                if file in selected:
-                    selected.remove(file)
+                selected.append(file)
 
         if st.button("Add Selected Files", use_container_width=True):
             if len(selected) > 0:
@@ -68,6 +66,48 @@ def dialog_search_files():
                 st.rerun()
             else:
                 st.warning("No files selected.")
+
+
+@st.dialog("📅 Search calendars", width="large")
+def dialog_search_calendars():
+    result = calendar_search_engine()
+    if result:
+        st.session_state.chat_search_calendars = result["records"]
+
+    selected = []
+    if "chat_search_calendars" in st.session_state:
+        default_value = st.checkbox(
+            "Select all calendar events",
+            label_visibility="hidden",
+            value=False,
+            key="select_all_calendars",
+        )
+        spacer()
+
+        for record in st.session_state.chat_search_calendars:
+            cols = st.columns([1, 9])
+            with cols[0]:
+                if st.checkbox("", value=default_value, key=record.get("id")):
+                    selected.append(record)
+            with cols[1]:
+                box_calendar_record(
+                    record,
+                    show_edit_button=False,
+                )
+
+        if st.button("Add Selected Calendar Events", use_container_width=True):
+            if len(selected) > 0:
+                for record in selected:
+                    if record not in st.session_state.chat_calendars:
+                        st.session_state.chat_calendars.append(record)
+                del st.session_state.chat_search_calendars
+                toast_for_rerun(
+                    f"Added {len(selected)} calendar events to the chat.",
+                    icon="✅",
+                )
+                st.rerun()
+            else:
+                st.warning("No calendar events selected.")
 
 
 @st.dialog("✏️ Edit Chat")
@@ -95,6 +135,7 @@ def clear_chat():
     del st.session_state.chat_session
     del st.session_state.chat_infos
     del st.session_state.chat_files
+    del st.session_state.chat_calendars
     del st.session_state.chat_messages
 
 
@@ -111,12 +152,25 @@ def load_chat_session(session_id, silent: bool = False):
         st.session_state.chat_files = st.session_state.chat_messages[-1].get(
             "files", []
         )
+        st.session_state.chat_calendars = st.session_state.chat_messages[-1].get(
+            "calendar", []
+        )
         if not st.session_state.chat_files or len(st.session_state.chat_files) == 0:
             st.session_state.chat_files = []
         else:
             st.session_state.chat_files = json.loads(st.session_state.chat_files)
+        if (
+            not st.session_state.chat_calendars
+            or len(st.session_state.chat_calendars) == 0
+        ):
+            st.session_state.chat_calendars = []
+        else:
+            st.session_state.chat_calendars = json.loads(
+                st.session_state.chat_calendars
+            )
     else:
         st.session_state.chat_files = []
+        st.session_state.chat_calendars = []
 
     if not silent:
         toast_for_rerun(
@@ -196,14 +250,23 @@ def chat():
                 dialog_edit_chat()
             st.divider()
 
+            st.markdown("**Files attached**")
             cols = st.columns(2)
             with cols[0]:
-                if st.button("📁 Search for files", use_container_width=True):
+                if st.button(
+                    "📁 Search",
+                    use_container_width=True,
+                    key=f"search_files_{st.session_state.chat_session}",
+                ):
                     if "chat_search_files" in st.session_state:
                         del st.session_state.chat_search_files
                     dialog_search_files()
             with cols[1]:
-                if st.button("🗑️ Clear files", use_container_width=True):
+                if st.button(
+                    "🗑️ Clear",
+                    use_container_width=True,
+                    key=f"clear_files_{st.session_state.chat_session}",
+                ):
                     st.session_state.chat_files = []
                     toast_for_rerun("Cleared all files from the chat.", icon="🗑️")
                     st.rerun()
@@ -221,11 +284,49 @@ def chat():
                     unsafe_allow_html=True,
                 )
 
+            st.divider()
+            st.markdown("**Calendar events attached**")
+            cols = st.columns(2)
+            with cols[0]:
+                if st.button(
+                    "📅 Search",
+                    use_container_width=True,
+                    key=f"search_calendar_{st.session_state.chat_session}",
+                ):
+                    if "chat_search_calendars" in st.session_state:
+                        del st.session_state.chat_search_calendars
+                    dialog_search_calendars()
+            with cols[1]:
+                if st.button(
+                    "🗑️ Clear",
+                    use_container_width=True,
+                    key=f"clear_calendar_{st.session_state.chat_session}",
+                ):
+                    st.session_state.chat_calendars = []
+                    toast_for_rerun("Cleared all calendars events to this chat.")
+                    st.rerun()
+
+            if len(st.session_state.chat_calendars) == 0:
+                st.markdown("No calendar events attached to this chat.")
+            else:
+                st.markdown(
+                    generate_badges_html(
+                        [
+                            f"📅 {c['date'].replace('T', ' ').replace('Z', '')} - {c['time_spent']}h - {c['title']}"
+                            for c in st.session_state.chat_calendars
+                        ],
+                        color="rgb(155, 89, 182)",
+                        bg_color="rgba(155, 89, 182, 0.2)",
+                    ),
+                    unsafe_allow_html=True,
+                )
+
         for message in st.session_state.chat_messages:
             user = message["user"]
             date = message["date"].replace("T", " ").replace("Z", "")
             content = message["content"]
             files = json.loads(message["files"]) if message["files"] else []
+            calendars = json.loads(message["calendar"]) if message["calendar"] else []
 
             with st.chat_message("assistant" if user != "user" else "user"):
                 st.caption(f"**{user if user != 'user' else 'You'}** - {date}")
@@ -237,9 +338,25 @@ def chat():
                             ),
                             unsafe_allow_html=True,
                         )
-                        spacer(15)
                     else:
                         st.caption("No files attached.")
+                    if len(calendars) > 0:
+                        st.markdown(
+                            generate_badges_html(
+                                [
+                                    f"📅 {c['date'].replace('T', ' ').replace('Z', '')} - {c['time_spent']}h - {c['title']}"
+                                    for c in calendars
+                                ],
+                                color="rgb(255, 200, 255)",
+                                bg_color="rgba(155, 89, 182, 0.3)",
+                            ),
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.caption("No calendar events attached.")
+
+                    if len(files) > 0 or len(calendars) > 0:
+                        spacer(15)
                 st.markdown(content)
 
         if is_chat_running(st.session_state.chat_session).get("state") != "not_running":
@@ -248,12 +365,18 @@ def chat():
                     st.write_stream(stream_thinking(st.session_state.chat_session))
 
         prompt = st.chat_input(
-            "Ask a question.", disabled=len(st.session_state.chat_files) == 0
+            "Ask a question.",
+            disabled=len(st.session_state.chat_files) == 0
+            and len(st.session_state.chat_calendars) == 0,
         )
         if prompt:
             response = requests.post(
                 f"http://back:80/chat/{st.session_state.chat_session}/message",
-                json={"content": prompt, "files": st.session_state.chat_files},
+                json={
+                    "content": prompt,
+                    "files": json.dumps(st.session_state.chat_files),
+                    "calendars": json.dumps(st.session_state.chat_calendars),
+                },
             )
             if response.status_code == 200:
                 st.session_state.chat_messages.append(response.json())

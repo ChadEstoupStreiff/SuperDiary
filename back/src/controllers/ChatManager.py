@@ -3,12 +3,23 @@ import logging
 import queue
 import time
 from datetime import datetime
-from typing import List
+from typing import Dict, List
 
 from db import ChatMessage, ChatSession, get_db
 from fastapi import HTTPException
 from tools.ai import request_llm
 from utils import read_content
+
+
+def read_calendar(event: Dict[str, str]):
+    return f"""Title: {event['title']}
+Project: {event['project']}
+Date: {event['date']}
+Time Spent: {event['time_spent']}
+Description: {event['description']}
+Location: {event['location']}
+Attendees: {event['attendees']}
+"""
 
 
 class ChatManager:
@@ -25,10 +36,17 @@ class ChatManager:
         if not messages:
             return "No context available.", []
 
-        files = json.loads(messages[-1]["files"])
+        files = json.loads(messages[-1]["files"]) if messages[-1]["files"] else []
+        calendars = (
+            json.loads(messages[-1]["calendar"]) if messages[-1]["calendar"] else []
+        )
         file_texts = [
-            f"--- File: {file} ---\n{read_content(file) or '[File could not be read]'}"
+            f"--- File: {file} ---\n{read_content(file) or '[File could not be read]'}\n"
             for file in files
+        ]
+        calendar_texts = [
+            f"--- Calendar Event:\n{read_calendar(event) or '[Event could not be read]'}\n"
+            for event in calendars
         ]
 
         chat_texts = [
@@ -37,21 +55,23 @@ class ChatManager:
 User: {msg['user']}
 Date: {msg['date'].strftime('%Y-%m-%d %H:%M:%S')}
 Files: {', '.join(json.loads(msg['files'])) if msg['files'] else 'None'}
+Calendars: {msg['calendar'] if msg['calendar'] else 'None'}
 Message: {msg['content']}
 """
             for msg in messages
         ]
 
         prompt = (
-            "You are given a conversation and some files provided by the user.\n"
-            "You are an AI Chat BOT that can answer questions based on the conversation and files.\n"
+            "You are given a conversation and some files and calendar events provided by the user.\n"
+            "You are an AI Chat BOT that can answer questions based on the conversation, files and calendar events.\n"
             "Use the file contents if relevant to ANSWER the user's LATEST prompt.\n\n"
             + "\n".join(file_texts)
+            + "\n".join(calendar_texts)
             + "\n\n--- Conversation ---\n"
             + "\n".join(chat_texts)
         )
 
-        return prompt, files
+        return prompt, files, calendars
 
     @classmethod
     def stream_callback(cls, data):
@@ -67,11 +87,9 @@ Message: {msg['content']}
             chat_id = cls.queue.get()
             cls.running_chat = chat_id
             cls.running_answer = ""
-            logging.critical(f"CHAT >> Processing chat session: {chat_id}")
 
-            # Simulate processing time
-            # After processing, reset running chat
-            prompt, files = cls.generate_prompt(chat_id)
+            prompt, files, calendars = cls.generate_prompt(chat_id)
+            logging.critical(f"Prompt: {prompt}")
             try:
                 ai_type, model, chat_answer = request_llm(
                     "chat", prompt, stream_callback=cls.stream_callback
@@ -89,6 +107,7 @@ Message: {msg['content']}
                         user=f"{ai_type} - {model}",
                         content=chat_answer,
                         files=json.dumps(files) if files else None,
+                        calendar=json.dumps(calendars) if calendars else None,
                         date=datetime.now(),
                     )
                 )
@@ -201,7 +220,13 @@ Message: {msg['content']}
             db.close()
 
     @classmethod
-    def add_message(cls, session_id: str, content: str, files: List[str] = None):
+    def add_message(
+        cls,
+        session_id: str,
+        content: str,
+        files: List[str] = None,
+        calendar: List[str] = None,
+    ):
         if cls.is_running(session_id).get("state") == "not_running":
             db = get_db()
             try:
@@ -209,7 +234,8 @@ Message: {msg['content']}
                     session_id=session_id,
                     user="user",
                     content=content,
-                    files=json.dumps(files) if files else None,
+                    files=files,
+                    calendar=calendar,
                     date=datetime.now(),
                 )
                 db.add(new_message)

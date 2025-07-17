@@ -356,10 +356,10 @@ def generate_aside_project_markdown(names: List[str], colors: List[str]):
     """
 
 
-def generate_badges_html(file_list, color: str = "rgba(61, 157, 243, 0.3)"):
+def generate_badges_html(file_list, color: str="rgb(96, 180, 255)", bg_color: str = "rgba(61, 157, 243, 0.3)"):
     style = (
-        f"background-color: {color};"
-        "color: rgb(96, 180, 255);"
+        f"background-color: {bg_color};"
+        f"color: {color};"
         "font-size: 0.875rem;"
         "border-radius: 0.25rem;"
         "padding: 0px 0.25rem;"

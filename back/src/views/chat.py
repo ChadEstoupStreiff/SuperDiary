@@ -1,8 +1,8 @@
+from typing import Any, Dict, List, Optional
+
 from controllers.ChatManager import ChatManager
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List, Optional
-
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
@@ -36,10 +36,15 @@ def get_chat_info(session_id: str):
 def get_chat_messages(session_id: str):
     return ChatManager.get_chat_messages(session_id)
 
+
 class ChatMessageRequest(BaseModel):
     content: str
-    files: Optional[List[str]] = None
+    files: Optional[str] = None
+    calendars: Optional[str] = None
+
 
 @router.post("/{session_id}/message")
 def add_chat_message(session_id: str, request: ChatMessageRequest):
-    return ChatManager.add_message(session_id, request.content, request.files)
+    return ChatManager.add_message(
+        session_id, request.content, request.files, request.calendars
+    )

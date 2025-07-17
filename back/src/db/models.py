@@ -177,4 +177,5 @@ class ChatMessage(Base):
     user = Column(String(32), nullable=False)  # e.g., 'user', 'assistant'
 
     files = Column(TEXT(130560), nullable=True)
+    calendar = Column(TEXT(130560), nullable=True)
     content = Column(TEXT(130560), nullable=False)

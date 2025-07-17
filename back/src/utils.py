@@ -6,6 +6,7 @@ import os
 import docx
 from controllers.OCRManager import OCRManager
 from controllers.TranscriptionManager import TranscriptionManager
+from controllers.NoteManager import NoteManager
 from PyPDF2 import PdfReader
 
 
@@ -84,14 +85,26 @@ def read_content(file: str, force_read: bool = False) -> str:
         with open(file, "r") as f:
             content = f.read()
 
+    note = NoteManager.get(file)
+    if note is not None:
+        note = note.get("content")
+    else:
+        note = None
+
     if content is None:
         logging.warning(f"Unable to read content from file: {file}")
         return None
+
+    date = file.split("/")[1]
+    subfolder = file.split("/")[2]
     return f"""
 File Name: {os.path.basename(file)}
 File Extension: {os.path.splitext(file)[1]}
-MIME Type: {mime if mime else "Unkown"}
+MIME Type: {mime if mime else "Unknown"}
+Date: {date}
+Subfolder: {subfolder}
 
+{f"Note: {note}\n" if note else ""}
 Content:
-{content if content else "Can' read"}
+{content if content else "Can't read"}
 """

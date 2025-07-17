@@ -163,7 +163,8 @@ Do NOT include explanations, notes, or any formatting outside the summary itself
 """,
             input_text=input,
             max_tokens=2048,
-        ).strip()
+        )
+        summary = summary.strip()
         if summary.startswith("```") and summary.endswith("```"):
             summary = summary[3:-3].strip()
         return (keywords, summary)

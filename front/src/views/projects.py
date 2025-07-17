@@ -54,7 +54,7 @@ def projects():
     else:
         files = files.json()
 
-    records = requests.get(f"http://back:80/calendar/records?project={project['name']}")
+    records = requests.get(f"http://back:80/calendar/search?project={project['name']}")
     if records.status_code != 200:
         st.error("Project not found or no calendar records available.")
         records = []
