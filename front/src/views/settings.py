@@ -3,7 +3,12 @@ import copy
 import pandas as pd
 import requests
 import streamlit as st
-from utils import generate_tag_visual_markdown, spacer, toast_for_rerun
+from utils import (
+    generate_tag_visual_markdown,
+    refractor_text_area,
+    spacer,
+    toast_for_rerun,
+)
 
 
 # MARK: Settings func
@@ -41,31 +46,30 @@ def dialog_create_project():
     """
     Dialog for creating a new project.
     """
-    with st.form("create_project_form"):
-        name = st.text_input(
-            "Project Name", help="Enter the name of the project.", max_chars=50
-        )
-        description = st.text_area(
-            "Project Description",
-            help="Enter a brief description of the project.",
-        )
-        color = st.color_picker(
-            "Project Color",
-            value="#0000FF",  # Default to blue
-            help="Select a color for the project.",
-        )
-        st.write(color)
+    name = st.text_input(
+        "Project Name", help="Enter the name of the project.", max_chars=50
+    )
+    description = refractor_text_area(
+        "Project Description",
+        help="Enter a brief description of the project.",
+    )
+    color = st.color_picker(
+        "Project Color",
+        value="#0000FF",  # Default to blue
+        help="Select a color for the project.",
+    )
+    st.write(color)
 
-        if st.form_submit_button("Create Project", use_container_width=True):
-            response = requests.post(
-                f"http://back:80/project?name={name}&description={description}&color={color[1:]}"
-            )
-            if response.status_code == 200:
-                toast_for_rerun("Project created successfully!", icon="✅")
-                st.rerun()
-            else:
-                st.error("Failed to create project. Please try again.")
-                st.toast("Failed to create project. Please try again.", icon="❌")
+    if st.button("Create Project", use_container_width=True):
+        response = requests.post(
+            f"http://back:80/project?name={name}&description={description}&color={color[1:]}"
+        )
+        if response.status_code == 200:
+            toast_for_rerun("Project created successfully!", icon="✅")
+            st.rerun()
+        else:
+            st.error("Failed to create project. Please try again.")
+            st.toast("Failed to create project. Please try again.", icon="❌")
 
 
 @st.dialog("✏️ Edit Project")
@@ -73,33 +77,32 @@ def dialog_edit_project(project):
     """
     Dialog for editing an existing project.
     """
-    with st.form("edit_project_form"):
-        name = st.text_input(
-            "Project Name",
-            value=project["name"],
-            help="Enter the name of the project.",
-            max_chars=50,
-        )
-        description = st.text_area(
-            "Project Description",
-            value=project["description"] or "",
-            help="Enter a brief description of the project.",
-        )
-        color = st.color_picker(
-            "Project Color",
-            value=project["color"],
-            help="Select a color for the project.",
-        )
+    name = st.text_input(
+        "Project Name",
+        value=project["name"],
+        help="Enter the name of the project.",
+        max_chars=50,
+    )
+    description = refractor_text_area(
+        "Project Description",
+        value=project["description"] or "",
+        help="Enter a brief description of the project.",
+    )
+    color = st.color_picker(
+        "Project Color",
+        value=project["color"],
+        help="Select a color for the project.",
+    )
 
-        if st.form_submit_button("Update Project", use_container_width=True):
-            response = requests.put(
-                f"http://back:80/project/{project['name']}?name={name}&description={description}&color={color[1:]}",
-            )
-            if response.status_code == 200:
-                toast_for_rerun("Project updated successfully!", icon="✅")
-                st.rerun()
-            else:
-                st.error("Failed to update project. Please try again.")
+    if st.button("Update Project", use_container_width=True):
+        response = requests.put(
+            f"http://back:80/project/{project['name']}?name={name}&description={description}&color={color[1:]}",
+        )
+        if response.status_code == 200:
+            toast_for_rerun("Project updated successfully!", icon="✅")
+            st.rerun()
+        else:
+            st.error("Failed to update project. Please try again.")
 
 
 @st.dialog("🗑️ Delete project")
@@ -366,6 +369,12 @@ def settings():
             with st.expander("Chat Settings", expanded=True):
                 settings["chat_type"], settings["chat_model"] = chose_ai_menu(
                     settings["chat_type"], settings["chat_model"], key="chat"
+                )
+            with st.expander("Refractor Settings", expanded=True):
+                settings["refractor_type"], settings["refractor_model"] = chose_ai_menu(
+                    settings["refractor_type"],
+                    settings["refractor_model"],
+                    key="refractor",
                 )
 
         with cols[1]:

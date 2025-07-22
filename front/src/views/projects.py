@@ -4,7 +4,7 @@ import requests
 import streamlit as st
 from core.calendar import box_calendar_record
 from core.files import display_files, representation_mode_select
-from utils import toast_for_rerun
+from utils import refractor_text_area, toast_for_rerun
 
 
 def change_project():
@@ -104,7 +104,7 @@ def projects():
     with tabs[3]:
         notes = requests.get(f"http://back:80/project/{project['name']}/notes").json()
         top = st.container()
-        edited_notes = st.text_area(
+        edited_notes = refractor_text_area(
             "Project Notes",
             value=notes,
             height=1000,

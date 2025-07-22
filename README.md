@@ -70,7 +70,6 @@ Bugs:
 None found :)
 
 TODO: 
-- Add edition and deletion of calendar record
 - Test search on big volume (tokens on summaries may explode search time)
 
 Optimization:

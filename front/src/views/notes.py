@@ -5,7 +5,7 @@ import tempfile
 import requests
 import streamlit as st
 from pages import PAGE_VIEWER
-from utils import clear_cache, toast_for_rerun
+from utils import clear_cache, toast_for_rerun, refractor_text_area
 
 
 def clear_selected_note():
@@ -133,7 +133,7 @@ def notes():
 
         # MARK: CONTENT
         with cols[0]:
-            markdown_input = st.text_area(
+            markdown_input = refractor_text_area(
                 "Edit note content",
                 value=st.session_state["note_content"],
                 height=editor_size if side_by_side else None,

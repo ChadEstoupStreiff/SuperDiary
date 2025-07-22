@@ -21,6 +21,8 @@ default_settings = {
     "summarization_model": "llama3.2:1b",
     "chat_type": "llama",
     "chat_model": "llama3.2:1b",
+    "refractor_type": "llama",
+    "refractor_model": "llama3.2:1b",
     "auto_display_file_size_limit": 10,  # 20Mb
     "openai_api_key": "",
     "gemini_api_key": "",

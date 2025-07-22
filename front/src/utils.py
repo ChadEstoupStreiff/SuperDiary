@@ -209,7 +209,6 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
             with open(file_path, "rb") as file:
                 file_bytes = file.read()
 
-
                 if file_extension == "md" or file_extension == "markdown":
                     st.markdown(file_bytes.decode("utf-8"), unsafe_allow_html=True)
 
@@ -356,7 +355,11 @@ def generate_aside_project_markdown(names: List[str], colors: List[str]):
     """
 
 
-def generate_badges_html(file_list, color: str="rgb(96, 180, 255)", bg_color: str = "rgba(61, 157, 243, 0.3)"):
+def generate_badges_html(
+    file_list,
+    color: str = "rgb(96, 180, 255)",
+    bg_color: str = "rgba(61, 157, 243, 0.3)",
+):
     style = (
         f"background-color: {bg_color};"
         f"color: {color};"
@@ -376,6 +379,7 @@ def generate_badges_html(file_list, color: str="rgb(96, 180, 255)", bg_color: st
     tag_template = f'<span style="{style}" class="is-badge">{{}}</span>'
     tags_html = "".join([tag_template.format(file) for file in file_list])
     return f'<div style="display:flex; flex-wrap:wrap;">{tags_html}</div>'
+
 
 def spacer(space: int = 30):
     """
@@ -419,7 +423,7 @@ def guess_mime(file_name: str) -> str:
     """
     Guess the MIME type of a file based on its name, with custom overrides.
     """
-    ext = file_name.lower().split('.')[-1]
+    ext = file_name.lower().split(".")[-1]
 
     custom_mime = {
         "md": "text/markdown",
@@ -439,3 +443,56 @@ def guess_mime(file_name: str) -> str:
 
     mime, _ = mimetypes.guess_type(file_name)
     return mime or "application/octet-stream"
+
+
+def refractor_text_area(
+    label: str,
+    value: str = "",
+    key: str = None,
+    height: int = 300,
+    label_visibility: str = "visible",
+    help: str = None
+):
+    """
+    Create a text area with a specific height and label.
+    """
+    with st.container(border=True):
+        result = st.text_area(
+            label=label,
+            value=value,
+            key=key,
+            height=height,
+            help=help,
+            label_visibility=label_visibility,
+        )
+        cols = st.columns(3)
+
+        question = None
+        with cols[0]:
+            if st.button("⚡ Brief", key=f"search_{key}", use_container_width=True):
+                question = "Brief and summarize this text:"
+        with cols[1]:
+            if st.button(
+                "🔄 Rewrite", key=f"refractor_{key}", use_container_width=True
+            ):
+                question = "Rewrite and improve this text:"
+        with cols[2]:
+            if st.button("🤖 Improve", key=f"improve_{key}", use_container_width=True):
+                question = "Give more details and improve this text:"
+
+        if question:
+            with st.spinner("Refractoring text...", show_time=True):
+                refractor_result = requests.get(
+                    "http://back:80/utils/ai/refractor?text="
+                    + quote(result)
+                    + "&question="
+                    + quote(question)
+                )
+
+            if refractor_result.status_code == 200:
+                result = refractor_result.json()
+                with st.expander("Refractor proposition", expanded=True):
+                    st.code(result, language="text", wrap_lines=True)
+            else:
+                st.error(f"Error during refractor: {refractor_result.text}")
+    return result

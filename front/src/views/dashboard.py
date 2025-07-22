@@ -7,7 +7,7 @@ from core.files import display_files
 from utils import clear_cache, toast_for_rerun
 
 
-@st.dialog("📤 Upload files")
+@st.dialog("📤 Upload files", width="large")
 def dialog_upload(files):
     toggle_edit_date = st.toggle(
         "Edit Date By file",

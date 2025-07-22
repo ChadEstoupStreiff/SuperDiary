@@ -2,16 +2,16 @@ import datetime
 
 import requests
 import streamlit as st
-from utils import generate_project_visual_markdown, toast_for_rerun
+from utils import generate_project_visual_markdown, toast_for_rerun, refractor_text_area
 
 
-@st.dialog("✏️ Edit Record")
+@st.dialog("✏️ Edit Record", width="large")
 def dialog_edit_record(record):
     projects = [p["name"] for p in requests.get("http://back:80/projects").json()]
 
     with st.form("edit_record_form"):
         edited_title = st.text_input("Title", value=record.get("title", ""))
-        edited_description = st.text_area(
+        edited_description = refractor_text_area(
             "Description", value=record.get("description", "")
         )
         edited_project = st.selectbox(

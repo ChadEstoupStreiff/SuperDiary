@@ -1,6 +1,5 @@
 import datetime
 import json
-import mimetypes
 import os
 from typing import List
 
@@ -17,7 +16,8 @@ from utils import (
     generate_tag_visual_markdown,
     spacer,
     toast_for_rerun,
-    guess_mime
+    guess_mime,
+    refractor_text_area,
 )
 from views.settings import tasks as list_tasks
 
@@ -45,7 +45,7 @@ def dialog_delete_file(file):
             st.error("Failed to delete the file. Please try again.")
 
 
-@st.dialog("✏️ Edit file details")
+@st.dialog("✏️ Edit file details", width="large")
 def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
     # MARK: EDIT FILE DETAILS
     """
@@ -338,7 +338,7 @@ def see_file(file):
         result = requests.get(f"http://back:80/notes/{file}")
         if result.status_code == 200 and result.json() is not None:
             notes = result.json().get("note", "")
-            edited_notes = st.text_area(
+            edited_notes = refractor_text_area(
                 "Notes",
                 value=notes,
                 height=500,
