@@ -10,7 +10,8 @@ RUN pip install --upgrade pip
 RUN apt-get install -y libgl1 \
     gcc \
     default-libmysqlclient-dev \
-    pkg-config
+    pkg-config \
+    libglib2.0-0
 
 WORKDIR /
 COPY requirements.txt /requirements.txt

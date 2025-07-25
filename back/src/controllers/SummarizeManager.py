@@ -11,7 +11,6 @@ from db import Summary, SummaryTask, TaskStateEnum, get_db
 from sqlalchemy import and_
 from tools.ai import request_llm
 from utils import guess_mime, read_content
-from views.settings import get_setting
 
 
 class SummarizeManager:
@@ -145,7 +144,7 @@ Example: keyword1, keyword2, keyword3, ...
             keywords = json.loads(keywords)
         else:
             keywords = [w.strip() for w in keywords.split(",")]
-        
+
         _, _, summary = request_llm(
             setting_prefix="summarization",
             prompt=""""! FILE CONTENT START !

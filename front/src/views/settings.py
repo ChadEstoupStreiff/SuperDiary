@@ -307,7 +307,6 @@ def chose_ai_menu(default_ai_type: str, default_model: str, key: str = "ai_menu"
 
     elif ai_type == "Gemini":
         gemini_models = [
-            "gemini-1.5-flash-8B",
             "gemini-1.5-flash",
             "gemini-1.5-pro",
             "gemini-2.0-flash-lite",
@@ -524,7 +523,6 @@ def settings():
 | llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
 | llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
 | llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
-| gemini-1.5-flash-8B   | Gemini    | Fastest lightweight model, ideal for repetitive/simple workflows            | **\$0.0375–0.075 / \$0.15–0.30** |
 | gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
 | gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |
@@ -545,7 +543,6 @@ def settings():
 | llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
 | gpt-4.1-nano          | ChatGPT   | Ultra-light model for micro-tasks                                           | **\$0.10 / \$0.40**              |
 | llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
-| gemini-1.5-flash-8B   | Gemini    | Fastest lightweight model, ideal for repetitive/simple workflows            | **\$0.0375–0.075 / \$0.15–0.30** |
 | gpt-3.5-turbo         | ChatGPT   | Fast, general-purpose model for basic conversation and summarization        | **\$1.00 / \$2.00**              |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
 | llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
@@ -566,7 +563,6 @@ def settings():
 | llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
 | llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
 | llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
-| gemini-1.5-flash-8B   | Gemini    | Fastest lightweight model, ideal for repetitive/simple workflows            | **\$0.0375–0.075 / \$0.15–0.30** |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
 | gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
 | gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |

@@ -3,10 +3,10 @@ import time
 from threading import Thread
 
 import uvicorn
+from controllers.SummarizeManager import SummarizeManager
 from controllers.ChatManager import ChatManager
 from controllers.FileManager import FileManager
 from controllers.OCRManager import OCRManager
-from controllers.SummarizeManager import SummarizeManager
 from controllers.TranscriptionManager import TranscriptionManager
 from db import DB, create_default_values
 from db.models import Base
@@ -14,8 +14,6 @@ from fastapi import FastAPI
 from pillow_heif import register_heif_opener
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from views.ollama import list_models, pull_model
-from views.settings import get_setting
 
 app = FastAPI()
 

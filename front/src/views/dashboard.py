@@ -9,43 +9,92 @@ from utils import clear_cache, toast_for_rerun
 
 @st.dialog("📤 Upload files", width="large")
 def dialog_upload(files):
-    toggle_edit_date = st.toggle(
-        "Edit Date By file",
-        value=False,
-        help="Enable to edit the date of the files being uploaded.",
-    )
-    top_date = st.container()
+    cols = st.columns(3)
+    with cols[0]:
+        toggle_edit_date = st.toggle(
+            "Edit Date By file",
+            value=False,
+            help="Enable to edit the date of the files being uploaded.",
+        )
+    with cols[1]:
+        toggle_per_file_projects = st.toggle(
+            "Edit Projects By file",
+            value=False,
+            help="Enable to edit the projects associated with each file.",
+        )
+    with cols[2]:
+        toggle_per_file_tags = st.toggle(
+            "Edit Tags By file",
+            value=False,
+            help="Enable to edit the tags associated with each file.",
+        )
+
     if not toggle_edit_date:
         date = st.date_input(
             "Upload Date",
             help="Select the date for the files being uploaded.",
         )
+    projects = requests.get("http://back:80/projects").json()
+    tags = requests.get("http://back:80/tags").json()
+
+    cols = st.columns(2)
+    with cols[0]:
+        selected_projects = st.multiselect(
+            "Select Projects",
+            options=[p["name"] for p in projects],
+            help="Select the projects to associate with the uploaded files.",
+        )
+    with cols[1]:
+        selected_tags = st.multiselect(
+            "Select Tags",
+            options=[t["name"] for t in tags],
+            help="Select the tags to associate with the uploaded files.",
+        )
 
     file_edit_info = {}
-    with top_date:
-        for file in files:
-            if file.name not in file_edit_info:
-                file_edit_info[file.name] = {}
+    rest_projects = [p for p in projects if p["name"] not in selected_projects]
+    rest_tags = [t for t in tags if t["name"] not in selected_tags]
+    for file in files:
+        if file.name not in file_edit_info:
+            file_edit_info[file.name] = {}
 
-            with st.container(
-                border=True,
-                key=f"file_container_{file.name}",
-            ):
-                cols = st.columns([5, 2] if toggle_edit_date else [1])
+        with st.container(
+            border=True,
+            key=f"file_container_{file.name}",
+        ):
+            cols = st.columns([5, 2] if toggle_edit_date else [1])
+            with cols[0]:
+                file_edit_info[file.name]["name"] = st.text_input(
+                    f"Save {file.name} as",
+                    value=file.name,
+                    help=f"Enter the name to save {file.name} as.",
+                    key=f"file_name_{file.name}",
+                )
+            if toggle_edit_date:
+                with cols[1]:
+                    file_edit_info[file.name]["date"] = st.date_input(
+                        "Edit date",
+                        help=f"Select the date for {file.name}.",
+                        key=f"file_date_{file.name}",
+                    ).strftime("%Y-%m-%d")
+            if toggle_per_file_projects or toggle_per_file_tags:
+                cols = st.columns(2)
                 with cols[0]:
-                    file_edit_info[file.name]["name"] = st.text_input(
-                        f"Save {file.name} as",
-                        value=file.name,
-                        help=f"Enter the name to save {file.name} as.",
-                        key=f"file_name_{file.name}",
-                    )
-                if toggle_edit_date:
-                    with cols[1]:
-                        file_edit_info[file.name]["date"] = st.date_input(
-                            "Edit date",
-                            help=f"Select the date for {file.name}.",
-                            key=f"file_date_{file.name}",
-                        ).strftime("%Y-%m-%d")
+                    if toggle_per_file_projects:
+                        file_edit_info[file.name]["projects"] = st.multiselect(
+                            "Projects",
+                            options=[p["name"] for p in rest_projects],
+                            help=f"Select projects for {file.name}.",
+                            key=f"file_projects_{file.name}",
+                        )
+                with cols[1]:
+                    if toggle_per_file_tags:
+                        file_edit_info[file.name]["tags"] = st.multiselect(
+                            "Tags",
+                            options=[t["name"] for t in rest_tags],
+                            help=f"Select tags for {file.name}.",
+                            key=f"file_tags_{file.name}",
+                        )
 
     if st.button(
         "✅ Save files",
@@ -54,7 +103,7 @@ def dialog_upload(files):
     ):
         with st.spinner("Saving files...", show_time=True):
             files_payload = [("files", (file.name, file, file.type)) for file in files]
-            request = f"http://back:80/files/upload?subdirectory=uploads&file_edit_info={json.dumps(file_edit_info)}"
+            request = f"http://back:80/files/upload?subdirectory=uploads&file_edit_info={json.dumps(file_edit_info)}&projects={json.dumps(selected_projects)}&tags={json.dumps(selected_tags)}"
             if not toggle_edit_date:
                 request += f"&date={date.strftime('%Y-%m-%d')}"
             response = requests.post(

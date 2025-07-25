@@ -12,7 +12,7 @@ from controllers.OCRManager import OCRManager
 from controllers.SummarizeManager import SummarizeManager
 from controllers.TranscriptionManager import TranscriptionManager
 from db import get_db
-from db.models import ProjectFile, TagFile
+from db.models import ProjectFile, TagFile, Note
 from fastapi import APIRouter, HTTPException, UploadFile
 from PIL import Image
 from pillow_heif import register_heif_opener
@@ -61,12 +61,13 @@ def add_recent_added_file(file: str):
     finally:
         db.close()
 
-
 @router.post("/upload")
 async def upload_files(
     files: List[UploadFile],
     subdirectory: str,
     date: str = None,
+    projects: str = None,
+    tags: str = None,
     file_edit_info: str = None,
 ):
     """
@@ -74,6 +75,8 @@ async def upload_files(
     """
     file_edit_info = json.loads(file_edit_info) if file_edit_info else {}
     date = date or datetime.now().strftime("%Y-%m-%d")
+    projects = json.loads(projects) if projects else []
+    tags = json.loads(tags) if tags else []
     try:
         for file in files:
             file_date = file_edit_info.get(file.filename, {}).get("date", date)
@@ -111,6 +114,31 @@ async def upload_files(
 
             add_recent_added_file(file_path)
 
+            db = get_db()
+            try:
+                # Add to ProjectFile
+                for project in projects + file_edit_info.get(file.filename, {}).get(
+                    "projects", []
+                ):
+                    project_file = ProjectFile(file=file_path, project=project)
+                    db.add(project_file)
+
+                # Add to TagFile
+                for tag in tags + file_edit_info.get(file.filename, {}).get("tags", []):
+                    tag_file = TagFile(file=file_path, tag=tag)
+                    db.add(tag_file)
+
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logging.error(f"Error adding file to database: {str(e)}")
+                logging.error(traceback.format_exc())
+                raise HTTPException(
+                    status_code=500, detail=f"Error adding file to database: {str(e)}"
+                )
+            finally:
+                db.close()
+
             if file_exists:
                 os.utime(file_path, None)
             else:
@@ -138,6 +166,15 @@ async def upload_files(
 
         return {"message": f"{len(files)} files uploaded successfully."}
     except Exception as e:
+        for file in files:
+            file_path = os.path.join("/shared", date, subdirectory, file.filename)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            SummarizeManager.delete(file_path)
+            OCRManager.delete(file_path)
+            TranscriptionManager.delete(file_path)
+        logging.error(f"Removed files after error: {file_path}")
+
         logging.error(f"Error uploading files: {str(e)}")
         logging.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error uploading files: {str(e)}")
@@ -157,6 +194,23 @@ async def delete_file(file: str):
         OCRManager.delete(file_path)
         TranscriptionManager.delete(file_path)
         NoteManager.delete(file_path)
+
+        db = get_db()
+        try:
+            # Delete ProjectFile entries
+            db.query(ProjectFile).filter(ProjectFile.file == file_path).delete()
+            db.query(TagFile).filter(TagFile.file == file_path).delete()
+            db.query(Note).filter(Note.file == file_path).delete()
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting database entries for file {file}: {str(e)}")
+            logging.error(traceback.format_exc())
+            raise HTTPException(
+                status_code=500, detail=f"Error deleting database entries: {str(e)}"
+            )
+        finally:
+            db.close()
 
         os.remove(file_path)
         return {"message": f"File {file} deleted successfully."}
@@ -308,7 +362,7 @@ async def search_files(
     types: str = None,
     projects: str = None,
     tags: str = None,
-    search_mode: int = 0, # 0: FAST, 1: NORMAL, 2: DEEP
+    search_mode: int = 0,  # 0: FAST, 1: NORMAL, 2: DEEP
 ):
     """
     Search for files based on a query.

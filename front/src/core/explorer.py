@@ -46,6 +46,7 @@ def search_files(
             "projects": projects,
             "tags": tags,
             "files": result.json(),
+            "search_mode": search_mode,
             "time_spent": end_time - start_time,
         }
     else:
@@ -63,6 +64,7 @@ def search_files(
             "projects": projects,
             "tags": tags,
             "files": [],
+            "search_mode": search_mode,
             "time_spent": -1,
         }
 

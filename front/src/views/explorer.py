@@ -29,7 +29,7 @@ def explorer():
         time_spent = st.session_state.explorer_files.get(
             "time_spent", -1
         ).total_seconds()
-        query_str = f"Found {len(st.session_state.explorer_files['files'])} files in {time_spent:.3f}s beetween {st.session_state.explorer_files['start_date']} and {st.session_state.explorer_files['end_date']}"
+        query_str = f"Found {len(st.session_state.explorer_files['files'])} files in {time_spent:.3f}s with mode {st.session_state.explorer_files['search_mode']} beetween {st.session_state.explorer_files['start_date']} and {st.session_state.explorer_files['end_date']}"
         if (
             st.session_state.explorer_files["query"] is not None
             and len(st.session_state.explorer_files["query"]) > 0

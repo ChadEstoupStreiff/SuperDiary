@@ -9,38 +9,38 @@ from utils import generate_project_visual_markdown, toast_for_rerun, refractor_t
 def dialog_edit_record(record):
     projects = [p["name"] for p in requests.get("http://back:80/projects").json()]
 
-    with st.form("edit_record_form"):
-        edited_title = st.text_input("Title", value=record.get("title", ""))
-        edited_description = refractor_text_area(
-            "Description", value=record.get("description", "")
-        )
-        edited_project = st.selectbox(
-            "Project",
-            options=projects,
-            index=projects.index(record.get("project", projects[0])),
-            help="Select a project for this record.",
-        )
-        edited_time_spent = st.number_input(
-            "Time Spent (hours)", value=record.get("time_spent", 0.0), min_value=0.0
-        )
-        edited_location = st.text_input(
-            "Location", value=record.get("location", ""), placeholder="Enter location"
-        )
-        edited_attendees = st.text_input(
-            "Attendees",
-            value=record.get("attendees", ""),
-            placeholder="Enter attendees, separated by commas",
-        )
+    edited_title = st.text_input("Title", value=record.get("title", ""))
+    edited_description = refractor_text_area(
+        "Description", value=record.get("description", "")
+    )
+    edited_project = st.selectbox(
+        "Project",
+        options=projects,
+        index=projects.index(record.get("project", projects[0])),
+        help="Select a project for this record.",
+    )
+    edited_time_spent = st.number_input(
+        "Time Spent (hours)", value=record.get("time_spent", 0.0), min_value=0.0
+    )
+    edited_location = st.text_input(
+        "Location", value=record.get("location", ""), placeholder="Enter location"
+    )
+    edited_attendees = st.text_input(
+        "Attendees",
+        value=record.get("attendees", ""),
+        placeholder="Enter attendees, separated by commas",
+    )
 
-        if st.form_submit_button("✅ Save Changes", use_container_width=True):
-            result = requests.put(
-                f"http://back:80/calendar/record/{record['id']}?title={edited_title}&project={edited_project}&time_spent={edited_time_spent}&description={edited_description}&location={edited_location}&attendees={edited_attendees}",
-            )
-            if result.status_code == 200:
-                toast_for_rerun("Record updated successfully!", icon="✅")
-                st.rerun()
-            else:
-                st.error(f"Failed to update record: {result.text}")
+    if st.button("✅ Save Changes", use_container_width=True):
+        result = requests.put(
+            f"http://back:80/calendar/record/{record['id']}?title={edited_title}&project={edited_project}&time_spent={edited_time_spent}&description={edited_description}&location={edited_location}&attendees={edited_attendees}",
+        )
+        if result.status_code == 200:
+            toast_for_rerun("Record updated successfully!", icon="✅")
+            st.rerun()
+        else:
+            st.error(f"Failed to update record: {result.text}")
+
     if st.button("🗑️ Delete", use_container_width=True):
         result = requests.delete(
             f"http://back:80/calendar/record/{record['id']}",

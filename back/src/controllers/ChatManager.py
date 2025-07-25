@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from typing import Dict, List
 
+import tiktoken
 from db import ChatMessage, ChatSession, get_db
 from fastapi import HTTPException
 from tools.ai import request_llm
@@ -40,14 +41,18 @@ class ChatManager:
         calendars = (
             json.loads(messages[-1]["calendar"]) if messages[-1]["calendar"] else []
         )
+        logging.info(f"CHAT >> Reading files: {files}")
         file_texts = [
-            f"--- File: {file} ---\n{read_content(file) or '[File could not be read]'}\n"
+            f"--- File: {file} ---\n{read_content(file, include_projects=True, include_note=True, include_summary=True, include_tags=True) or '[File could not be read]'}\n\n"
             for file in files
         ]
+        logging.info(f"CHAT >> Reading calendar events: {calendars}")
         calendar_texts = [
-            f"--- Calendar Event: ---\n{read_calendar(event) or '[Event could not be read]'}\n"
+            f"--- Calendar Event: ---\n{read_calendar(event) or '[Event could not be read]'}\n\n"
             for event in calendars
         ]
+
+        logging.info("CHAT >> Preparing prompt")
 
         chat_texts = [
             f"""
@@ -56,7 +61,7 @@ User: {msg['user']}
 Date: {msg['date'].strftime('%Y-%m-%d %H:%M:%S')}
 Files: {', '.join(json.loads(msg['files'])) if msg['files'] else 'None'}
 Calendars: {msg['calendar'] if msg['calendar'] else 'None'}
-Message: {msg['content']}
+Message: {msg['content']}\n\n
 """
             for msg in messages
         ]
@@ -70,8 +75,14 @@ Message: {msg['content']}
             + "\n\n--- Conversation ---\n"
             + "\n".join(chat_texts)
         )
-        while "\n\n" in prompt:
-            prompt = prompt.replace("\n\n", "\n")
+        while "\n\n\n" in prompt:
+            prompt = prompt.replace("\n\n\n", "\n\n")
+
+        nbr_tokens = len(tiktoken.encoding_for_model("gpt-4").encode(prompt))
+
+        logging.info(
+            f"CHAT >> Generated prompt for chat {chat_id} with estimated nbr of tokens: {nbr_tokens}:\n{prompt}"
+        )
 
         return prompt, files, calendars
 
@@ -253,3 +264,15 @@ Message: {msg['content']}
             raise HTTPException(
                 status_code=400, detail="Chat session is currently running"
             )
+
+    @classmethod
+    def delete(cls, session_id: str):
+        db = get_db()
+        try:
+            db.query(ChatSession).filter(ChatSession.id == session_id).delete()
+            db.commit()
+        except Exception as e:
+            logging.error(f"Error deleting chat session: {str(e)}")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+        finally:
+            db.close()

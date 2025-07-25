@@ -63,7 +63,6 @@ MIT License © Chad Estoup-Streiff
 Ideas:
 - Favorites files ? Will display on top when search
 - Pin file to dashboard ?
-- Button refractor ?
 - A robot that looks for files and update summaries if needed (like if the summary is older that file date, in reupload for exemple)
 
 Bugs:  

@@ -36,6 +36,10 @@ def get_chat_info(session_id: str):
 def get_chat_messages(session_id: str):
     return ChatManager.get_chat_messages(session_id)
 
+@router.delete("/{session_id}")
+def delete_chat_session(session_id: str):
+    return ChatManager.delete(session_id)
+
 
 class ChatMessageRequest(BaseModel):
     content: str

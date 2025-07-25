@@ -12,6 +12,7 @@ from utils import generate_badges_html, spacer, toast_for_rerun
 
 @st.dialog("🆕 New Chat")
 def dialog_new_chat():
+    # MARK: New chat
     with st.form("new_chat_form"):
         chat_title = st.text_input(
             "Chat Title",
@@ -35,6 +36,7 @@ def dialog_new_chat():
 
 @st.dialog("📁 Search files", width="large")
 def dialog_search_files():
+    # MARK: Search files
     result = file_search_engine(nbr_columns=3)
     if result:
         st.session_state.chat_search_files = result["files"]
@@ -70,6 +72,7 @@ def dialog_search_files():
 
 @st.dialog("📅 Search calendars", width="large")
 def dialog_search_calendars():
+    # MARK: Search calendars
     result = calendar_search_engine()
     if result:
         st.session_state.chat_search_calendars = result["records"]
@@ -112,6 +115,7 @@ def dialog_search_calendars():
 
 @st.dialog("✏️ Edit Chat")
 def dialog_edit_chat():
+    # MARK: Edit chat
     if "chat_session" not in st.session_state:
         st.warning("No chat session selected.")
         return
@@ -120,7 +124,7 @@ def dialog_edit_chat():
     chat_title = st.text_input("Chat Title", value=chat_info["title"])
     chat_description = st.text_area("Chat Description", value=chat_info["description"])
 
-    if st.button("Save Changes", use_container_width=True):
+    if st.button("✏️Save Changes", use_container_width=True):
         response = requests.put(
             f"http://back:80/chat/{st.session_state.chat_session}/edit?title={chat_title}&description={chat_description}",
         )
@@ -131,7 +135,133 @@ def dialog_edit_chat():
             st.error(f"Failed to update chat. {response.text}")
 
 
+@st.dialog("🗑️ Delete Chat")
+def dialog_delete_chat():
+    # MARK: Delete chat
+    st.warning(
+        "Are you sure you want to delete this chat? This action cannot be undone."
+    )
+    if st.button(
+        "🗑️ Delete Chat",
+        use_container_width=True,
+        key=f"delete_chat_{st.session_state.chat_session}",
+    ):
+        response = requests.delete(
+            f"http://back:80/chat/{st.session_state.chat_session}",
+        )
+        if response.status_code == 200:
+            toast_for_rerun("Chat deleted successfully!", icon="🗑️")
+            clear_chat()
+            st.rerun()
+        else:
+            st.error(f"Failed to delete chat. {response.text}")
+
+
+@st.dialog("💬 Message presets", width="large")
+def dialog_message_presets():
+    # MARK: Presets
+    def save_presets(presets):
+        response = requests.post("http://back:80/settings/chat_presets?value=" + json.dumps(presets))
+        if response.status_code == 200:
+            toast_for_rerun("Presets saved successfully!", icon="✅")
+            st.rerun()
+        else:
+            st.error(f"Failed to save presets: {response.text}")
+
+    cols = st.columns(4)
+    with cols[0]:
+        show_message = st.toggle(
+            "Show message",
+            value=False,
+            key="show_message_presets",
+        )
+    with cols[1]:
+        show_edition = st.toggle(
+            "Show edition",
+            value=False,
+            key="show_edition_presets",
+        )
+    with cols[2]:
+        show_deletion = st.toggle(
+            "Show deletion",
+            value=False,
+            key="show_deletion_presets",
+        )
+    with cols[3]:
+        show_addition = st.toggle(
+            "Show addition",
+            value=False,
+            key="show_addition_presets",
+        )
+
+    res = requests.get("http://back:80/settings/chat_presets")
+    if res.status_code != 200:
+        st.error("Failed to load message presets.")
+        return
+    presets = res.json()
+
+    if len(presets) == 0:
+        st.info("No message presets available.")
+    else:
+        if show_addition:
+            with st.form("create_preset"):
+                st.subheader("➕ Add new preset")
+                new_title = st.text_input("New title")
+                new_message = st.text_area("New message")
+                submitted = st.form_submit_button("Add preset", use_container_width=True)
+                if submitted and new_title and new_message:
+                    presets.append([new_title, new_message])
+                    save_presets(presets)
+                    toast_for_rerun("Preset added successfully!", icon="✅")
+                    st.rerun()
+            st.divider()
+
+        top = st.container()
+        n_cols = 2
+        for i in range(len(presets) // n_cols + 1):
+            cols = st.columns(n_cols)
+            for j in range(n_cols):
+                index = i * n_cols + j
+                if index < len(presets):
+                    preset = presets[index]
+                    title, message = preset
+                    with cols[j]:
+                        with st.container(
+                            border=show_message or show_edition or show_deletion
+                        ):
+                            if st.button(
+                                title, use_container_width=True, key=f"preset_{index}"
+                            ):
+                                send_message(message)
+                            if show_message:
+                                st.markdown(f"💬 {message}")
+
+                            if show_edition:
+                                with st.expander("✏️", expanded=True):
+                                    preset[0] = st.text_input(
+                                        "Title", value=title, key=f"title_{index}"
+                                    )
+                                    preset[1] = st.text_area(
+                                        "Message", value=message, key=f"msg_{index}"
+                                    )
+
+                            if show_deletion:
+                                st.divider()
+                                if st.button(
+                                    "🗑️ Delete",
+                                    key=f"delete_{index}",
+                                    use_container_width=True,
+                                ):
+                                    presets.pop(index)
+                                    save_presets(presets)
+        if show_edition:
+            with top:
+                if st.button("✏️ Save edition", use_container_width=True, key="save_presets"):
+                    save_presets(presets)
+                st.divider()
+
 def clear_chat():
+    # MARK: Clear
     del st.session_state.chat_session
     del st.session_state.chat_infos
     del st.session_state.chat_files
@@ -140,6 +270,7 @@ def clear_chat():
 
 
 def load_chat_session(session_id, silent: bool = False):
+    # MARK: Load
     st.session_state.chat_session = session_id
     st.session_state.chat_infos = requests.get(
         f"http://back:80/chat/{session_id}/info"
@@ -180,6 +311,7 @@ def load_chat_session(session_id, silent: bool = False):
     st.rerun()
 
 
+# MARK: Thinking
 def is_chat_running(session_id):
     try:
         response = requests.get(f"http://back:80/chat/{session_id}/is_running")
@@ -211,7 +343,24 @@ def stream_thinking(session_id):
             yield part_data
 
 
+def send_message(prompt):
+    response = requests.post(
+        f"http://back:80/chat/{st.session_state.chat_session}/message",
+        json={
+            "content": prompt,
+            "files": json.dumps(st.session_state.chat_files),
+            "calendars": json.dumps(st.session_state.chat_calendars),
+        },
+    )
+    if response.status_code == 200:
+        st.session_state.chat_messages.append(response.json())
+        st.rerun()
+    else:
+        st.toast("Failed to send message.", icon="❌")
+
+
 def chat():
+    # MARK: Main
     with st.sidebar:
         with st.container(border=True):
             if st.button("🆕 New Chat", use_container_width=True):
@@ -241,16 +390,29 @@ def chat():
             # if st.button("🔄 Reload Chat", use_container_width=True):
             #     load_chat_session(st.session_state.chat_session)
 
+            # MARK: Infos
             st.header(f"Chat: {st.session_state.chat_infos['title']}")
             st.markdown(f"**Created on:** {st.session_state.chat_infos['date']}")
             if st.session_state.chat_infos["description"]:
                 st.subheader(st.session_state.chat_infos["description"])
 
-            if st.button("✏️ Edit Chat", use_container_width=True):
-                dialog_edit_chat()
+            cols = st.columns(2)
+            with cols[0]:
+                if st.button("✏️ Edit Chat", use_container_width=True):
+                    dialog_edit_chat()
+            with cols[1]:
+                if st.button("🗑️ Delete Chat", use_container_width=True):
+                    dialog_delete_chat()
+
+            st.divider()
+            if st.button(
+                "💬 Message presets", use_container_width=True, key="message_presets"
+            ):
+                dialog_message_presets()
             st.divider()
 
             st.markdown("**Files attached**")
+            # MARK: Files
             cols = st.columns(2)
             with cols[0]:
                 if st.button(
@@ -284,6 +446,7 @@ def chat():
                     unsafe_allow_html=True,
                 )
 
+            # MARK: Calendars
             st.divider()
             st.markdown("**Calendar events attached**")
             cols = st.columns(2)
@@ -321,6 +484,7 @@ def chat():
                     unsafe_allow_html=True,
                 )
 
+        # MARK: Chat
         for message in st.session_state.chat_messages:
             user = message["user"]
             date = message["date"].replace("T", " ").replace("Z", "")
@@ -366,23 +530,9 @@ def chat():
 
         prompt = st.chat_input(
             "Ask a question.",
-            disabled=len(st.session_state.chat_files) == 0
-            and len(st.session_state.chat_calendars) == 0,
         )
         if prompt:
-            response = requests.post(
-                f"http://back:80/chat/{st.session_state.chat_session}/message",
-                json={
-                    "content": prompt,
-                    "files": json.dumps(st.session_state.chat_files),
-                    "calendars": json.dumps(st.session_state.chat_calendars),
-                },
-            )
-            if response.status_code == 200:
-                st.session_state.chat_messages.append(response.json())
-                st.rerun()
-            else:
-                st.toast("Failed to send message.", icon="❌")
+            send_message(prompt)
 
 
 if __name__ == "__main__":
