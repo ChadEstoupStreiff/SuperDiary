@@ -1,2 +1,3 @@
 streamlit==1.44.*
 requests==2.31.*
+emoji==2.2.0

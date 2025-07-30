@@ -26,6 +26,7 @@ default_settings = {
     "auto_display_file_size_limit": 10,  # 10Mb
     "openai_api_key": "",
     "gemini_api_key": "",
+    "chat_user_description": "",
     "chat_presets": [
         [
             "📄 Generate Academic Summary",

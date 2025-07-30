@@ -135,6 +135,7 @@ def notes():
         with cols[0]:
             markdown_input = refractor_text_area(
                 "Edit note content",
+                context="You need to write a note in markdown format. I like emojis and bullet points, so use them when appropriate.",
                 value=st.session_state["note_content"],
                 height=editor_size if side_by_side else None,
                 key=f"notes_textarea_{opened_note}",

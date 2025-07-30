@@ -11,13 +11,13 @@ class StockPile(Base):
     __tablename__ = "StockPile"
 
     key = Column(String(64), primary_key=True, index=True)
-    value = Column(String(512), nullable=False)
+    value = Column(TEXT, nullable=False)
 
 class Setting(Base):
     __tablename__ = "Setting"
 
     key = Column(String(64), primary_key=True, index=True)
-    value = Column(TEXT(130560), nullable=False)
+    value = Column(TEXT, nullable=False)
 
 
 class Note(Base):
@@ -25,7 +25,7 @@ class Note(Base):
 
     file = Column(String(512), primary_key=True, index=True)
     date = Column(DateTime, nullable=False)
-    note = Column(TEXT(130560), nullable=False)
+    note = Column(TEXT, nullable=False)
 
 
 class TaskStateEnum(Enum):
@@ -40,8 +40,8 @@ class OCR(Base):
 
     file = Column(String(512), primary_key=True, index=True)
     date = Column(DateTime, nullable=False)
-    ocr = Column(TEXT(130560), nullable=False)
-    blip = Column(TEXT(130560), nullable=True)
+    ocr = Column(TEXT, nullable=False)
+    blip = Column(TEXT, nullable=True)
 
 
 class OCRTask(Base):
@@ -53,7 +53,7 @@ class OCRTask(Base):
     )
     added = Column(DateTime, primary_key=True)
     completed = Column(DateTime, nullable=True)
-    result = Column(TEXT(130560), nullable=True)
+    result = Column(TEXT, nullable=True)
 
 
 class Summary(Base):
@@ -61,8 +61,8 @@ class Summary(Base):
 
     file = Column(String(512), primary_key=True, index=True)
     date = Column(DateTime, nullable=False)
-    summary = Column(TEXT(130560), nullable=False)
-    keywords = Column(TEXT(130560), nullable=False)
+    summary = Column(TEXT, nullable=False)
+    keywords = Column(TEXT, nullable=False)
 
 
 class SummaryTask(Base):
@@ -74,7 +74,7 @@ class SummaryTask(Base):
     )
     added = Column(DateTime, primary_key=True)
     completed = Column(DateTime, nullable=True)
-    result = Column(TEXT(130560), nullable=True)
+    result = Column(TEXT, nullable=True)
 
 
 class Transcription(Base):
@@ -82,7 +82,7 @@ class Transcription(Base):
 
     file = Column(String(512), primary_key=True, index=True)
     date = Column(DateTime, nullable=False)
-    transcription = Column(TEXT(130560), nullable=False)
+    transcription = Column(TEXT, nullable=False)
 
 
 class TranscriptionTask(Base):
@@ -94,7 +94,7 @@ class TranscriptionTask(Base):
     )
     added = Column(DateTime, primary_key=True)
     completed = Column(DateTime, nullable=True)
-    result = Column(TEXT(130560), nullable=True)
+    result = Column(TEXT, nullable=True)
 
 
 class Tag(Base):
@@ -119,10 +119,10 @@ class Project(Base):
     __tablename__ = "Project"
 
     name = Column(String(50), primary_key=True, nullable=False)
-    description = Column(TEXT(130560), nullable=True)
+    description = Column(TEXT, nullable=True)
     color = Column(String(32), nullable=False)
-    notes = Column(TEXT(130560), default="")
-    todo = Column(TEXT(130560), default="[]")
+    notes = Column(TEXT, default="")
+    todo = Column(TEXT, default="[]")
 
 
 class ProjectFile(Base):
@@ -149,9 +149,9 @@ class CalendarRecord(Base):
     start_time = Column(DateTime, nullable=True)
     time_spent = Column(Float, nullable=False)
     title = Column(String(512), nullable=False)
-    description = Column(TEXT(130560), nullable=True)
+    description = Column(TEXT, nullable=True)
     location = Column(String(512), nullable=True)
-    attendees = Column(TEXT(130560), nullable=True)
+    attendees = Column(TEXT, nullable=True)
 
 
 class ChatSession(Base):
@@ -161,7 +161,7 @@ class ChatSession(Base):
         String(255), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
     )
     title = Column(String(512), nullable=False)
-    description = Column(TEXT(130560), nullable=True)
+    description = Column(TEXT, nullable=True)
     date = Column(DateTime, nullable=False)
 
 class ChatMessage(Base):
@@ -176,6 +176,6 @@ class ChatMessage(Base):
     date = Column(DateTime, nullable=False)
     user = Column(String(32), nullable=False)  # e.g., 'user', 'assistant'
 
-    files = Column(TEXT(130560), nullable=True)
-    calendar = Column(TEXT(130560), nullable=True)
-    content = Column(TEXT(130560), nullable=False)
+    files = Column(TEXT, nullable=True)
+    calendar = Column(TEXT, nullable=True)
+    content = Column(TEXT, nullable=False)

@@ -70,6 +70,8 @@ None found :)
 
 TODO: 
 - Test search on big volume (tokens on summaries may explode search time)
+- Page
+- multi select for edition
 
 Optimization:
 - on search, don't create a new connection for each file

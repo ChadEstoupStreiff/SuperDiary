@@ -162,3 +162,12 @@ Subfolder: {subfolder}
 Content:
 {content if content else "Can't read"}
 """
+
+
+def walk_files():
+    return [
+        os.path.join(dp, filename)
+        for dp, _, filenames in os.walk("/shared")
+        for filename in filenames
+        if filename != ".DS_Store"
+    ]

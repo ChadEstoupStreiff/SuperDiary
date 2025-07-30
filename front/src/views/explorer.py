@@ -68,6 +68,7 @@ def explorer():
                 representation_mode=representation_mode,
                 nbr_of_files_per_line=nbr_of_files_per_line,
                 show_preview=show_preview,
+                allow_multiple_selection=True,
             )
         else:
             st.write("No files found in the system.")

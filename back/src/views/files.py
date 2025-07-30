@@ -12,12 +12,12 @@ from controllers.OCRManager import OCRManager
 from controllers.SummarizeManager import SummarizeManager
 from controllers.TranscriptionManager import TranscriptionManager
 from db import get_db
-from db.models import ProjectFile, TagFile, Note
+from db.models import Note, ProjectFile, TagFile
 from fastapi import APIRouter, HTTPException, UploadFile
 from PIL import Image
 from pillow_heif import register_heif_opener
 from starlette.responses import FileResponse
-from utils import guess_mime
+from utils import guess_mime, walk_files
 from views.settings import get_setting
 from views.stockpile import StockPile, get_recent_added
 
@@ -60,6 +60,7 @@ def add_recent_added_file(file: str):
         )
     finally:
         db.close()
+
 
 @router.post("/upload")
 async def upload_files(
@@ -323,15 +324,6 @@ async def get_file_metadata(file: str):
         logging.error(f"File not found: {str(e)}")
         logging.error(traceback.format_exc())
         raise HTTPException(status_code=404, detail=str(e))
-
-
-def walk_files():
-    return [
-        os.path.join(dp, filename)
-        for dp, _, filenames in os.walk("/shared")
-        for filename in filenames
-        if filename != ".DS_Store"
-    ]
 
 
 @router.get("/list")

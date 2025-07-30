@@ -8,6 +8,7 @@ from utils import (
     refractor_text_area,
     spacer,
     toast_for_rerun,
+    text_emoji_input,
 )
 
 
@@ -369,6 +370,14 @@ def settings():
                 settings["chat_type"], settings["chat_model"] = chose_ai_menu(
                     settings["chat_type"], settings["chat_model"], key="chat"
                 )
+                settings["chat_user_description"] = st.text_area(
+                    "User Description",
+                    value=settings["chat_user_description"],
+                    help="Enter a description of the user for the chat model.",
+                )
+                st.caption(
+                    "Note: The user description is used to provide context to the chat model."
+                )
             with st.expander("Refractor Settings", expanded=True):
                 settings["refractor_type"], settings["refractor_model"] = chose_ai_menu(
                     settings["refractor_type"],
@@ -520,9 +529,9 @@ def settings():
         if sort_type == "Type":
             st.markdown("""| Model                 | Type      | Capabilities                                                                 | Input/Output **\$ per 1M tokens** |
 |-----------------------|-----------|------------------------------------------------------------------------------|----------------------------------|
-| llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
-| llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
-| llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| llama3.2:1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
+| llama3.2:8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
+| llama3.2:70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
 | gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
 | gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |
@@ -540,12 +549,12 @@ def settings():
         elif sort_type == "Capabilities":
             st.markdown("""| Model                 | Type      | Capabilities                                                                 | Input/Output **\$ per 1M tokens** |
 |-----------------------|-----------|------------------------------------------------------------------------------|----------------------------------|
-| llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
+| llama3.2:1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
 | gpt-4.1-nano          | ChatGPT   | Ultra-light model for micro-tasks                                           | **\$0.10 / \$0.40**              |
-| llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
+| llama3.2:8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
 | gpt-3.5-turbo         | ChatGPT   | Fast, general-purpose model for basic conversation and summarization        | **\$1.00 / \$2.00**              |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
-| llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| llama3.2:70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
 | gemini-2.5-flash-lite | Gemini    | Lightweight 2.5 model, tuned for efficiency                                 | **\$0.10 / \$0.40**              |
 | gpt-4.1-mini          | ChatGPT   | Efficient model with faster latency and reduced cost                        | **\$0.40 / \$1.60**              |
 | gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
@@ -560,9 +569,9 @@ def settings():
         elif sort_type == "Pricing":
             st.markdown("""| Model                 | Type      | Capabilities                                                                 | Input/Output **\$ per 1M tokens** |
 |-----------------------|-----------|------------------------------------------------------------------------------|----------------------------------|
-| llama3-1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
-| llama3-8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
-| llama3-70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| llama3.2:1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
+| llama3.2:8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
+| llama3.2:70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
 | gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
 | gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |

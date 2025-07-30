@@ -33,8 +33,8 @@ def dialog_delete_file(file):
         f"Are you sure you want to delete the file:\n  **{os.path.basename(file)}**?\n This action cannot be undone."
     )
     if st.button("Delete 🗑️", use_container_width=True):
-        resulst = requests.delete(f"http://back:80/files/delete/{file}")
-        if resulst.status_code == 200:
+        result = requests.delete(f"http://back:80/files/delete/{file}")
+        if result.status_code == 200:
             toast_for_rerun(
                 "File deleted successfully.",
                 icon="🗑️",

@@ -1,6 +1,7 @@
 import logging
 import time
 from threading import Thread
+import traceback
 
 import uvicorn
 from controllers.SummarizeManager import SummarizeManager
@@ -8,8 +9,9 @@ from controllers.ChatManager import ChatManager
 from controllers.FileManager import FileManager
 from controllers.OCRManager import OCRManager
 from controllers.TranscriptionManager import TranscriptionManager
-from db import DB, create_default_values
+from db import DB, create_default_values, get_db, TagFile, ProjectFile
 from db.models import Base
+from utils import walk_files
 from fastapi import FastAPI
 from pillow_heif import register_heif_opener
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -117,6 +119,53 @@ def summarize_health():
     else:
         return "DEAD"
 
+# @app.get("/metrics")
+# def metrics():
+#     files = walk_files()
+#     db = get_db()
+#     try:
+#         # Count files per project
+#         files_per_project = dict(
+#             db.query(ProjectFile.project, func.count(ProjectFile.file))
+#             .group_by(ProjectFile.project)
+#             .all()
+#         )
+
+#         # Count files per tag
+#         files_per_tag = dict(
+#             db.query(TagFile.tag, func.count(TagFile.file))
+#             .group_by(TagFile.tag)
+#             .all()
+#         )
+
+#         # Set of all file names
+#         all_files = set(files)
+
+#         # Files with tags
+#         tagged_files = set(row[0] for row in db.query(TagFile.file).distinct())
+
+#         # Files in projects
+#         project_files = set(row[0] for row in db.query(ProjectFile.file).distinct())
+
+#         # Files with no tag or no project
+#         no_tag = list(all_files - tagged_files)
+#         no_project = list(all_files - project_files)
+
+#     except Exception as e:
+#         logging.error(f"Error retrieving metrics: {str(e)}")
+#         db.rollback()
+#         logging.error(traceback.format_exc())
+#         return {"error": str(e)}
+#     finally:
+#         db.close()
+
+#     return {
+#         "nbr_files": len(files),
+#         "files_per_project": files_per_project,
+#         "files_per_tag": files_per_tag,
+#         "files_without_tag": len(no_tag),
+#         "files_without_project": len(no_project),
+#     }
 
 if __name__ == "__main__":
     logging.basicConfig(

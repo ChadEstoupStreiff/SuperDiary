@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from controllers.ChatManager import ChatManager
 from fastapi import APIRouter
@@ -36,12 +36,14 @@ def get_chat_info(session_id: str):
 def get_chat_messages(session_id: str):
     return ChatManager.get_chat_messages(session_id)
 
+
 @router.delete("/{session_id}")
 def delete_chat_session(session_id: str):
     return ChatManager.delete(session_id)
 
 
 class ChatMessageRequest(BaseModel):
+    user_description: Optional[str] = None
     content: str
     files: Optional[str] = None
     calendars: Optional[str] = None
@@ -49,6 +51,11 @@ class ChatMessageRequest(BaseModel):
 
 @router.post("/{session_id}/message")
 def add_chat_message(session_id: str, request: ChatMessageRequest):
+    content = (
+        request.content.strip()
+        if request.user_description is None or request.user_description == ""
+        else f"""User description: {request.user_description}\n\nMessage: {request.content.strip()}"""
+    )
     return ChatManager.add_message(
-        session_id, request.content, request.files, request.calendars
+        session_id, content, request.files, request.calendars
     )

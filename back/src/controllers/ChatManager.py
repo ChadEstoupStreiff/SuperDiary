@@ -67,13 +67,14 @@ Message: {msg['content']}\n\n
         ]
 
         prompt = (
-            "You are given a conversation and some files and calendar events provided by the user.\n"
-            "You are an AI Chat BOT that can answer questions based on the conversation, files and calendar events.\n"
-            "Use the file contents if relevant to ANSWER the user's LATEST prompt.\n\n"
-            + "\n".join(file_texts)
+            "\n".join(file_texts)
             + "\n".join(calendar_texts)
             + "\n\n--- Conversation ---\n"
             + "\n".join(chat_texts)
+            + "\n\n"
+            "You are given a conversation and some files and calendar events provided by the user.\n"
+            "You are an AI Chat BOT that can answer questions based on the conversation, files and calendar events.\n"
+            "Use the file contents if relevant to ANSWER the user's LATEST prompt.\n\n"
         )
         while "\n\n\n" in prompt:
             prompt = prompt.replace("\n\n\n", "\n\n")

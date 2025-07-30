@@ -7,7 +7,7 @@ import streamlit as st
 from core.calendar import box_calendar_record
 from core.calendar import search_engine as calendar_search_engine
 from core.explorer import search_engine as file_search_engine
-from utils import generate_badges_html, spacer, toast_for_rerun
+from utils import generate_badges_html, spacer, toast_for_rerun, get_setting
 
 
 @st.dialog("🆕 New Chat")
@@ -347,6 +347,7 @@ def send_message(prompt):
     response = requests.post(
         f"http://back:80/chat/{st.session_state.chat_session}/message",
         json={
+            "user_description": get_setting("chat_user_description", "") if st.session_state.chat_include_user_description else "",
             "content": prompt,
             "files": json.dumps(st.session_state.chat_files),
             "calendars": json.dumps(st.session_state.chat_calendars),
@@ -405,11 +406,13 @@ def chat():
                     dialog_delete_chat()
 
             st.divider()
+
             if st.button(
                 "💬 Message presets", use_container_width=True, key="message_presets"
             ):
                 dialog_message_presets()
-            st.divider()
+
+            st.session_state.chat_include_user_description = st.toggle("Include user description", value=False, key="include_user_description")
 
             st.markdown("**Files attached**")
             # MARK: Files
@@ -447,7 +450,6 @@ def chat():
                 )
 
             # MARK: Calendars
-            st.divider()
             st.markdown("**Calendar events attached**")
             cols = st.columns(2)
             with cols[0]:

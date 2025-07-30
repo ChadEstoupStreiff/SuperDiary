@@ -2,10 +2,12 @@ import base64
 import json
 import mimetypes
 import os
+import random
 import tempfile
 from typing import List
 from urllib.parse import quote
 
+import emoji
 import pandas as pd
 import requests
 import streamlit as st
@@ -448,10 +450,11 @@ def guess_mime(file_name: str) -> str:
 def refractor_text_area(
     label: str,
     value: str = "",
+    context: str = None,
     key: str = None,
     height: int = 300,
     label_visibility: str = "visible",
-    help: str = None
+    help: str = None,
 ):
     """
     Create a text area with a specific height and label.
@@ -481,6 +484,8 @@ def refractor_text_area(
                 question = "Give more details and improve this text:"
 
         if question:
+            if context:
+                question = f"{context}\n\n{question}"
             with st.spinner("Refractoring text...", show_time=True):
                 refractor_result = requests.get(
                     "http://back:80/utils/ai/refractor?text="
@@ -490,9 +495,85 @@ def refractor_text_area(
                 )
 
             if refractor_result.status_code == 200:
-                result = refractor_result.json()
+                proposition = refractor_result.json()
                 with st.expander("Refractor proposition", expanded=True):
-                    st.code(result, language="text", wrap_lines=True)
+                    st.code(proposition, language="text", wrap_lines=True)
             else:
                 st.error(f"Error during refractor: {refractor_result.text}")
     return result
+
+
+def text_emoji_input(
+    label: str,
+    help: str = None,
+    max_chars: int = None,
+    key: str = "text_emoji_selector",
+    value: str = "",
+    ratio: List[int] = [1, 5],
+):
+    """
+    Create a text input with an emoji selector.
+    """
+    if f"text_emoji_input_emoji_{key}" not in st.session_state:
+        emojis = [(e, n["en"]) for (e, n) in emoji.EMOJI_DATA.items()]
+        st.info("Random choice")
+        st.session_state[f"text_emoji_input_emoji_{key}"] = random.choice(emojis)[0]
+        st.session_state[f"text_emoji_input_pick_emoji_{key}"] = False
+
+    def toggle_emoji_picker(key):
+        st.session_state[f"text_emoji_input_pick_emoji_{key}"] = not st.session_state[
+            f"text_emoji_input_pick_emoji_{key}"
+        ]
+
+    input_cols = st.columns(ratio)
+    with input_cols[1]:
+        text = st.text_input(
+            label,
+            key=f"text_emoji_input_text_{key}",
+            value=value,
+            help=help,
+            max_chars=max_chars,
+        )
+
+    if st.session_state[f"text_emoji_input_pick_emoji_{key}"]:
+        emojis = [(e, n["en"]) for (e, n) in emoji.EMOJI_DATA.items()]
+        with st.container(border=True):
+            search = st.text_input(
+                "Search emoji",
+                key=f"emoji_search_{key}",
+                placeholder="Search for an emoji...",
+            )
+            if search:
+                emojis = [
+                    (e, n["en"])
+                    for (e, n) in emoji.EMOJI_DATA.items()
+                    if search.lower() in n["en"].lower()
+                ]
+
+            n_cols = 6
+            emojis = emojis[: n_cols * 3]
+            cols = st.columns(n_cols)
+            for i, (emoji_char, _) in enumerate(emojis):
+                with cols[i % n_cols]:
+                    if st.button(
+                        emoji_char,
+                        use_container_width=True,
+                        key=f"text_emoji_input_emojiselect_{key}_{emoji_char}",
+                    ):
+                        st.session_state[f"text_emoji_input_emoji_{key}"] = emoji_char
+
+
+    with input_cols[0]:
+        spacer(27)
+        st.button(
+            st.session_state[f"text_emoji_input_emoji_{key}"],
+            key=f"text_emoji_input_emojipicker_{key}",
+            use_container_width=True,
+            on_click=lambda: toggle_emoji_picker(key),
+        )
+        
+    return (
+        f"{st.session_state[f"text_emoji_input_emoji_{key}"]} {text}"
+        if text
+        else st.session_state[f"text_emoji_input_emoji_{key}"]
+    )
