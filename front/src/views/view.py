@@ -14,10 +14,11 @@ from utils import (
     generate_aside_tag_markdown,
     generate_project_visual_markdown,
     generate_tag_visual_markdown,
+    guess_mime,
+    paths_to_markdown_tree,
+    refractor_text_area,
     spacer,
     toast_for_rerun,
-    guess_mime,
-    refractor_text_area,
 )
 from views.settings import tasks as list_tasks
 
@@ -311,6 +312,7 @@ def see_file(file):
                 st.error("Failed to ask summary.")
 
     # MARK: METADATA
+    metadata = None
     with tab_metadata:
         result = requests.get(f"http://back:80/files/metadata/{file}")
         if result.status_code == 200:
@@ -368,6 +370,16 @@ def see_file(file):
             else False,
         )
 
+    return {
+        "file_name": file_name,
+        "date": date,
+        "subfolder": subfolder,
+        "mime": mime,
+        "projects": projects,
+        "tags": tags,
+        "metadata": metadata,
+    }
+
 
 def view():
     if "file_to_see" not in st.session_state:
@@ -388,7 +400,7 @@ def view():
         #     key="back_to_explorer",
         # ):
         #     st.switch_page(PAGE_EXPLORER)
-        see_file(file)
+        infos = see_file(file)
 
     with cols[1 if side_by_side else 0]:
         # MARK: FILE PREVIEW
@@ -491,6 +503,21 @@ def view():
                         st.rerun()
                     else:
                         st.error("Failed to create OCR & BLIP task.")
+
+            elif (
+                file.endswith(".zip")
+                or file.endswith(".tar.gz")
+                or file.endswith(".tar")
+                or file.endswith(".tgz")
+            ):
+                if "metadata" in infos and "zip_paths" in infos["metadata"]:
+                    st.markdown(
+                        paths_to_markdown_tree(
+                            infos["metadata"]["zip_paths"],
+                        )
+                    )
+                else:
+                    st.error("No archive contents available. Please check the file.")
 
             with top:
                 download_and_display_file(file)

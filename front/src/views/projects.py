@@ -4,7 +4,7 @@ import requests
 import streamlit as st
 from core.calendar import box_calendar_record
 from core.files import display_files, representation_mode_select
-from utils import refractor_text_area, toast_for_rerun
+from utils import get_setting, refractor_text_area, toast_for_rerun
 
 
 def change_project():
@@ -84,7 +84,9 @@ def projects():
     with tabs[1]:
         with st.columns([1, 4])[0]:
             representation_mode, show_preview, nbr_of_files_per_line = (
-                representation_mode_select()
+                representation_mode_select(
+                    default_mode=get_setting("projects_default_representation_mode")
+                )
             )
         st.divider()
         display_files(
@@ -92,6 +94,7 @@ def projects():
             representation_mode=representation_mode,
             show_preview=show_preview,
             nbr_of_files_per_line=nbr_of_files_per_line,
+            allow_multiple_selection=True,
         )
     with tabs[2]:
         if records:

@@ -27,7 +27,7 @@ PAGE_EXPLORER = st.Page(
 )
 PAGE_VIEWER = st.Page(
     "views/view.py",
-    title="Document viewer",
+    title="Document",
     icon="🔎",
     url_path="view",
 )

@@ -357,12 +357,32 @@ def settings():
         loaded_settings = load_settings()
         settings = copy.deepcopy(loaded_settings)
 
-        settings["auto_display_file_size_limit"] = st.number_input(
-            "Auto display file size limit (MB), -1 to disable",
-            min_value=-1,
-            value=settings.get("auto_display_file_size_limit", 10),
-            help="Set the maximum file size (in MB) for automatic display in the viewer.",
-        )
+        cols = st.columns([2, 1, 1])
+        with cols[0]:
+            settings["auto_display_file_size_limit"] = st.number_input(
+                "Auto display file size limit (MB), -1 to disable",
+                min_value=-1,
+                value=settings.get("auto_display_file_size_limit", 10),
+                help="Set the maximum file size (in MB) for automatic display in the viewer.",
+            )
+        
+        representation_options = ["🧮 Table", "🃏 Cards", "🏷️ List"]
+        with cols[1]:
+            settings["explorer_default_representation_mode"] = st.segmented_control(
+                "Default representation mode in explorer",
+                options=range(len(representation_options)),
+                format_func=lambda x: representation_options[x],
+                default= settings.get("explorer_default_representation_mode", 1),
+                key="representation",
+            )
+        with cols[2]:
+            settings["projects_default_representation_mode"] = st.segmented_control(
+                "Default representation mode in projects",
+                options=range(len(representation_options)),
+                format_func=lambda x: representation_options[x],
+                default=settings.get("projects_default_representation_mode", 1),
+                key="projects_representation",
+            )
 
         cols = st.columns(2)
         with cols[0]:

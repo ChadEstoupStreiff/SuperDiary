@@ -10,6 +10,7 @@ from utils import (
     download_file_button,
     generate_aside_project_markdown,
     generate_aside_tag_markdown,
+    guess_mime,
     spacer,
     toast_for_rerun,
 )
@@ -51,7 +52,9 @@ def edit_project_dialog(files, key="edit_project"):
     st.info(f"{len(files)} selected files.")
 
     if st.button(
-        "Clear all projects of all files 🗑️", use_container_width=True, key=f"clear_project_{key}"
+        "Clear all projects of all files 🗑️",
+        use_container_width=True,
+        key=f"clear_project_{key}",
     ):
         error_files = []
         with st.spinner("Clearing projects of files..."):
@@ -95,7 +98,10 @@ def edit_project_dialog(files, key="edit_project"):
     cols = st.columns(2)
     with cols[0]:
         if st.button(
-            "Assign Projects 🟢", use_container_width=True, key=f"assign_project_{key}", disabled=len(selected_projects) == 0
+            "Assign Projects 🟢",
+            use_container_width=True,
+            key=f"assign_project_{key}",
+            disabled=len(selected_projects) == 0,
         ):
             error_files = []
             with st.spinner("Assigning projects to files..."):
@@ -105,7 +111,9 @@ def edit_project_dialog(files, key="edit_project"):
                             f"http://back:80/project/{selected_project}/file?file={file}",
                         )
                         if result.status_code != 200:
-                            st.error(f"Failed to assign project to {os.path.basename(file)}.")
+                            st.error(
+                                f"Failed to assign project to {os.path.basename(file)}."
+                            )
                             if file not in error_files:
                                 error_files.append(file)
             toast_for_rerun(
@@ -114,10 +122,13 @@ def edit_project_dialog(files, key="edit_project"):
             )
             clear_cache()
             st.rerun()
-    
+
     with cols[1]:
         if st.button(
-            "Unassign Projects ❌", use_container_width=True, key=f"unassign_project_{key}", disabled=len(selected_projects) == 0
+            "Unassign Projects ❌",
+            use_container_width=True,
+            key=f"unassign_project_{key}",
+            disabled=len(selected_projects) == 0,
         ):
             error_files = []
             with st.spinner("Unassigning projects from files..."):
@@ -127,7 +138,9 @@ def edit_project_dialog(files, key="edit_project"):
                             f"http://back:80/project/{selected_project}/file?file={file}",
                         )
                         if result.status_code != 200:
-                            st.error(f"Failed to unassign project from {os.path.basename(file)}.")
+                            st.error(
+                                f"Failed to unassign project from {os.path.basename(file)}."
+                            )
                             if file not in error_files:
                                 error_files.append(file)
             toast_for_rerun(
@@ -137,6 +150,7 @@ def edit_project_dialog(files, key="edit_project"):
             clear_cache()
             st.rerun()
 
+
 @st.dialog("🏷️ Edit Tags", width="small")
 def edit_tags_dialog(files, key="edit_tags"):
     """
@@ -145,7 +159,9 @@ def edit_tags_dialog(files, key="edit_tags"):
     st.info(f"{len(files)} selected files.")
 
     if st.button(
-        "Clear all tags of all files 🗑️", use_container_width=True, key=f"clear_tags_{key}"
+        "Clear all tags of all files 🗑️",
+        use_container_width=True,
+        key=f"clear_tags_{key}",
     ):
         error_files = []
         with st.spinner("Clearing tags of files..."):
@@ -187,7 +203,10 @@ def edit_tags_dialog(files, key="edit_tags"):
     cols = st.columns(2)
     with cols[0]:
         if st.button(
-            "Assign Tags 🟢", use_container_width=True, key=f"assign_tag_{key}", disabled=len(selected_tags) == 0
+            "Assign Tags 🟢",
+            use_container_width=True,
+            key=f"assign_tag_{key}",
+            disabled=len(selected_tags) == 0,
         ):
             error_files = []
             with st.spinner("Assigning tags to files..."):
@@ -197,7 +216,9 @@ def edit_tags_dialog(files, key="edit_tags"):
                             f"http://back:80/tag/{selected_tag}/file?file={file}",
                         )
                         if result.status_code != 200:
-                            st.error(f"Failed to assign tag to {os.path.basename(file)}.")
+                            st.error(
+                                f"Failed to assign tag to {os.path.basename(file)}."
+                            )
                             if file not in error_files:
                                 error_files.append(file)
             if len(error_files) == 0:
@@ -214,7 +235,10 @@ def edit_tags_dialog(files, key="edit_tags"):
             st.rerun()
     with cols[1]:
         if st.button(
-            "Unassign Tags ❌", use_container_width=True, key=f"unassign_tag_{key}", disabled=len(selected_tags) == 0
+            "Unassign Tags ❌",
+            use_container_width=True,
+            key=f"unassign_tag_{key}",
+            disabled=len(selected_tags) == 0,
         ):
             error_files = []
             with st.spinner("Unassigning tags from files..."):
@@ -224,7 +248,9 @@ def edit_tags_dialog(files, key="edit_tags"):
                             f"http://back:80/tag/{selected_tag}/file?file={file}",
                         )
                         if result.status_code != 200:
-                            st.error(f"Failed to unassign tag from {os.path.basename(file)}.")
+                            st.error(
+                                f"Failed to unassign tag from {os.path.basename(file)}."
+                            )
                             if file not in error_files:
                                 error_files.append(file)
             if len(error_files) == 0:
@@ -240,17 +266,102 @@ def edit_tags_dialog(files, key="edit_tags"):
             clear_cache()
             st.rerun()
 
+
+@st.dialog("✨ AI Actions", width="small")
+def ai_actions_dialog(files, key="ai_actions"):
+    if st.button(
+        "🧠 Generate Summary",
+        use_container_width=True,
+        key=f"generate_summary_{key}",
+    ):
+        with st.spinner("Asking summary for files..."):
+            error_files = []
+            for file in files:
+                result = requests.post(f"http://back:80/summarize/ask/{file}")
+                if result.status_code != 200:
+                    error_files.append(file)
+            if len(error_files) == 0:
+                toast_for_rerun(
+                    f"Summary asked for {len(files)} files.",
+                    icon="🧠",
+                )
+            else:
+                toast_for_rerun(
+                    f"Failed to ask summary for {len(error_files)} files. Summary asked for {len(files) - len(error_files)} files.",
+                    icon="⚠️",
+                )
+        st.rerun()
+
+    if st.button(
+        "🔍 Generate OCR",
+        use_container_width=True,
+        key=f"generate_ocr_{key}",
+    ):
+        with st.spinner("Asking OCR for files..."):
+            asked_files = [
+                file for file in files if guess_mime(file).startswith("image/")
+            ]
+            error_files = []
+            for file in asked_files:
+                result = requests.post(f"http://back:80/ocr/ask/{file}")
+                if result.status_code != 200:
+                    error_files.append(file)
+            if len(error_files) == 0:
+                toast_for_rerun(
+                    f"OCR asked for {len(files)} files.",
+                    icon="🔍",
+                )
+            else:
+                toast_for_rerun(
+                    f"Failed to ask OCR for {len(error_files)} files. OCR asked for {len(files) - len(error_files)} files.",
+                    icon="⚠️",
+                )
+        st.rerun()
+
+    if st.button(
+        "🎤 Generate Transcription",
+        use_container_width=True,
+        key=f"generate_transcription_{key}",
+    ):
+        with st.spinner("Asking transcription for files..."):
+            asked_files = [
+                file
+                for file in files
+                if guess_mime(file).startswith("audio/")
+                or guess_mime(file).startswith("video/")
+            ]
+            error_files = []
+            for file in asked_files:
+                result = requests.post(f"http://back:80/transcribe/ask/{file}")
+                if result.status_code != 200:
+                    error_files.append(file)
+            if len(error_files) == 0:
+                toast_for_rerun(
+                    f"Transcription asked for {len(files)} files.",
+                    icon="🎤",
+                )
+            else:
+                toast_for_rerun(
+                    f"Failed to ask transcription for {len(error_files)} files. Transcription asked for {len(files) - len(error_files)} files.",
+                    icon="⚠️",
+                )
+        st.rerun()
+
+
 def table_files(files, allow_multiple_selection: bool = False, key: str = "table"):
     # MARK: TABLE FILES
+    allow_multiple_selection_options = ["🔎 View", "📦 Select"]
     if allow_multiple_selection:
         cols = st.columns([1, 2, 1, 1, 1, 1, 1])
         with cols[0]:
             interact_mode = st.pills(
-                "Interaction Mode", ["🔎 View", "📦 Select"], default="🔎 View"
+                "Interaction Mode", allow_multiple_selection_options, default=allow_multiple_selection_options[1]
             )
+            if interact_mode not in allow_multiple_selection_options:
+                interact_mode = allow_multiple_selection_options[0]
 
     select_default_value = False
-    if allow_multiple_selection and interact_mode == "📦 Select":
+    if allow_multiple_selection and interact_mode == allow_multiple_selection_options[1]:
         with cols[1]:
             spacer()
             select_default_value = st.checkbox(
@@ -287,7 +398,7 @@ def table_files(files, allow_multiple_selection: bool = False, key: str = "table
         column_config={
             "see": st.column_config.CheckboxColumn(
                 "🔎"
-                if not allow_multiple_selection or interact_mode == "🔎 View"
+                if not allow_multiple_selection or interact_mode == allow_multiple_selection_options[0]
                 else "📦",
                 default=select_default_value,
             )
@@ -298,7 +409,7 @@ def table_files(files, allow_multiple_selection: bool = False, key: str = "table
         key=f"{key}_lines",
     )
     selected_rows = table.query("see == True")
-    if not allow_multiple_selection or interact_mode == "🔎 View":
+    if not allow_multiple_selection or interact_mode == allow_multiple_selection_options[0]:
         if len(selected_rows) > 0:
             st.session_state.file_to_see = f"/shared/{selected_rows.iloc[0]['Date']}/{selected_rows.iloc[0]['Subfolder']}/{selected_rows.iloc[0]['File']}"
             st.switch_page(PAGE_VIEWER)
@@ -353,8 +464,7 @@ def table_files(files, allow_multiple_selection: bool = False, key: str = "table
                 key=f"{key}_ai_actions",
                 disabled=len(selected_rows) == 0,
             ):
-                # TODO implement AI actions
-                pass
+                ai_actions_dialog(selected_files)
 
 
 def box_file(file: str, height: int, show_preview: bool, key: str = ""):
@@ -517,7 +627,10 @@ def display_files(
                     download_and_display_file(files[i], default_height_if_needed=250)
 
 
-def representation_mode_select(aside: bool = False, aside_offset: int = 0):
+def representation_mode_select(
+    aside: bool = False, aside_offset: int = 0, default_mode: int = 1
+):
+    # MARK: REPRESENTATION MODE SELECT
     cols = st.columns([1, 1, 1, aside_offset]) if aside else st.columns(1)
     representation_options = ["🧮 Table", "🃏 Cards", "🏷️ List"]
     with cols[0]:
@@ -525,7 +638,7 @@ def representation_mode_select(aside: bool = False, aside_offset: int = 0):
             "Representation",
             options=range(len(representation_options)),
             format_func=lambda x: representation_options[x],
-            default=1,
+            default=default_mode,
             key="representation",
         )
     if representation_mode is None:

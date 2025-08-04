@@ -1,7 +1,9 @@
 import json
 import logging
 import os
+import tarfile
 import traceback
+import zipfile
 from datetime import datetime
 from io import BytesIO
 from typing import List
@@ -311,7 +313,8 @@ async def get_file_metadata(file: str):
         file_path = os.path.join(file)
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File {file} does not exist.")
-
+        
+        mime = guess_mime(file_path)
         metadata = {
             "size": os.path.getsize(file_path),
             "created": datetime.fromtimestamp(os.path.getctime(file_path)).isoformat(),
@@ -319,6 +322,20 @@ async def get_file_metadata(file: str):
             "path": file_path,
             "mime_type": guess_mime(file_path),
         }
+
+        if mime.endswith("zip"):
+            try:
+                with zipfile.ZipFile(file_path, "r") as z:
+                    metadata["zip_paths"] = z.namelist()
+            except Exception as e:
+                logging.error(f"Error reading archive contents: {str(e)}")
+        elif mime.endswith(("tar.gz", "tgz", "tar")):
+            try:
+                with tarfile.open(file_path, "r") as tar:
+                    metadata["zip_paths"] = tar.getnames()
+            except Exception as e:
+                logging.error(f"Error reading archive contents: {str(e)}")
+
         return metadata
     except FileNotFoundError as e:
         logging.error(f"File not found: {str(e)}")
@@ -355,6 +372,10 @@ async def search_files(
     projects: str = None,
     tags: str = None,
     search_mode: int = 0,  # 0: FAST, 1: NORMAL, 2: DEEP
+    exclude_file_types: bool = False,
+    exclude_subfolders: bool = False,
+    exclude_projects: bool = False,
+    exclude_tags: bool = False,
 ):
     """
     Search for files based on a query.
@@ -380,6 +401,10 @@ async def search_files(
             projects.split(",") if projects else None,
             tags.split(",") if tags else None,
             search_mode=search_mode,
+            exclude_file_types=exclude_file_types,
+            exclude_subfolders=exclude_subfolders,
+            exclude_projects=exclude_projects,
+            exclude_tags=exclude_tags,
         )
         result.sort()
         result.reverse()

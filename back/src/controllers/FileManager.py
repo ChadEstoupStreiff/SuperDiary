@@ -47,9 +47,13 @@ class FileManager:
         start_date: str = None,
         end_date: str = None,
         subfolders: List[str] = None,
-        types: List[list] = None,
+        types: List[str] = None,
         projects: List[str] = None,
         tags: List[str] = None,
+        exclude_file_types: bool = False,
+        exclude_subfolders: bool = False,
+        exclude_projects: bool = False,
+        exclude_tags: bool = False,
     ):
         files = []
 
@@ -62,48 +66,87 @@ class FileManager:
 
         if projects or tags:
             db = get_db()
+
         try:
             for dp, _, filenames in tqdm(
                 os.walk("/shared"), desc="Indexing files", unit="file"
             ):
                 for filename in filenames:
-                    if filename != ".DS_Store":
-                        file = os.path.join(dp, filename)
-                        mime_file = guess_mime(file)
-                        mime_file = mime_file or "application/octet-stream"
+                    if filename == ".DS_Store":
+                        continue
+
+                    file = os.path.join(dp, filename)
+                    mime_file = guess_mime(file) or "application/octet-stream"
+
+                    try:
                         date = datetime.fromisoformat(file.split("/")[2])
-                        subfolder = file.split("/")[3]
+                    except Exception:
+                        continue  # skip if date parsing fails
 
-                        if (
-                            filename != ".DS_Store"
-                            and (start_dt <= date if start_dt else True)
-                            and (date <= end_dt if end_dt else True)
-                            and (not types or mime_file in types)
-                            and (not subfolders or subfolder in subfolders)
-                        ):
-                            if projects:
-                                file_projects = [
-                                    p.project
-                                    for p in db.query(ProjectFile)
-                                    .filter(ProjectFile.file == file)
-                                    .all()
-                                ]
-                            if tags:
-                                file_tags = [
-                                    t.tag
-                                    for t in db.query(TagFile)
-                                    .filter(TagFile.file == file)
-                                    .all()
-                                ]
+                    subfolder = file.split("/")[3]
 
-                            if (
-                                not projects
-                                or any(p in file_projects for p in projects)
-                            ) and (not tags or any(t in file_tags for t in tags)):
-                                files.append(file)
+                    # --- Handle file type filter (with exclude) ---
+                    if types:
+                        if exclude_file_types:
+                            if mime_file in types:
+                                continue
+                        else:
+                            if mime_file not in types:
+                                continue
+
+                    # --- Handle subfolder filter (with exclude) ---
+                    if subfolders:
+                        if exclude_subfolders:
+                            if subfolder in subfolders:
+                                continue
+                        else:
+                            if subfolder not in subfolders:
+                                continue
+
+                    # --- Handle date range ---
+                    if start_dt and date < start_dt:
+                        continue
+                    if end_dt and date > end_dt:
+                        continue
+
+                    file_projects, file_tags = [], []
+
+                    # --- Handle project filter (with exclude) ---
+                    if projects:
+                        file_projects = [
+                            p.project
+                            for p in db.query(ProjectFile)
+                            .filter(ProjectFile.file == file)
+                            .all()
+                        ]
+                        if exclude_projects:
+                            if any(p in file_projects for p in projects):
+                                continue
+                        else:
+                            if not any(p in file_projects for p in projects):
+                                continue
+
+                    # --- Handle tag filter (with exclude) ---
+                    if tags:
+                        file_tags = [
+                            t.tag
+                            for t in db.query(TagFile)
+                            .filter(TagFile.file == file)
+                            .all()
+                        ]
+                        if exclude_tags:
+                            if any(t in file_tags for t in tags):
+                                continue
+                        else:
+                            if not any(t in file_tags for t in tags):
+                                continue
+
+                    files.append(file)
+
         except Exception as e:
             logging.error(f"Error querying database: {str(e)}")
             raise RuntimeError(f"Error querying database: {str(e)}")
+
         finally:
             if projects or tags:
                 db.close()
@@ -171,6 +214,10 @@ class FileManager:
         projects: List[str] = None,
         tags: List[str] = None,
         search_mode: int = 0,
+        exclude_file_types: bool = False,
+        exclude_subfolders: bool = False,
+        exclude_projects: bool = False,
+        exclude_tags: bool = False,
     ):
         files = cls.list_files(
             start_date=start_date,
@@ -179,6 +226,10 @@ class FileManager:
             types=types,
             projects=projects,
             tags=tags,
+            exclude_file_types=exclude_file_types,
+            exclude_subfolders=exclude_subfolders,
+            exclude_projects=exclude_projects,
+            exclude_tags=exclude_tags,
         )
         if text:
             text = text.strip()

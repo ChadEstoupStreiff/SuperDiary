@@ -4,6 +4,7 @@ import mimetypes
 import os
 import random
 import tempfile
+from pathlib import Path
 from typing import List
 from urllib.parse import quote
 
@@ -459,6 +460,8 @@ def refractor_text_area(
     """
     Create a text area with a specific height and label.
     """
+    if f"refractor_ask_question_{key}" not in st.session_state:
+        st.session_state[f"refractor_ask_question_{key}"] = False
     with st.container(border=True):
         result = st.text_area(
             label=label,
@@ -468,7 +471,7 @@ def refractor_text_area(
             help=help,
             label_visibility=label_visibility,
         )
-        cols = st.columns(3)
+        cols = st.columns(4)
 
         question = None
         with cols[0]:
@@ -482,6 +485,22 @@ def refractor_text_area(
         with cols[2]:
             if st.button("🤖 Improve", key=f"improve_{key}", use_container_width=True):
                 question = "Give more details and improve this text:"
+        with cols[3]:
+            if st.button("❓ Ask", key=f"ask_{key}", use_container_width=True):
+                st.session_state[f"refractor_ask_question_{key}"] = not st.session_state[f"refractor_ask_question_{key}"]
+        if st.session_state[f"refractor_ask_question_{key}"]:
+            with st.container(border=True):
+                question_input = st.text_input(
+                    "Personalize how to reformat this text.",
+                    key=f"refractor_ask_question_input_{key}",
+                    placeholder="How to reformat this text?",
+                )
+                if st.button(
+                    "❓ Ask",
+                    key=f"refractor_ask_question_submit_{key}",
+                    use_container_width=True,
+                ):
+                    question = question_input.strip()
 
         if question:
             if context:
@@ -562,7 +581,6 @@ def text_emoji_input(
                     ):
                         st.session_state[f"text_emoji_input_emoji_{key}"] = emoji_char
 
-
     with input_cols[0]:
         spacer(27)
         st.button(
@@ -571,9 +589,31 @@ def text_emoji_input(
             use_container_width=True,
             on_click=lambda: toggle_emoji_picker(key),
         )
-        
+
     return (
         f"{st.session_state[f"text_emoji_input_emoji_{key}"]} {text}"
         if text
         else st.session_state[f"text_emoji_input_emoji_{key}"]
     )
+
+
+def paths_to_markdown_tree(paths: List[str]) -> str:
+    # Build a tree structure
+    tree = {}
+    for path in paths:
+        parts = Path(path).parts
+        d = tree
+        for part in parts:
+            d = d.setdefault(part, {})
+
+    # Recursive printing in Markdown
+    def print_tree(d, indent=0):
+        md = ""
+        for i, key in enumerate(sorted(d.keys())):
+            prefix = "    " * indent + f"- **{key}**"
+            md += prefix + "\n"
+            if d[key]:  # has children
+                md += print_tree(d[key], indent + 1)
+        return md
+
+    return print_tree(tree)

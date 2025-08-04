@@ -64,14 +64,19 @@ Ideas:
 - Favorites files ? Will display on top when search
 - Pin file to dashboard ?
 - A robot that looks for files and update summaries if needed (like if the summary is older that file date, in reupload for exemple)
+- Github link to add context to chat ?
+- Super notes with block ( #%% delimiters )
+
 
 Bugs:  
-None found :)
+- When clear cache, explorer ignore form parameters
+- deosnt delete file in recent open and recent added
 
 TODO: 
 - Test search on big volume (tokens on summaries may explode search time)
-- Page
-- multi select for edition
+- Page (for volume on front, back can handles a lot of files)
+- Exclude mode (on file type, subfolder, project and tags)
+- CLIP search on images ?
 
 Optimization:
 - on search, don't create a new connection for each file
