@@ -8,31 +8,9 @@ from utils import get_setting, refractor_text_area, toast_for_rerun
 
 
 def change_project():
-    del st.session_state["project_notes"]
-
-
-def update_todo(project_name, todo):
-    for item in todo:
-        if item["Done"] is None:
-            item["Done"] = False
-        if item["Task"] is None:
-            item["Task"] = ""
-    todo.sort(key=lambda x: x["Done"])
-    response = requests.post(
-        f"http://back:80/project/{project_name}/todo?todo={json.dumps(todo)}",
-    )
-    if response.status_code == 200:
-        toast_for_rerun(
-            "TODO list updated successfully!",
-            icon="✅",
-        )
-        st.rerun()
-    else:
-        st.error(f"Error updating TODO list: {response.text}")
-        st.toast(
-            f"Error updating TODO list: {response.text}",
-            icon="❌",
-        )
+    # del st.session_state["project_notes"]
+    # del st.session_state["project_todo_table"]
+    pass
 
 
 def projects():
@@ -73,13 +51,13 @@ def projects():
 - 📄 **Files:** `{len(files)}`
 - 📆 **Calendar records:** `{len(records)}`
 - ⌛ **Time Spent:** `{sum(record['time_spent'] for record in records) if records else 0} hours`
-
-### 📝 Description:
 """,
             unsafe_allow_html=True,
         )
-        with st.container(border=True):
-            st.write(project["description"])
+        if project["description"]:
+            st.markdown("### 📝 Description:")
+            with st.container(border=True):
+                st.write(project["description"])
 
     with tabs[1]:
         with st.columns([1, 4])[0]:
@@ -104,48 +82,85 @@ def projects():
                     box_calendar_record(record, show_project=False)
         else:
             st.info("No calendar records found.")
-    with tabs[3]:
-        notes = requests.get(f"http://back:80/project/{project['name']}/notes").json()
-        top = st.container()
-        edited_notes = refractor_text_area(
-            "Project Notes",
-            value=notes,
-            height=1000,
-            key="project_notes",
-            label_visibility="hidden",
-        )
 
-        with top:
-            if st.button(
-                "📝 Save Notes",
-                help="Click to save the project notes.",
-                use_container_width=True,
-            ):
-                if edited_notes != notes:
+    with tabs[3]:
+        response = requests.get(f"http://back:80/project/{project['name']}/notes")
+        if response.status_code != 200:
+            st.error("Failed to load project notes.")
+        else:
+            notes = response.json()
+
+            def update_notes(notes):
+                if "project_notes" in st.session_state:
+                    edited_notes = st.session_state["project_notes"]
                     response = requests.post(
                         f"http://back:80/project/{project['name']}/notes?notes={edited_notes}"
                     )
-                    if response.status_code == 200:
+                    if response.status_code != 200:
+                        toast_for_rerun(
+                            "Failed to update project notes.",
+                            icon="❌",
+                        )
+                    else:
                         toast_for_rerun(
                             "Project notes updated successfully.",
                             icon="✅",
                         )
-                        st.rerun()
-                    else:
+
+            refractor_text_area(
+                "Project Notes",
+                value=notes,
+                height=1000,
+                on_change=update_notes,
+                key="project_notes",
+                label_visibility="hidden",
+                args=(notes,),
+            )
+    with tabs[4]:
+        response = requests.get(f"http://back:80/project/{project['name']}/todo")
+        if response.status_code != 200:
+            st.error("Failed to load TODO list.")
+        else:
+            todo_table = response.json()
+
+            def update_todo(todo_table):
+                if "project_todo_table" in st.session_state:
+                    todo_editions = st.session_state["project_todo_table"][
+                        "edited_rows"
+                    ]
+                    todo_deletions = st.session_state["project_todo_table"][
+                        "deleted_rows"
+                    ]
+                    todo_additions = st.session_state["project_todo_table"][
+                        "added_rows"
+                    ]
+
+                    if len(todo_deletions) > 0:
+                        todo_table = [
+                            todo_table[i]
+                            for i in range(len(todo_table))
+                            if i not in todo_deletions
+                        ]
+                    for index, editions in todo_editions.items():
+                        for key, value in editions.items():
+                            todo_table[index][key] = value
+                    for _ in todo_additions:
+                        todo_table.append({"Done": False, "Task": ""})
+
+                    todo_table.sort(key=lambda x: x["Done"])
+
+                    response = requests.post(
+                        f"http://back:80/project/{project['name']}/todo?todo={json.dumps(todo_table)}",
+                    )
+                    if response.status_code != 200:
+                        st.error(f"Error updating TODO list: {response.text}")
                         st.toast(
-                            "Failed to update project notes.",
+                            f"Error updating TODO list: {response.text}",
                             icon="❌",
                         )
 
-    with tabs[4]:
-        todo = requests.get(f"http://back:80/project/{project['name']}/todo")
-        if todo.status_code == 200:
-            todo = todo.json()
-            if not todo:
-                todo = [{"Done": False, "Task": ""}]
-
-            new_todo = st.data_editor(
-                todo,
+            st.data_editor(
+                todo_table,
                 column_config={
                     "Done": st.column_config.CheckboxColumn("Done", width=None),
                     "Task": st.column_config.TextColumn("Task", width="large"),
@@ -154,17 +169,9 @@ def projects():
                 hide_index=True,
                 num_rows="dynamic",
                 key="project_todo_table",
+                on_change=update_todo,
+                args=(todo_table,),
             )
-
-            if new_todo != todo:
-                update_todo(project["name"], new_todo)
-                toast_for_rerun(
-                    "TODO list updated successfully.",
-                    icon="✅",
-                )
-                st.rerun()
-        else:
-            st.error("Failed to fetch TODO items.")
 
 
 if __name__ == "__main__":

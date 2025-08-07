@@ -341,15 +341,10 @@ def see_file(file):
         result = requests.get(f"http://back:80/notes/{file}")
         if result.status_code == 200 and result.json() is not None:
             notes = result.json().get("note", "")
-            edited_notes = refractor_text_area(
-                "Notes",
-                value=notes,
-                height=500,
-                help="These are the notes for the file. They are used in search context and can be edited.",
-            )
-            if edited_notes != notes:
+
+            def update_notes(file):
                 result_update = requests.post(
-                    f"http://back:80/notes/{file}?note={edited_notes}"
+                    f"http://back:80/notes/{file}?note={st.session_state['file_notes']}",
                 )
                 if result_update.status_code == 200:
                     st.toast(
@@ -358,6 +353,17 @@ def see_file(file):
                     )
                 else:
                     st.error("Failed to update notes. Please try again later.")
+
+            refractor_text_area(
+                "Notes",
+                value=notes,
+                height=500,
+                help="These are the notes for the file. They are used in search context and can be edited.",
+                key="file_notes",
+                on_change=update_notes,
+                args=(file,),
+            )
+
         else:
             st.error("Failed to load notes for this file.")
 

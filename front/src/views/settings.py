@@ -660,7 +660,7 @@ def settings():
                 new_ollama_server = st.text_input(
                     "Ollama URL",
                     value=ollama_server,
-                    help="Enter the URL of your Ollama server. (http://localhost:11434 to use the local Ollama server)",
+                    help="Enter the URL of your Ollama server. (http://ollama:11434 to use the local Ollama server)",
                 )
                 if new_ollama_server != ollama_server:
                     settings["ollama_server"] = new_ollama_server

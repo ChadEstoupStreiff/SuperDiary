@@ -469,6 +469,8 @@ def refractor_text_area(
     key: str = None,
     height: int = 300,
     label_visibility: str = "visible",
+    on_change=None,
+    args: List = None,
     help: str = None,
 ):
     """
@@ -484,6 +486,8 @@ def refractor_text_area(
             height=height,
             help=help,
             label_visibility=label_visibility,
+            on_change=on_change,
+            args=args,
         )
         cols = st.columns(4)
 
