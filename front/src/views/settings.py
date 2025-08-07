@@ -8,7 +8,6 @@ from utils import (
     refractor_text_area,
     spacer,
     toast_for_rerun,
-    text_emoji_input,
 )
 
 
@@ -259,7 +258,7 @@ def chose_ai_menu(default_ai_type: str, default_model: str, key: str = "ai_menu"
     import requests
     import streamlit as st
 
-    ai_type_options = ["llama", "ChatGPT", "Gemini"]
+    ai_type_options = ["llama", "Mistral", "ChatGPT", "Gemini"]
     ai_type = st.radio(
         "AI type",
         ai_type_options,
@@ -285,6 +284,25 @@ def chose_ai_menu(default_ai_type: str, default_model: str, key: str = "ai_menu"
             else 0,
             key=f"{key}_model",
             help="Select the LLaMA model to use.",
+        )
+    elif ai_type == "Mistral":
+        mistral_models = [
+            "ministral-3b-latest",
+            "ministral-8b-latest",
+            "mistral-small-latest",
+            "mistral-medium-latest",
+            "mistral-large-latest",
+            "magistral-small-latest",
+            "magistral-medium-latest",
+        ]
+        model = st.selectbox(
+            "Mistral Model",
+            options=mistral_models,
+            index=mistral_models.index(default_model)
+            if default_model in mistral_models
+            else 0,
+            key=f"{key}_model",
+            help="Select the Mistral model to use.",
         )
     elif ai_type == "ChatGPT":
         chatgpt_models = [
@@ -365,14 +383,14 @@ def settings():
                 value=settings.get("auto_display_file_size_limit", 10),
                 help="Set the maximum file size (in MB) for automatic display in the viewer.",
             )
-        
+
         representation_options = ["🧮 Table", "🃏 Cards", "🏷️ List"]
         with cols[1]:
             settings["explorer_default_representation_mode"] = st.segmented_control(
                 "Default representation mode in explorer",
                 options=range(len(representation_options)),
                 format_func=lambda x: representation_options[x],
-                default= settings.get("explorer_default_representation_mode", 1),
+                default=settings.get("explorer_default_representation_mode", 1),
                 key="representation",
             )
         with cols[2]:
@@ -533,8 +551,8 @@ def settings():
 
     # MARK: LLM Settings
     with settings_tabs[3]:
-        tab_llama, tab_chatgpt, tab_gemini = st.tabs(
-            ["Local Llama", "OpenAI ChatGPT", "Google Gemini"]
+        tab_llama, tab_mistral, tab_chatgpt, tab_gemini = st.tabs(
+            ["Local Llama", "Mistral", "OpenAI ChatGPT", "Google Gemini"]
         )
 
         spacer()
@@ -552,6 +570,13 @@ def settings():
 | llama3.2:1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
 | llama3.2:8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
 | llama3.2:70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| ministral-3b-latest      | Mistral   | Most efficient edge model, 128k token context                      | **\$0.04 / \$0.04**                |
+| ministral-8b-latest      | Mistral   | Powerful model for on-device use cases, 128k token context         | **\$0.10 / \$1.00**                |
+| mistral-small-latest     | Mistral   | Multilingual and multimodal Apache 2.0 model, 32k token context   | **\$0.10 / \$0.30**                |
+| mistral-medium-latest    | Mistral   | Cost-efficient enterprise-level performance, 128k token context     | **\$0.40 / \$2.00**                |
+| mistral-large-latest     | Mistral   | Solves complex tasks with high quality, 128k token context         | **\$2.00 / \$6.00**                |
+| magistral-small-latest   | Mistral   | Multilingual reasoning model, 40k token context                   | **\$0.50 / \$1.50**                |
+| magistral-medium-latest  | Mistral   | High-end multilingual reasoning, 128k token context                | **\$2.00 / \$5.00**                |
 | gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
 | gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |
@@ -566,140 +591,213 @@ def settings():
 | gpt-4o                | ChatGPT   | Top-tier multimodal model (text, image, audio), fast with high accuracy     | **\$2.50 / \$10.00**             |
 | gpt-4                | ChatGPT   | High-quality reasoning and understanding, best for difficult tasks          | **\$30.00 / \$60.00**            |
 | gpt-4.5-preview       | ChatGPT   | Experimental cutting-edge model, very high performance and cost             | **\$75.00 / \$150.00**           |""")
+
         elif sort_type == "Capabilities":
             st.markdown("""| Model                 | Type      | Capabilities                                                                 | Input/Output **\$ per 1M tokens** |
 |-----------------------|-----------|------------------------------------------------------------------------------|----------------------------------|
-| llama3.2:1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
+| gemini-2.5-flash      | Gemini    | Hybrid reasoning model for speed and broad media support                    | **\$0.30 / \$2.50**              |
 | gpt-4.1-nano          | ChatGPT   | Ultra-light model for micro-tasks                                           | **\$0.10 / \$0.40**              |
-| llama3.2:8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
-| gpt-3.5-turbo         | ChatGPT   | Fast, general-purpose model for basic conversation and summarization        | **\$1.00 / \$2.00**              |
+| llama3.2:1b           | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
-| llama3.2:70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
 | gemini-2.5-flash-lite | Gemini    | Lightweight 2.5 model, tuned for efficiency                                 | **\$0.10 / \$0.40**              |
 | gpt-4.1-mini          | ChatGPT   | Efficient model with faster latency and reduced cost                        | **\$0.40 / \$1.60**              |
-| gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
+| ministral-8b-latest   | Mistral   | Powerful model for on-device use cases, 128k token context                  | **\$0.10 / \$1.00**              |
 | gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |
-| gemini-2.5-flash      | Gemini    | Hybrid reasoning model for speed and broad media support                    | **\$0.30 / \$2.50**              |
-| gpt-4.1               | ChatGPT   | Stronger reasoning, faster than GPT-4, versatile                            | **\$2.00 / \$8.00**              |
-| gemini-1.5-pro        | Gemini    | Complex reasoning, 2M token context, strong at coding and data analysis     | **\$1.25–2.50 / \$5.00–10.00**   |
-| gemini-2.5-pro        | Gemini    | Premium model for advanced reasoning, coding, and analysis                  | **\$1.25–2.50 / \$10.00–15.00**  |
-| gpt-4o                | ChatGPT   | Top-tier multimodal model (text, image, audio), fast with high accuracy     | **\$2.50 / \$10.00**             |
+| llama3.2:8b           | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
+| gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
+| gpt-3.5-turbo         | ChatGPT   | Fast, general-purpose model for basic conversation and summarization        | **\$1.00 / \$2.00**              |
 | gpt-4                | ChatGPT   | High-quality reasoning and understanding, best for difficult tasks          | **\$30.00 / \$60.00**            |
+| llama3.2:70b          | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| magistral-medium-latest  | Mistral   | High-end multilingual reasoning, 128k token context                         | **\$2.00 / \$5.00**              |
+| gpt-4.1               | ChatGPT   | Stronger reasoning, faster than GPT-4, versatile                            | **\$2.00 / \$8.00**              |
+| gemini-2.5-pro        | Gemini    | Premium model for advanced reasoning, coding, and analysis                  | **\$1.25–2.50 / \$10.00–15.00**  |
+| magistral-small-latest | Mistral   | Multilingual reasoning model, 40k token context                             | **\$0.50 / \$1.50**              |
+| mistral-small-latest  | Mistral   | Multilingual and multimodal Apache 2.0 model, 32k token context             | **\$0.10 / \$0.30**              |
+| mistral-large-latest  | Mistral   | Solves complex tasks with high quality, 128k token context                  | **\$2.00 / \$6.00**              |
+| gemini-1.5-pro        | Gemini    | Complex reasoning, 2M token context, strong at coding and data analysis     | **\$1.25–2.50 / \$5.00–10.00**   |
+| mistral-medium-latest | Mistral   | Cost-efficient enterprise-level performance, 128k token context             | **\$0.40 / \$2.00**              |
+| ministral-3b-latest   | Mistral   | Most efficient edge model, 128k token context                               | **\$0.04 / \$0.04**              |
 | gpt-4.5-preview       | ChatGPT   | Experimental cutting-edge model, very high performance and cost             | **\$75.00 / \$150.00**           |""")
+
         elif sort_type == "Pricing":
             st.markdown("""| Model                 | Type      | Capabilities                                                                 | Input/Output **\$ per 1M tokens** |
 |-----------------------|-----------|------------------------------------------------------------------------------|----------------------------------|
-| llama3.2:1b             | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
-| llama3.2:8b             | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
-| llama3.2:70b            | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| llama3.2:1b           | LLaMA     | Tiny model for simple tasks on constrained devices                          | **Free**                         |
+| llama3.2:8b           | LLaMA     | Balanced open model for standard use cases                                  | **Free**                         |
+| llama3.2:70b          | LLaMA     | High-quality open-source model with good reasoning                          | **Free**                         |
+| ministral-3b-latest   | Mistral   | Most efficient edge model, 128k token context                               | **\$0.04 / \$0.04**              |
 | gemini-2.0-flash-lite | Gemini    | Smallest Gemini 2.0 for scalable usage with low latency                      | **\$0.075 / \$0.30**             |
 | gemini-1.5-flash      | Gemini    | Fast inference with 1M context, great for interactive tasks                 | **\$0.075–0.15 / \$0.30–0.60**   |
 | gemini-2.0-flash      | Gemini    | Balanced multimodal support (text/image/video/audio)                        | **\$0.10 / \$0.40**              |
 | gemini-2.5-flash-lite | Gemini    | Lightweight 2.5 model, tuned for efficiency                                 | **\$0.10 / \$0.40**              |
+| mistral-small-latest  | Mistral   | Multilingual and multimodal Apache 2.0 model, 32k token context             | **\$0.10 / \$0.30**              |
+| ministral-8b-latest   | Mistral   | Powerful model for on-device use cases, 128k token context                  | **\$0.10 / \$1.00**              |
 | gpt-4.1-nano          | ChatGPT   | Ultra-light model for micro-tasks                                           | **\$0.10 / \$0.40**              |
 | gpt-4.1-mini          | ChatGPT   | Efficient model with faster latency and reduced cost                        | **\$0.40 / \$1.60**              |
+| mistral-medium-latest | Mistral   | Cost-efficient enterprise-level performance, 128k token context             | **\$0.40 / \$2.00**              |
+| magistral-small-latest| Mistral   | Multilingual reasoning model, 40k token context                             | **\$0.50 / \$1.50**              |
 | gpt-3.5-turbo         | ChatGPT   | Fast, general-purpose model for basic conversation and summarization        | **\$1.00 / \$2.00**              |
-| gemini-2.5-flash      | Gemini    | Hybrid reasoning model for speed and broad media support                    | **\$0.30 / \$2.50**              |
 | gemini-1.5-pro        | Gemini    | Complex reasoning, 2M token context, strong at coding and data analysis     | **\$1.25–2.50 / \$5.00–10.00**   |
 | gemini-2.5-pro        | Gemini    | Premium model for advanced reasoning, coding, and analysis                  | **\$1.25–2.50 / \$10.00–15.00**  |
+| magistral-medium-latest| Mistral  | High-end multilingual reasoning, 128k token context                         | **\$2.00 / \$5.00**              |
+| mistral-large-latest  | Mistral   | Solves complex tasks with high quality, 128k token context                  | **\$2.00 / \$6.00**              |
 | gpt-4.1               | ChatGPT   | Stronger reasoning, faster than GPT-4, versatile                            | **\$2.00 / \$8.00**              |
 | gpt-4o                | ChatGPT   | Top-tier multimodal model (text, image, audio), fast with high accuracy     | **\$2.50 / \$10.00**             |
 | gpt-4                | ChatGPT   | High-quality reasoning and understanding, best for difficult tasks          | **\$30.00 / \$60.00**            |
 | gpt-4.5-preview       | ChatGPT   | Experimental cutting-edge model, very high performance and cost             | **\$75.00 / \$150.00**           |""")
 
-        with st.expander("LLM Settings", expanded=True):
-            with tab_llama:
-                cols = st.columns(2)
-                with cols[0]:
-                    model_pull_name = st.text_input(
-                        "Model to install",
-                        help="Enter the name of the model to pull from Ollama.",
-                    )
-                    st.caption(
-                        "See available models at this link: https://ollama.com/library"
-                    )
-                    if st.button("Pull Model", use_container_width=True):
-                        with st.spinner("Pulling model...", show_time=True):
-                            if model_pull_name:
-                                result = requests.post(
-                                    f"http://back:80/ollama/pull/{model_pull_name}"
-                                )
-                                if result.status_code == 200:
-                                    st.toast(
-                                        f"Model '{model_pull_name}' pulled successfully.",
-                                        icon="✅",
-                                    )
-                                    installed_models = requests.get(
-                                        "http://back:80/ollama/list"
-                                    ).json()
-                                else:
-                                    st.toast(
-                                        f"Failed to pull model '{model_pull_name}'. Please try again.",
-                                        icon="❌",
-                                    )
-                            else:
-                                st.warning("Please enter a model name to pull.")
-                with cols[1]:
-                    st.subheader("Installed Models:")
-                    for model in installed_models:
-                        st.badge(model)
-            with tab_chatgpt:
-                openai_api_key = settings.get("openai_api_key", "")
-                new_openai_api_key = st.text_input(
-                    "OpenAI API Key",
-                    value=openai_api_key,
-                    type="password",
-                    help="Enter your OpenAI API key to use ChatGPT models.",
-                    key="openai_api_key",
+        with tab_llama:
+            st.image(
+                "https://content.pstmn.io/d776e89b-2248-4c3f-a942-2eef03064755/b2xsYW1hLmpwZw==",
+                width=500,
+            )
+            st.text(
+                "Ollama is a local LLM provider, allowing you to run models on your own machine. Best for privacy and control."
+            )
+            cols = st.columns(2)
+            with cols[0]:
+                model_pull_name = st.text_input(
+                    "Model to install",
+                    help="Enter the name of the model to pull from Ollama.",
                 )
-                if new_openai_api_key != openai_api_key:
-                    settings["openai_api_key"] = new_openai_api_key
-                    apply_settings(settings)
-
-            with tab_gemini:
-                gemini_api_key = settings.get("gemini_api_key", "")
-                new_gemini_api_key = st.text_input(
-                    "Google Gemini API Key",
-                    value=gemini_api_key,
-                    type="password",
-                    help="Enter your Google Gemini API key to use Gemini models.",
-                    key="gemini_api_key",
+                st.caption(
+                    "See available models at this link: https://ollama.com/library"
                 )
-                if new_gemini_api_key != gemini_api_key:
-                    settings["gemini_api_key"] = new_gemini_api_key
-                    apply_settings(settings)
-
-            if len(openai_api_key) > 0:
-                with tab_chatgpt:
-                    with st.spinner("Checking OpenAI key...", show_time=True):
-                        try:
-                            headers = {"Authorization": f"Bearer {openai_api_key}"}
-                            response = requests.get(
-                                "https://api.openai.com/v1/models",
-                                headers=headers,
-                                timeout=10,
+                if st.button("Pull Model", use_container_width=True):
+                    with st.spinner("Pulling model...", show_time=True):
+                        if model_pull_name:
+                            result = requests.post(
+                                f"http://back:80/ollama/pull/{model_pull_name}"
                             )
-                            if response.status_code == 200:
-                                st.success("OpenAI API key is valid.", icon="✅")
+                            if result.status_code == 200:
+                                st.toast(
+                                    f"Model '{model_pull_name}' pulled successfully.",
+                                    icon="✅",
+                                )
+                                installed_models = requests.get(
+                                    "http://back:80/ollama/list"
+                                ).json()
                             else:
-                                st.error("OpenAI API key is invalid.", icon="❌")
-                                st.toast("OpenAI API key is invalid.", icon="❌")
-                        except requests.RequestException as e:
-                            st.toast(f"OpenAI check failed: {e}", icon="⚠️")
+                                st.toast(
+                                    f"Failed to pull model '{model_pull_name}'. Please try again.",
+                                    icon="❌",
+                                )
+                        else:
+                            st.warning("Please enter a model name to pull.")
+            with cols[1]:
+                st.subheader("Installed Models:")
+                for model in installed_models:
+                    st.badge(model)
 
-            if len(gemini_api_key) > 0:
-                with tab_gemini:
-                    with st.spinner("Checking Gemini key...", show_time=True):
-                        try:
-                            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_api_key}"
-                            response = requests.get(url, timeout=10)
-                            if response.status_code == 200:
-                                st.success("Google Gemini API key is valid.", icon="✅")
-                            else:
-                                st.error("Google Gemini API key is invalid.", icon="❌")
-                                st.toast("Google Gemini API key is invalid.", icon="❌")
-                        except requests.RequestException as e:
-                            st.toast(f"Gemini check failed: {e}", icon="⚠️")
+        with tab_mistral:
+            st.image(
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRBaT-xYST2LGo0lrPbyAltLhwLXcWTjCs2yg&s",
+                width=300,
+            )
+            st.text(
+                "Mistral AI is a leading provider of open-weight LLMs, offering a range of models for various tasks. And it's French 🇫🇷"
+            )
+            mistral_api_key = settings.get("mistral_api_key", "")
+            new_mistral_api_key = st.text_input(
+                "Mistral API Key",
+                value=mistral_api_key,
+                type="password",
+                help="Enter your Mistral API key to use Mistral models.",
+                key="mistral_api_key",
+            )
+            if new_mistral_api_key != mistral_api_key:
+                settings["mistral_api_key"] = new_mistral_api_key
+                apply_settings(settings)
+
+        with tab_chatgpt:
+            st.image(
+                "https://www.logicgate.com/wp-content/smush-webp/plt-openai-01-hero-01.png.webp",
+                width=300,
+            )
+            st.text(
+                "OpenAI provides a range of powerful LLMs, including the popular ChatGPT models. Best for general-purpose tasks. American 🇺🇸 with a bit of privacy controversy."
+            )
+            openai_api_key = settings.get("openai_api_key", "")
+            new_openai_api_key = st.text_input(
+                "OpenAI API Key",
+                value=openai_api_key,
+                type="password",
+                help="Enter your OpenAI API key to use ChatGPT models.",
+                key="openai_api_key",
+            )
+            if new_openai_api_key != openai_api_key:
+                settings["openai_api_key"] = new_openai_api_key
+                apply_settings(settings)
+
+        with tab_gemini:
+            st.image(
+                "https://lh3.googleusercontent.com/1E500rkSh8Gqkz2l12tkrKkMgsDmbQot0h3afeiRukXNficphb2zEE8o6J3dSKkiDGOOCcQ8WtRYzEYudgiYK9FkoQeYg_SP92-C=e365-pa-nu-w1200",
+                width=300,
+            )
+            st.text(
+                "Google Gemini is a powerful LLM provider, offering advanced models for complex tasks. Best for multimodal tasks and reasoning. American 🇺🇸 with a big monopoly on high tech."
+            )
+            gemini_api_key = settings.get("gemini_api_key", "")
+            new_gemini_api_key = st.text_input(
+                "Google Gemini API Key",
+                value=gemini_api_key,
+                type="password",
+                help="Enter your Google Gemini API key to use Gemini models.",
+                key="gemini_api_key",
+            )
+            if new_gemini_api_key != gemini_api_key:
+                settings["gemini_api_key"] = new_gemini_api_key
+                apply_settings(settings)
+
+        if len(mistral_api_key) > 0:
+            with tab_mistral:
+                with st.spinner("Checking Mistral key...", show_time=True):
+                    try:
+                        headers = {"Authorization": f"Bearer {mistral_api_key}"}
+                        response = requests.get(
+                            "https://api.mistral.ai/v1/models",
+                            headers=headers,
+                            timeout=10,
+                        )
+                        if response.status_code == 200:
+                            st.success("Mistral API key is valid.", icon="✅")
+                        else:
+                            st.error("Mistral API key is invalid.", icon="❌")
+                            st.toast("Mistral API key is invalid.", icon="❌")
+                    except requests.RequestException as e:
+                        st.toast(f"Mistral check failed: {e}", icon="⚠️")
+
+        if len(openai_api_key) > 0:
+            with tab_chatgpt:
+                with st.spinner("Checking OpenAI key...", show_time=True):
+                    try:
+                        headers = {"Authorization": f"Bearer {openai_api_key}"}
+                        response = requests.get(
+                            "https://api.openai.com/v1/models",
+                            headers=headers,
+                            timeout=10,
+                        )
+                        if response.status_code == 200:
+                            st.success("OpenAI API key is valid.", icon="✅")
+                        else:
+                            st.error("OpenAI API key is invalid.", icon="❌")
+                            st.toast("OpenAI API key is invalid.", icon="❌")
+                    except requests.RequestException as e:
+                        st.toast(f"OpenAI check failed: {e}", icon="⚠️")
+
+        if len(gemini_api_key) > 0:
+            with tab_gemini:
+                with st.spinner("Checking Gemini key...", show_time=True):
+                    try:
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_api_key}"
+                        response = requests.get(url, timeout=10)
+                        if response.status_code == 200:
+                            st.success("Google Gemini API key is valid.", icon="✅")
+                        else:
+                            st.error("Google Gemini API key is invalid.", icon="❌")
+                            st.toast("Google Gemini API key is invalid.", icon="❌")
+                    except requests.RequestException as e:
+                        st.toast(f"Gemini check failed: {e}", icon="⚠️")
 
     # MARK: Tasks
     with settings_tabs[4]:

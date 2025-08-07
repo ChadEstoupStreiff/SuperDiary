@@ -118,6 +118,38 @@ async def add_recent(file: str):
     finally:
         db.close()
 
+@router.delete("/recentopened")
+async def clear_recent(file: str):
+    """
+    Clear a file from the recent stockpile.
+    """
+    try:
+        recent_files = get_recent_opened()
+    except HTTPException:
+        recent_files = []
+
+    if file in recent_files:
+        recent_files.remove(file)
+
+    db = get_db()
+    try:
+        stockpile_item = (
+            db.query(StockPile).filter(StockPile.key == "recentopened").first()
+        )
+        if stockpile_item:
+            stockpile_item.value = json.dumps(recent_files)
+            db.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Recent files not found")
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error clearing recent file {file}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, detail=f"Error clearing recent file: {str(e)}"
+        )
+    finally:
+        db.close()
 
 def get_recent_added():
     """
@@ -139,6 +171,77 @@ def get_recent_added():
     finally:
         db.close()
 
+@router.post("/recentadded")
+async def add_recent_added(file: str):
+    """
+    Add a file to the recent added stockpile.
+    """
+    try:
+        recent_files = get_recent_added()
+    except HTTPException:
+        recent_files = []
+
+    if file in recent_files:
+        recent_files.remove(file)
+    if len(recent_files) >= 10:
+        recent_files.pop()
+    recent_files.insert(0, file)
+
+    db = get_db()
+    try:
+        stockpile_item = (
+            db.query(StockPile).filter(StockPile.key == "recentadded").first()
+        )
+        if stockpile_item:
+            stockpile_item.value = json.dumps(recent_files)
+        else:
+            stockpile_item = StockPile(
+                key="recentadded", value=json.dumps(recent_files)
+            )
+            db.add(stockpile_item)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error adding recent added file {file}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, detail=f"Error adding recent added file: {str(e)}"
+        )
+    finally:
+        db.close()
+
+@router.delete("/recentadded")
+async def clear_recent_added(file: str):
+    """
+    Clear a file from the recent added stockpile.
+    """
+    try:
+        recent_files = get_recent_added()
+    except HTTPException:
+        recent_files = []
+
+    if file in recent_files:
+        recent_files.remove(file)
+
+    db = get_db()
+    try:
+        stockpile_item = (
+            db.query(StockPile).filter(StockPile.key == "recentadded").first()
+        )
+        if stockpile_item:
+            stockpile_item.value = json.dumps(recent_files)
+            db.commit()
+        else:
+            raise HTTPException(status_code=404, detail="Recent added files not found")
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error clearing recent added file {file}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, detail=f"Error clearing recent added file: {str(e)}"
+        )
+    finally:
+        db.close()
 
 @router.get("/recentadded")
 async def get_recent_added_items():

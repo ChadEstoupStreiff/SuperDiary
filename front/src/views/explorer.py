@@ -1,7 +1,5 @@
-import datetime
-
 import streamlit as st
-from core.explorer import search_engine, search_files
+from core.explorer import search_engine
 from core.files import display_files, representation_mode_select
 from utils import get_setting
 
@@ -18,15 +16,6 @@ def explorer():
                 default_mode=get_setting("explorer_default_representation_mode")
             )
         )
-
-    if "explorer_files" not in st.session_state:
-        search_result = search_files(
-            None,
-            datetime.date.today() - datetime.timedelta(days=7),
-            datetime.date.today(),
-        )
-        if search_result is not None:
-            st.session_state.explorer_files = search_result
 
     if "explorer_files" in st.session_state:
         time_spent = st.session_state.explorer_files.get(
@@ -99,6 +88,8 @@ def explorer():
             )
         else:
             st.write("No files found in the system.")
+    else:
+        st.info("Search for files first :)")
 
 
 if __name__ == "__main__":

@@ -57,6 +57,45 @@ def request_llm(
                     except Exception:
                         pass
             return ai_type, model, output
+    
+    # Mistral
+    elif ai_type == "Mistral":
+        api_key = get_setting("mistral_api_key")
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "stream": stream_callback is not None,
+        }
+        url = "https://api.mistral.ai/v1/chat/completions"
+        with requests.post(
+            url, headers=headers, json=payload, stream=stream_callback is not None
+        ) as response:
+            if response.status_code != 200:
+                raise Exception(f"Mistral error {response.status_code}: {response.text}")
+
+            output = ""
+            for line in response.iter_lines():
+                if line:
+                    line = line.decode("utf-8")
+                    if line.startswith("data: "):
+                        line = line[6:]
+                    if line == "[DONE]":
+                        break
+                    try:
+                        data = json.loads(line)
+                        chunk = data["choices"][0]["delta"].get("content", "")
+                        output += chunk
+                        if stream_callback:
+                            stream_callback(chunk)
+                    except Exception:
+                        pass
+            return ai_type, model, output
 
     # ChatGPT
     elif ai_type == "ChatGPT":

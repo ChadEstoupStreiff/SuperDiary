@@ -38,7 +38,8 @@ if __name__ == "__main__":
             ],
             "Opened": [] if "file_to_see" not in st.session_state else [PAGE_VIEWER],
         },
-        expanded=True,
+        expanded=False,
+        position="sidebar",
     )
     if "toast_for_rerun" in st.session_state:
         for message, icon in st.session_state.toast_for_rerun:

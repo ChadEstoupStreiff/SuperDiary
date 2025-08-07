@@ -35,13 +35,14 @@ def guess_mime(file_name: str) -> str:
         "jsonl": "application/x-ndjson",
         "log": "text/log",
         "logs": "text/log",
+        "webp": "image/webp",
     }
 
     if ext in custom_mime:
         return custom_mime[ext].strip()
 
     mime, _ = mimetypes.guess_type(file_name)
-    return mime.strip() or "application/octet-stream"
+    return mime.strip() if mime is not None else "application/octet-stream"
 
 
 def read_content(

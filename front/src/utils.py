@@ -175,6 +175,19 @@ mimes_map = {
 }
 
 
+def delete_file(file_name: str):
+    """
+    Delete a file from the server.
+    """
+    encoded_file_name = quote(file_name)
+    result = requests.delete(f"http://back:80/files/delete/{encoded_file_name}")
+
+    requests.delete("http://back:80/stockpile/recentadded?file=" + encoded_file_name)
+    requests.delete("http://back:80/stockpile/recentopened?file=" + encoded_file_name)
+
+    return result
+
+
 def get_setting(key: str, default=None):
     result = requests.get(f"http://back:80/settings/{key}")
     if result.status_code == 200:
@@ -439,13 +452,14 @@ def guess_mime(file_name: str) -> str:
         "jsonl": "application/x-ndjson",
         "log": "text/log",
         "logs": "text/log",
+        "webp": "image/webp",
     }
 
     if ext in custom_mime:
-        return custom_mime[ext]
+        return custom_mime[ext].strip()
 
     mime, _ = mimetypes.guess_type(file_name)
-    return mime or "application/octet-stream"
+    return mime.strip() if mime is not None else "application/octet-stream"
 
 
 def refractor_text_area(
@@ -487,7 +501,9 @@ def refractor_text_area(
                 question = "Give more details and improve this text:"
         with cols[3]:
             if st.button("❓ Ask", key=f"ask_{key}", use_container_width=True):
-                st.session_state[f"refractor_ask_question_{key}"] = not st.session_state[f"refractor_ask_question_{key}"]
+                st.session_state[
+                    f"refractor_ask_question_{key}"
+                ] = not st.session_state[f"refractor_ask_question_{key}"]
         if st.session_state[f"refractor_ask_question_{key}"]:
             with st.container(border=True):
                 question_input = st.text_input(

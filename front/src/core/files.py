@@ -6,6 +6,7 @@ import streamlit as st
 from pages import PAGE_VIEWER
 from utils import (
     clear_cache,
+    delete_file,
     download_and_display_file,
     download_file_button,
     generate_aside_project_markdown,
@@ -26,7 +27,7 @@ def delete_files_dialog(files, key="delete_files"):
         error_files = []
         with st.spinner("Deleting files..."):
             for file in files:
-                result = requests.delete(f"http://back:80/files/delete/{file}")
+                result = delete_file(file)
                 if result.status_code != 200:
                     st.error(f"Failed to delete {os.path.basename(file)}.")
                     error_files.append(file)
@@ -355,13 +356,18 @@ def table_files(files, allow_multiple_selection: bool = False, key: str = "table
         cols = st.columns([1, 2, 1, 1, 1, 1, 1])
         with cols[0]:
             interact_mode = st.pills(
-                "Interaction Mode", allow_multiple_selection_options, default=allow_multiple_selection_options[1]
+                "Interaction Mode",
+                allow_multiple_selection_options,
+                default=allow_multiple_selection_options[1],
             )
             if interact_mode not in allow_multiple_selection_options:
                 interact_mode = allow_multiple_selection_options[0]
 
     select_default_value = False
-    if allow_multiple_selection and interact_mode == allow_multiple_selection_options[1]:
+    if (
+        allow_multiple_selection
+        and interact_mode == allow_multiple_selection_options[1]
+    ):
         with cols[1]:
             spacer()
             select_default_value = st.checkbox(
@@ -398,7 +404,8 @@ def table_files(files, allow_multiple_selection: bool = False, key: str = "table
         column_config={
             "see": st.column_config.CheckboxColumn(
                 "🔎"
-                if not allow_multiple_selection or interact_mode == allow_multiple_selection_options[0]
+                if not allow_multiple_selection
+                or interact_mode == allow_multiple_selection_options[0]
                 else "📦",
                 default=select_default_value,
             )
@@ -409,7 +416,10 @@ def table_files(files, allow_multiple_selection: bool = False, key: str = "table
         key=f"{key}_lines",
     )
     selected_rows = table.query("see == True")
-    if not allow_multiple_selection or interact_mode == allow_multiple_selection_options[0]:
+    if (
+        not allow_multiple_selection
+        or interact_mode == allow_multiple_selection_options[0]
+    ):
         if len(selected_rows) > 0:
             st.session_state.file_to_see = f"/shared/{selected_rows.iloc[0]['Date']}/{selected_rows.iloc[0]['Subfolder']}/{selected_rows.iloc[0]['File']}"
             st.switch_page(PAGE_VIEWER)
@@ -520,8 +530,6 @@ def box_file(file: str, height: int, show_preview: bool, key: str = ""):
 
 
 def line_file(file: str, show_preview: bool, key: str = ""):
-    MAX_SUMMARY_LENGTH = 500
-
     # MARK: LINE FILE
     with st.container(border=True):
         file_name = os.path.basename(file)
@@ -559,11 +567,8 @@ def line_file(file: str, show_preview: bool, key: str = ""):
                 summary = result.json().get("summary", "")
                 keywords = result.json().get("keywords", [])
                 st.caption(f"Keywords : {', '.join(keywords)}")
-                with st.container(border=True):
-                    st.markdown(
-                        summary[:MAX_SUMMARY_LENGTH]
-                        + (" ..." if len(summary) > MAX_SUMMARY_LENGTH else "")
-                    )
+                with st.container(border=True, height=300):
+                    st.markdown(summary)
             else:
                 st.info("No summary available for this file.")
         with cols[3 if show_preview else 2]:

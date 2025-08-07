@@ -8,6 +8,7 @@ import streamlit as st
 from pages import PAGE_EXPLORER, PAGE_NOTES
 from utils import (
     clear_cache,
+    delete_file,
     download_and_display_file,
     download_file_button,
     generate_aside_project_markdown,
@@ -34,7 +35,7 @@ def dialog_delete_file(file):
         f"Are you sure you want to delete the file:\n  **{os.path.basename(file)}**?\n This action cannot be undone."
     )
     if st.button("Delete 🗑️", use_container_width=True):
-        result = requests.delete(f"http://back:80/files/delete/{file}")
+        result = delete_file(file)
         if result.status_code == 200:
             toast_for_rerun(
                 "File deleted successfully.",

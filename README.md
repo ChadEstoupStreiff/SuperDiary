@@ -66,16 +66,14 @@ Ideas:
 - A robot that looks for files and update summaries if needed (like if the summary is older that file date, in reupload for exemple)
 - Github link to add context to chat ?
 - Super notes with block ( #%% delimiters )
+- Include possibility to use Mistral (🇫🇷)
 
 
 Bugs:  
-- When clear cache, explorer ignore form parameters
-- deosnt delete file in recent open and recent added
+None :)
 
 TODO: 
-- Test search on big volume (tokens on summaries may explode search time)
 - Page (for volume on front, back can handles a lot of files)
-- Exclude mode (on file type, subfolder, project and tags)
 - CLIP search on images ?
 
 Optimization:
