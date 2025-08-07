@@ -656,6 +656,23 @@ def settings():
             )
             cols = st.columns(2)
             with cols[0]:
+                ollama_server = settings.get("ollama_server", "http://localhost:11434")
+                new_ollama_server = st.text_input(
+                    "Ollama URL",
+                    value=ollama_server,
+                    help="Enter the URL of your Ollama server. (http://localhost:11434 to use the local Ollama server)",
+                )
+                if new_ollama_server != ollama_server:
+                    settings["ollama_server"] = new_ollama_server
+                    apply_settings(settings)
+
+                with st.spinner("Checking Ollama server...", show_time=True):
+                    response = requests.get("http://back:80/ollama/test_url")
+                if response.status_code == 200:
+                    st.success("✅ Ollama server is valid.")
+                else:
+                    st.error("❌ Ollama server is not reachable.")
+
                 model_pull_name = st.text_input(
                     "Model to install",
                     help="Enter the name of the model to pull from Ollama.",

@@ -66,7 +66,7 @@ Ideas:
 - A robot that looks for files and update summaries if needed (like if the summary is older that file date, in reupload for exemple)
 - Github link to add context to chat ?
 - Super notes with block ( #%% delimiters )
-- Include possibility to use Mistral (🇫🇷)
+- audio transcription with online models (mistral or chatgpt ?)
 
 
 Bugs:  

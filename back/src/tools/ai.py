@@ -1,16 +1,52 @@
 import json
+import re
+from typing import Set
 
 import requests
 import tiktoken
+from bs4 import BeautifulSoup
 from views.settings import get_setting
-from typing import Set
+
+
+def parse_token_count(size_str: str) -> int:
+    size_str = size_str.strip().upper()
+    if size_str.endswith("K"):
+        return int(float(size_str[:-1]) * 1024)
+    elif size_str.endswith("M"):
+        return int(float(size_str[:-1]) * 1024 * 1024)
+    else:
+        return int(size_str)
+
+
+def get_context_size(model_name: str, default: int = 4096) -> str:
+    base_url = "https://ollama.com/library/"
+    model_slug = model_name.split(":")[0]
+    url = f"{base_url}{model_slug}"
+
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch page: {url}")
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Search all mobile cards (sm:hidden blocks) for matching model name
+    model_cards = soup.find_all("a", class_="sm:hidden")
+    for card in model_cards:
+        name_tag = card.find("p", class_="block")
+        if name_tag and model_name in name_tag.text:
+            info_text = card.get_text()
+            match = re.search(r"(\d+K)\s+context window", info_text)
+            if match:
+                return match.group(1)
+
+    return default
+
 
 def request_llm(
     setting_prefix: str,
     prompt: str,
     input_text: str = None,
     stream_callback=None,
-    max_tokens: int = None,
 ) -> Set[str]:
     """
     Request a language model (LLM) to process the prompt and return the response.
@@ -20,22 +56,22 @@ def request_llm(
     model = get_setting(f"{setting_prefix}_model")
 
     if input_text is not None:
-        input_tokenized = tiktoken.encoding_for_model("gpt-3.5-turbo").encode(
-            input_text
-        )
-        if max_tokens and len(input_tokenized) > max_tokens:
-            input_text = tiktoken.encoding_for_model("gpt-3.5-turbo").decode(
-                input_tokenized[:max_tokens]
-            )
-
-    if input_text is not None:
         prompt = prompt.replace("{input}", input_text)
 
     # LLAMA
     if ai_type == "llama":
+        ollama_server = get_setting("ollama_server", "http://ollama:11434")
         with requests.post(
-            "http://ollama:11434/api/generate",
-            json={"model": model, "prompt": prompt, "stream": True},
+            f"{ollama_server}/api/generate",
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": True,
+                "options": {
+                    "num_ctx": parse_token_count(get_context_size(model)),
+                    "num_keep": 2048,
+                },
+            },
             stream=True,
             timeout=3600,
         ) as response:
@@ -57,7 +93,7 @@ def request_llm(
                     except Exception:
                         pass
             return ai_type, model, output
-    
+
     # Mistral
     elif ai_type == "Mistral":
         api_key = get_setting("mistral_api_key")
@@ -67,9 +103,7 @@ def request_llm(
         }
         payload = {
             "model": model,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
+            "messages": [{"role": "user", "content": prompt}],
             "stream": stream_callback is not None,
         }
         url = "https://api.mistral.ai/v1/chat/completions"
@@ -77,7 +111,9 @@ def request_llm(
             url, headers=headers, json=payload, stream=stream_callback is not None
         ) as response:
             if response.status_code != 200:
-                raise Exception(f"Mistral error {response.status_code}: {response.text}")
+                raise Exception(
+                    f"Mistral error {response.status_code}: {response.text}"
+                )
 
             output = ""
             for line in response.iter_lines():

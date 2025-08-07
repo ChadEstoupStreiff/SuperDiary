@@ -17,6 +17,7 @@ default_settings = {
     "enable_auto_ocr": True,
     "enable_auto_transcription": True,
     "enable_auto_summary": True,
+    "ollama_server": "http://ollama:11434",
     "transcription_type": "llama",
     "transcription_model": "small",
     "summarization_type": "llama",
