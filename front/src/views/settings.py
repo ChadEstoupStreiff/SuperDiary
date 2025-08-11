@@ -549,6 +549,14 @@ def settings():
                     ):
                         dialog_delete_tag(tag)
 
+    # MARK: Tasks
+    with settings_tabs[4]:
+        tasks(
+            file=None,
+            list_ocr=True,
+            list_transcription=True,
+        )
+
     # MARK: LLM Settings
     with settings_tabs[3]:
         tab_llama, tab_mistral, tab_chatgpt, tab_gemini = st.tabs(
@@ -815,14 +823,6 @@ def settings():
                             st.toast("Google Gemini API key is invalid.", icon="❌")
                     except requests.RequestException as e:
                         st.toast(f"Gemini check failed: {e}", icon="⚠️")
-
-    # MARK: Tasks
-    with settings_tabs[4]:
-        tasks(
-            file=None,
-            list_ocr=True,
-            list_transcription=True,
-        )
 
 
 if __name__ == "__main__":

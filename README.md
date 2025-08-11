@@ -68,7 +68,6 @@ Ideas:
 - Super notes with block ( #%% delimiters )
 - audio transcription with online models (mistral or chatgpt ?)
 
-
 Bugs:  
 None :)
 

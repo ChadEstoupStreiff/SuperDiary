@@ -4,7 +4,9 @@ import json
 import requests
 import streamlit as st
 from core.files import display_files
-from utils import clear_cache, toast_for_rerun
+from utils import clear_cache, fmt_bytes, spacer, toast_for_rerun
+from widgets import bar_widget, disk_widget
+from dotenv import dotenv_values
 
 
 @st.dialog("📤 Upload files", width="large")
@@ -127,7 +129,8 @@ def dashboard():
     """
     Render the dashboard page.
     """
-    st.write("Welcome to the Super Diary Dashboard!")
+    user_name = dotenv_values("/.env").get("USER_NAME", "User").lower().capitalize()
+    st.write(f"Welcome to the Super Diary Dashboard, {user_name}!")
     cols = st.columns([2, 1])
 
     with cols[1]:
@@ -147,26 +150,6 @@ def dashboard():
             and st.session_state.dashboard_new_files
         ):
             dialog_upload(files)
-
-        with st.container(border=True):
-            metric_cols = st.columns(2)
-            with metric_cols[0]:
-                st.metric(
-                    label="Total Files",
-                    value=requests.get("http://back:80/files/count").json(),
-                    help="Total number of files processed by the system.",
-                )
-            with metric_cols[1]:
-                st.metric(
-                    label="Total Projects",
-                    value=len(requests.get("http://back:80/projects").json()),
-                    help="Total number of projects created in the system.",
-                )
-                st.metric(
-                    label="Total Tags",
-                    value=len(requests.get("http://back:80/tags").json()),
-                    help="Total number of tags created in the system.",
-                )
 
     with cols[0]:
         today = datetime.date.today()
@@ -214,6 +197,69 @@ def dashboard():
                     representation_mode=0,
                     key="week_files",
                 )
+
+    with cols[1]:
+        with st.container(border=True):
+            metrics = requests.get("http://back:80/metrics").json()
+            metric_cols = st.columns(2)
+            with metric_cols[0]:
+                st.metric(
+                    label="Total Files",
+                    value=metrics.get("nbr_files", 0),
+                    help="Total number of files processed by the system.",
+                )
+                st.metric(
+                    label="Total Projects",
+                    value=metrics.get("nbr_projects", 0),
+                    help="Total number of projects created in the system.",
+                )
+                st.metric(
+                    label="Total Tags",
+                    value=metrics.get("nbr_tags", 0),
+                    help="Total number of tags created in the system.",
+                )
+            with metric_cols[1]:
+                st.metric(
+                    label="Total Calendars Events",
+                    value=metrics.get("nbr_calendars", 0),
+                    help="Total number of calendar entries in the system.",
+                )
+                st.metric(
+                    label="Total Hours",
+                    value=metrics.get("nbr_hours", 0),
+                    help="Total number of hours logged in the system.",
+                )
+                st.metric(
+                    label="App Disk Usage",
+                    value=fmt_bytes(
+                        metrics.get("disk_usage", {}).get("back", 0)
+                        + metrics.get("disk_usage", {}).get("ollama", 0)
+                        + metrics.get("disk_usage", {}).get("mysql", 0)
+                        + metrics.get("disk_usage", {}).get("files", 0)
+                    ),
+                    help="Total disk space used by the application. ( Cache + Ollama + Database + Files )",
+                )
+
+            disk_widget(metrics.get("disk_usage", {}))
+            spacer()
+            bar_widget(
+                metrics.get("file_type_counts", {}),
+                title="Files by Type",
+            )
+            spacer()
+            projects = requests.get("http://back:80/projects").json()
+            bar_widget(
+                metrics.get("files_per_project", {}),
+                colors={project["name"]: project["color"] for project in projects},
+                title="Files per Project",
+            )
+            spacer()
+            tags = requests.get("http://back:80/tags").json()
+            bar_widget(
+                metrics.get("files_per_tag", {}),
+                colors={tag["name"]: tag["color"] for tag in tags},
+                title="Files per Tag",
+            )
 
 
 if __name__ == "__main__":

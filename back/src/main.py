@@ -1,21 +1,24 @@
 import logging
+import os
+import shutil
 import time
-from threading import Thread
 import traceback
+from threading import Thread
 
 import uvicorn
-from controllers.SummarizeManager import SummarizeManager
 from controllers.ChatManager import ChatManager
 from controllers.FileManager import FileManager
 from controllers.OCRManager import OCRManager
+from controllers.SummarizeManager import SummarizeManager
 from controllers.TranscriptionManager import TranscriptionManager
-from db import DB, create_default_values, get_db, TagFile, ProjectFile
-from db.models import Base
-from utils import walk_files
+from db import DB, ProjectFile, TagFile, create_default_values, get_db
+from db.models import Base, CalendarRecord
 from fastapi import FastAPI
 from pillow_heif import register_heif_opener
+from sqlalchemy import func
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+from utils import walk_files
 
 app = FastAPI()
 
@@ -119,53 +122,114 @@ def summarize_health():
     else:
         return "DEAD"
 
-# @app.get("/metrics")
-# def metrics():
-#     files = walk_files()
-#     db = get_db()
-#     try:
-#         # Count files per project
-#         files_per_project = dict(
-#             db.query(ProjectFile.project, func.count(ProjectFile.file))
-#             .group_by(ProjectFile.project)
-#             .all()
-#         )
 
-#         # Count files per tag
-#         files_per_tag = dict(
-#             db.query(TagFile.tag, func.count(TagFile.file))
-#             .group_by(TagFile.tag)
-#             .all()
-#         )
+def du_size(path: str) -> int:
+    """Approximate `du -sb path` (sum of file sizes, no symlink following)."""
+    total = 0
+    stack = [path]
+    while stack:
+        p = stack.pop()
+        try:
+            with os.scandir(p) as it:
+                for e in it:
+                    try:
+                        if e.is_dir(follow_symlinks=False):
+                            stack.append(e.path)
+                        else:
+                            total += e.stat(follow_symlinks=False).st_size
+                    except Exception:
+                        pass
+        except NotADirectoryError:
+            try:
+                total += os.lstat(p).st_size
+            except Exception:
+                pass
+        except FileNotFoundError:
+            pass
+        except PermissionError:
+            pass
+    return total
 
-#         # Set of all file names
-#         all_files = set(files)
 
-#         # Files with tags
-#         tagged_files = set(row[0] for row in db.query(TagFile.file).distinct())
+@app.get("/metrics")
+def metrics():
+    db = get_db()
+    try:
+        files = walk_files()
+        calendars = db.query(CalendarRecord).all()
+        # Count files per project
+        files_per_project = dict(
+            db.query(ProjectFile.project, func.count(ProjectFile.file))
+            .group_by(ProjectFile.project)
+            .all()
+        )
+        file_type_counts = {}
+        for file in files:
+            ext = os.path.splitext(file)[1].lower()
+            if ext not in file_type_counts:
+                file_type_counts[ext] = 0
+            file_type_counts[ext] += 1
 
-#         # Files in projects
-#         project_files = set(row[0] for row in db.query(ProjectFile.file).distinct())
+        # Count files per tag
+        files_per_tag = dict(
+            db.query(TagFile.tag, func.count(TagFile.file)).group_by(TagFile.tag).all()
+        )
 
-#         # Files with no tag or no project
-#         no_tag = list(all_files - tagged_files)
-#         no_project = list(all_files - project_files)
+        # Set of all file names
+        all_files = set(files)
 
-#     except Exception as e:
-#         logging.error(f"Error retrieving metrics: {str(e)}")
-#         db.rollback()
-#         logging.error(traceback.format_exc())
-#         return {"error": str(e)}
-#     finally:
-#         db.close()
+        # Files with tags
+        tagged_files = set(row[0] for row in db.query(TagFile.file).distinct())
 
-#     return {
-#         "nbr_files": len(files),
-#         "files_per_project": files_per_project,
-#         "files_per_tag": files_per_tag,
-#         "files_without_tag": len(no_tag),
-#         "files_without_project": len(no_project),
-#     }
+        # Files in projects
+        project_files = set(row[0] for row in db.query(ProjectFile.file).distinct())
+
+        # Files with no tag or no project
+        no_tag = list(all_files - tagged_files)
+        no_project = list(all_files - project_files)
+
+        back_size = (
+            du_size("/root/.cache")
+            + du_size("/root/.paddle")
+            + du_size("/root/.paddleocr")
+        )
+        ollama_size = du_size("/ollama")
+        mysql_size = du_size("/mysql")
+        files_size = du_size("/shared")
+
+        # Mount size at /shared (total capacity, not free)
+        total, used, free = shutil.disk_usage("/shared")
+
+    except Exception as e:
+        logging.error(f"Error retrieving metrics: {str(e)}")
+        db.rollback()
+        logging.error(traceback.format_exc())
+        return {"error": str(e)}
+    finally:
+        db.close()
+
+    return {
+        "nbr_calendars": len(calendars),
+        "nbr_hours": sum(calendar.time_spent for calendar in calendars),
+        "nbr_projects": len(files_per_project),
+        "nbr_tags": len(files_per_tag),
+        "nbr_files": len(all_files),
+        "files_per_project": files_per_project,
+        "files_per_tag": files_per_tag,
+        "files_without_tag": len(no_tag),
+        "files_without_project": len(no_project),
+        "file_type_counts": file_type_counts,
+        "disk_usage": {  # bytes
+            "total": total,  # total size of the /shared mount
+            "available": free,  # available space in bytes
+            "other": used - (back_size + ollama_size + mysql_size + files_size),
+            "back": back_size,  # size of .cache + .paddle + .paddleocr
+            "ollama": ollama_size,
+            "mysql": mysql_size,
+            "files": files_size,
+        },
+    }
+
 
 if __name__ == "__main__":
     logging.basicConfig(

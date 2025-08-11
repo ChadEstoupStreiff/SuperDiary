@@ -637,3 +637,19 @@ def paths_to_markdown_tree(paths: List[str]) -> str:
         return md
 
     return print_tree(tree)
+
+def generate_color(text: str) -> str:
+    """
+    Generate a color based on the text input.
+    """
+    hash_value = hash(text)
+    r = (hash_value & 0xFF0000) >> 16
+    g = (hash_value & 0x00FF00) >> 8
+    b = hash_value & 0x0000FF
+    return f"#{r:02X}{g:02X}{b:02X}"
+
+def fmt_bytes(b):
+    b = float(max(0, b))
+    for u in ["B","KB","MB","GB","TB","PB"]:
+        if b < 1024 or u == "PB": return f"{b:.2f} {u}"
+        b /= 1024.0

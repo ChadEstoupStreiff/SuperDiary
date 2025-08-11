@@ -138,7 +138,6 @@ Do NOT use JSON, code blocks, quotes, or formatting.
 Example: keyword1, keyword2, keyword3, ...
 """,
             input_text=input,
-            max_tokens=2048,
         )
         if keywords.startswith("[") and keywords.endswith("]"):
             keywords = json.loads(keywords)
@@ -161,7 +160,6 @@ Respond ONLY with plain markdown.
 Do NOT include explanations, notes, or any formatting outside the summary itself.
 """,
             input_text=input,
-            max_tokens=2048,
         )
         summary = summary.strip()
         if summary.startswith("```") and summary.endswith("```"):
@@ -273,8 +271,8 @@ Do NOT include explanations, notes, or any formatting outside the summary itself
             {
                 "file": task.file,
                 "state": task.state.value,
-                "added": task.added.strftime("%d-%m-%Y %H:%M:%S"),
-                "completed": task.completed.strftime("%d-%m-%Y %H:%M:%S")
+                "added": task.added.strftime("%Y-%m-%d %H:%M:%S"),
+                "completed": task.completed.strftime("%Y-%m-%d %H:%M:%S")
                 if task.completed
                 else None,
                 "result": task.result,
@@ -291,8 +289,8 @@ Do NOT include explanations, notes, or any formatting outside the summary itself
             {
                 "file": task.file,
                 "state": task.state.value,
-                "added": task.added.strftime("%d-%m-%Y %H:%M:%S"),
-                "completed": task.completed.strftime("%d-%m-%Y %H:%M:%S")
+                "added": task.added.strftime("%Y-%m-%d %H:%M:%S"),
+                "completed": task.completed.strftime("%Y-%m-%d %H:%M:%S")
                 if task.completed
                 else None,
                 "result": task.result,

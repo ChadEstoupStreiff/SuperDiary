@@ -38,6 +38,11 @@ services:
       - OLLAMA_HOST=0.0.0.0
     volumes:
       - ${DATA_PATH}/ollama:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '4.'
+          # memory: '4.'
     tty: true
     hostname: ollama
     networks:
@@ -54,12 +59,19 @@ services:
     #         - driver: nvidia
     #           count: 1
     #           capabilities: [ gpu ]
+    deploy:
+      resources:
+        limits:
+          cpus: '4.'
+          # memory: '4.'
     volumes:
       - ${DATA_PATH}/shared:/shared
       - .env:/.env
       - ${DATA_PATH}/whisper_cache:/root/.cache
       - ${DATA_PATH}/paddle:/root/.paddle
       - ${DATA_PATH}/paddleocr:/root/.paddleocr
+      - ${DATA_PATH}/ollama:/ollama
+      - ${DATA_PATH}/back/db:/mysql
     depends_on:
       - back_db
     ports:
@@ -76,6 +88,8 @@ services:
       - back
     ports:
       - "${FRONT_PORT}:8501"
+    volumes:
+      - .env:/.env
     hostname: front
     networks:
       - appnet

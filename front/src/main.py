@@ -17,10 +17,6 @@ if __name__ == "__main__":
         page_icon="/assets/logo.png",
         layout="wide",
     )
-    # custom_style()
-
-    # if "file_to_see" in st.session_state:
-    #     pages.insert(4, PAGE_VIEWER)
 
     pg = st.navigation(
         {
@@ -41,8 +37,10 @@ if __name__ == "__main__":
         expanded=False,
         position="sidebar",
     )
+
     if "toast_for_rerun" in st.session_state:
         for message, icon in st.session_state.toast_for_rerun:
             st.toast(message, icon=icon)
         del st.session_state.toast_for_rerun
+
     pg.run()

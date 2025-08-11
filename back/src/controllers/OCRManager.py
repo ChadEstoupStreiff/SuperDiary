@@ -221,8 +221,8 @@ class OCRManager:
             {
                 "file": task.file,
                 "state": task.state.value,
-                "added": task.added.strftime("%d-%m-%Y %H:%M:%S"),
-                "completed": task.completed.strftime("%d-%m-%Y %H:%M:%S")
+                "added": task.added.strftime("%Y-%m-%d %H:%M:%S"),
+                "completed": task.completed.strftime("%Y-%m-%d %H:%M:%S")
                 if task.completed
                 else None,
                 "result": task.result,
@@ -242,8 +242,8 @@ class OCRManager:
             {
                 "file": task.file,
                 "state": task.state.value,
-                "added": task.added.strftime("%d-%m-%Y %H:%M:%S"),
-                "completed": task.completed.strftime("%d-%m-%Y %H:%M:%S")
+                "added": task.added.strftime("%Y-%m-%d %H:%M:%S"),
+                "completed": task.completed.strftime("%Y-%m-%d %H:%M:%S")
                 if task.completed
                 else None,
                 "result": task.result,

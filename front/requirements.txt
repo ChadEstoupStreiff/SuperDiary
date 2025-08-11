@@ -1,3 +1,4 @@
 streamlit==1.47.*
 requests==2.31.*
 emoji==2.2.0
+dotenv==0.9.9

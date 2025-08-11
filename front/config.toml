@@ -73,7 +73,7 @@ showErrorDetails = true
 #                 Streamlit Community Cloud) or through st.set_page_config.
 #                 If there are no options left, hide the menu.
 # Default: "auto"
-toolbarMode = "minimal"
+toolbarMode = "viewer"
 
 [runner]
 
@@ -193,7 +193,7 @@ serverPort = 8502
 # Flag to hide most of the UI elements found at the top of a Streamlit app.
 # NOTE: This does *not* hide the hamburger menu in the top-right of an app.
 # Default: false
-hideTopBar = true
+hideTopBar = false
 
 
 [mapbox]
