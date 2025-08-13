@@ -3,7 +3,6 @@ import re
 from typing import Set
 
 import requests
-import tiktoken
 from bs4 import BeautifulSoup
 from views.settings import get_setting
 
@@ -104,12 +103,10 @@ def request_llm(
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "stream": stream_callback is not None,
+            "stream": True,
         }
         url = "https://api.mistral.ai/v1/chat/completions"
-        with requests.post(
-            url, headers=headers, json=payload, stream=stream_callback is not None
-        ) as response:
+        with requests.post(url, headers=headers, json=payload, stream=True) as response:
             if response.status_code != 200:
                 raise Exception(
                     f"Mistral error {response.status_code}: {response.text}"
@@ -143,13 +140,11 @@ def request_llm(
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": prompt}],
-            "stream": stream_callback is not None,
+            "stream": True,
         }
         url = "https://api.openai.com/v1/chat/completions"
 
-        with requests.post(
-            url, headers=headers, json=payload, stream=stream_callback is not None
-        ) as response:
+        with requests.post(url, headers=headers, json=payload, stream=True) as response:
             if response.status_code != 200:
                 raise Exception(f"OpenAI error {response.status_code}: {response.text}")
 

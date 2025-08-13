@@ -235,54 +235,79 @@ def see_file(file):
         ):
             dialog_delete_file(file)
 
-    tab_details, tab_metadata, tab_notes, tab_summarize, tab_tasks = st.tabs(
-        ["📋 Détails", "🧾 Metadata", "📝 Notes", "🧠 Summary", "⏳ Tasks"]
+    tab_details, tab_notes, tab_summarize, tab_tasks = st.tabs(
+        ["📋 Détails", "📝 Notes", "🧠 Summary", "⏳ Tasks"]
     )
     # MARK: DETAILS
+    metadata = None
     with tab_details:
-        st.markdown(f"#### {file_name}")
-        st.caption(f"**📅 Date:** {date}")
-        st.caption(f"**📁 Subfolder:** {subfolder}")
-        st.caption(f"**🛣️ Path:** {file}")
+        cols = st.columns(2)
+        with cols[0]:
+            st.markdown(f"#### {file_name}")
+            st.caption(f"**📅 Date:** {date}")
+            st.caption(f"**📁 Subfolder:** {subfolder}")
+            st.caption(f"**🛣️ Path:** {file}")
 
-        projects = requests.get(f"http://back:80/projects_of/{file}")
-        if projects.status_code == 200:
-            projects = projects.json()
-        else:
-            projects = []
-        tags = requests.get(f"http://back:80/tags_of/{file}")
-        if tags.status_code == 200:
-            tags = tags.json()
-        else:
-            tags = []
+            projects = requests.get(f"http://back:80/projects_of/{file}")
+            if projects.status_code == 200:
+                projects = projects.json()
+            else:
+                projects = []
+            tags = requests.get(f"http://back:80/tags_of/{file}")
+            if tags.status_code == 200:
+                tags = tags.json()
+            else:
+                tags = []
 
-        st.markdown("##### Projects")
-        if len(projects) == 0:
-            st.info("This file is not associated with any project.")
-        else:
-            st.markdown(
-                generate_aside_project_markdown(
-                    [p["name"] for p in projects],
-                    [p["color"] for p in projects],
-                ),
-                unsafe_allow_html=True,
-            )
+            st.markdown("##### Projects")
+            if len(projects) == 0:
+                st.info("This file is not associated with any project.")
+            else:
+                st.markdown(
+                    generate_aside_project_markdown(
+                        [p["name"] for p in projects],
+                        [p["color"] for p in projects],
+                    ),
+                    unsafe_allow_html=True,
+                )
 
-        st.markdown("##### Tags")
-        if len(tags) == 0:
-            st.info("This file is not associated with any tags.")
-        else:
-            st.markdown(
-                generate_aside_tag_markdown(
-                    [t["name"] for t in tags],
-                    [t["color"] for t in tags],
-                ),
-                unsafe_allow_html=True,
-            )
+            st.markdown("##### Tags")
+            if len(tags) == 0:
+                st.info("This file is not associated with any tags.")
+            else:
+                st.markdown(
+                    generate_aside_tag_markdown(
+                        [t["name"] for t in tags],
+                        [t["color"] for t in tags],
+                    ),
+                    unsafe_allow_html=True,
+                )
 
-        spacer()
-        if st.button("Edit file details", use_container_width=True):
-            dialog_edit_file(file, projects=projects, tags=tags)
+            spacer()
+            if st.button("Edit file details", use_container_width=True):
+                dialog_edit_file(file, projects=projects, tags=tags)
+        
+        with cols[1]:
+            result = requests.get(f"http://back:80/files/metadata/{file}")
+            if result.status_code == 200:
+                metadata = result.json()
+                size = metadata.get("size", 0) / (1024 * 1024)
+                date_created = datetime.datetime.fromisoformat(
+                    metadata.get("created", 0)
+                ).strftime("%Y-%m-%d %H:%M:%S")
+                date_modified = datetime.datetime.fromisoformat(
+                    metadata.get("modified", 0)
+                ).strftime("%Y-%m-%d %H:%M:%S")
+                path = metadata.get("path", "Unknown")
+                mime = metadata.get("mime_type", "Unknown")
+
+                st.markdown(f"**Size:** {size:.3f} Mb")
+                st.markdown(f"**Created on:** {date_created}")
+                st.markdown(f"**Modified on:** {date_modified}")
+                st.markdown(f"**Path:** {path}")
+                st.markdown(f"**MIME Type:** {mime}")
+            else:
+                st.error("Failed to load metadata for this file.")
 
     # MARK: SUMMARIZE
     with tab_summarize:
@@ -311,30 +336,6 @@ def see_file(file):
                 st.rerun()
             else:
                 st.error("Failed to ask summary.")
-
-    # MARK: METADATA
-    metadata = None
-    with tab_metadata:
-        result = requests.get(f"http://back:80/files/metadata/{file}")
-        if result.status_code == 200:
-            metadata = result.json()
-            size = metadata.get("size", 0) / (1024 * 1024)
-            date_created = datetime.datetime.fromisoformat(
-                metadata.get("created", 0)
-            ).strftime("%Y-%m-%d %H:%M:%S")
-            date_modified = datetime.datetime.fromisoformat(
-                metadata.get("modified", 0)
-            ).strftime("%Y-%m-%d %H:%M:%S")
-            path = metadata.get("path", "Unknown")
-            mime = metadata.get("mime_type", "Unknown")
-
-            st.markdown(f"**Size:** {size:.3f} Mb")
-            st.markdown(f"**Created on:** {date_created}")
-            st.markdown(f"**Modified on:** {date_modified}")
-            st.markdown(f"**Path:** {path}")
-            st.markdown(f"**MIME Type:** {mime}")
-        else:
-            st.error("Failed to load metadata for this file.")
 
     # MARK: NOTES
     with tab_notes:

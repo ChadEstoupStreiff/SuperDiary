@@ -1,8 +1,10 @@
+import uuid
+
 import streamlit as st
-from utils import fmt_bytes, generate_color
+from utils import fmt_bytes
 
 
-def disk_widget(disk_usage: dict, width_px: int = 600, height_px: int = 18) -> str:
+def disk_widget(disk_usage: dict) -> str:
     total = int(disk_usage.get("total", 0))
     available = int(disk_usage.get("available", 0))
 
@@ -50,8 +52,6 @@ def disk_widget(disk_usage: dict, width_px: int = 600, height_px: int = 18) -> s
         title="Disk Usage",
         total=total,
         available=available,
-        width_px=width_px,
-        height_px=height_px,
         show_legend=True,
         caption_html="Total: "
         + fmt_bytes(total)
@@ -71,14 +71,20 @@ def bar_widget(
     title: str | None = None,  # optional title for the bar
     total: int | float | None = None,
     available: int | float = 0,  # optional trailing segment (e.g., free space)
-    width_px: int = 600,
+    # The width_px parameter is no longer needed for a responsive design
     height_px: int = 18,
     show_legend: bool = True,
     caption_html: str | None = None,
     value_formatter=None,  # callable(value)->str; if None uses str(value)
     show_percent: bool = True,
 ) -> str:
-    import uuid
+    # This is a placeholder for a color generation function.
+    # You'll need to define this function or import it from a library.
+    def generate_color(name):
+        import hashlib
+
+        hex_code = hashlib.sha256(name.encode()).hexdigest()[:6]
+        return f"#{hex_code}"
 
     cid = f"bar-{uuid.uuid4().hex}"
 
@@ -144,7 +150,7 @@ def bar_widget(
         f"""
 <div id="{cid}" style="position:relative;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial,sans-serif;">
   {f"<div style='font-size:20px;font-weight:500;margin-bottom:4px;'>{title}</div>" if title else ""}
-  <div style="width:{width_px}px;border:1px solid #ddd;border-radius:6px;overflow:hidden;background:#f7f7f7;">
+  <div style="width:100%;border:1px solid #ddd;border-radius:6px;overflow:hidden;background:#f7f7f7;">
     <div class="bar" style="display:flex;width:100%;height:{height_px}px;">
       {''.join(segs_html) if segs_html else '<div style="width:100%;height:100%;background:#eee"></div>'}
     </div>

@@ -7,11 +7,12 @@ import tempfile
 from pathlib import Path
 from typing import List
 from urllib.parse import quote
-
+import tifffile
 import emoji
 import pandas as pd
 import requests
 import streamlit as st
+import numpy as np
 
 map_languauge_extension = {
     "py": "python",
@@ -221,9 +222,32 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
                 key=f"dataframe_{file_path}",
             )
 
+        if file_extension.lower() in ("tif", "tiff"):
+            try:
+                with tifffile.TiffFile(file_path) as tif:
+                    if len(tif.pages) == 0:
+                        frame = 0
+                    else:
+                        frame = st.slider("Select frame", 0, len(tif.pages) - 1)
+                    img = tif.pages[frame].asarray()
+
+                    if np.issubdtype(img.dtype, np.floating):
+                        img = np.clip(img, 0, 1)  # floats expected in [0, 1]
+                    else:
+                        img_min, img_max = img.min(), img.max()
+                        if img_max > 255 or img_min < 0:
+                            img = (img - img_min) / (img_max - img_min)  # normalize to [0,1]
+                            img = (img * 255).astype(np.uint8)
+                            
+                    st.image(img, use_container_width=True)
+
+            except Exception as e:
+                st.error(f"File might be corrupted or not supported. Error: {e}")
+
         else:
             with open(file_path, "rb") as file:
                 file_bytes = file.read()
+
 
                 if file_extension == "md" or file_extension == "markdown":
                     st.markdown(file_bytes.decode("utf-8"), unsafe_allow_html=True)
@@ -269,9 +293,19 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
                     st.video(file_bytes, format="video/mp4")
 
                 else:
-                    st.error(
-                        f"Can't load a preview for this file type. {file_extension} is not supported."
-                    )
+                    if not st.toggle("Force read (read as utf-8)"):
+                        st.error(
+                            f"Can't load a preview for this file type. {file_extension} is not supported."
+                        )
+                    else:
+                        if st.toggle("Read as hex"):
+                            st.code(
+                                file_bytes.hex(),
+                            )
+                        else:
+                            st.code(
+                                file_bytes.decode("utf-8"),
+                            )
     except Exception as e:
         st.error(
             f"File might be corrupted or not supported. Error displaying file: {str(e)}"
