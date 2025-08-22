@@ -22,6 +22,7 @@ from starlette.responses import FileResponse
 from utils import guess_mime, walk_files
 from views.settings import get_setting
 from views.stockpile import StockPile, get_recent_added
+from pydub import AudioSegment
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
@@ -103,7 +104,16 @@ async def upload_files(
                     os.path.splitext(file_name)[0] + ".png",
                 )
                 if file_ext == ".heic"
-                else os.path.join("/shared", file_date, subdirectory, file_name)
+                else (
+                    os.path.join(
+                        "/shared",
+                        file_date,
+                        subdirectory,
+                        os.path.splitext(file_name)[0] + ".mp3",
+                    )
+                    if file_ext == ".m4a"
+                    else os.path.join("/shared", file_date, subdirectory, file_name)
+                )
             )
             file_exists = os.path.exists(file_path)
 
@@ -111,6 +121,10 @@ async def upload_files(
                 content = await file.read()
                 image = Image.open(BytesIO(content))
                 image.save(file_path, format="PNG")
+            elif file_ext == ".m4a":
+                content = await file.read()
+                audio = AudioSegment.from_file(BytesIO(content))
+                audio.export(file_path, format="mp3")
             else:
                 with open(file_path, "wb") as f:
                     f.write(await file.read())

@@ -1,11 +1,14 @@
 import datetime
 import json
+import math
 import os
 from typing import List
 
 import requests
 import streamlit as st
+from core.ocr import _bbox_from_any, _draw_label, _open_image
 from pages import PAGE_EXPLORER, PAGE_NOTES
+from PIL import ImageDraw
 from utils import (
     clear_cache,
     delete_file,
@@ -286,7 +289,7 @@ def see_file(file):
             spacer()
             if st.button("Edit file details", use_container_width=True):
                 dialog_edit_file(file, projects=projects, tags=tags)
-        
+
         with cols[1]:
             result = requests.get(f"http://back:80/files/metadata/{file}")
             if result.status_code == 200:
@@ -421,11 +424,12 @@ def view():
                 st.error("Could not determine the file type. Please check the file.")
 
             elif mime.endswith("markdown"):
-                if st.button("📝 Edit in note", use_container_width=True):
-                    st.session_state["note_name"] = file
-                    if "note_content" in st.session_state:
-                        del st.session_state["note_content"]
-                    st.switch_page(PAGE_NOTES)
+                with top:
+                    if st.button("📝 Edit in note", use_container_width=True):
+                        st.session_state["note_name"] = file
+                        if "note_content" in st.session_state:
+                            del st.session_state["note_content"]
+                        st.switch_page(PAGE_NOTES)
 
             elif mime.startswith("audio/") or mime.startswith("video/"):
                 # MARK: TRANSCRIPTION
@@ -468,7 +472,7 @@ def view():
                         ocr_result = result.json().get("ocr", "")
                         try:
                             ocr_json = json.loads(ocr_result)
-                            ocr_cols = st.columns(2)
+                            ocr_cols = st.columns(3)
                             with ocr_cols[0]:
                                 show_score = st.toggle(
                                     "Show OCR confidence score",
@@ -481,8 +485,59 @@ def view():
                                     value=False,
                                     key="show_ocr_json",
                                 )
+                            with ocr_cols[2]:
+                                show_text = st.toggle(
+                                    "Show OCR text on Image",
+                                    value=False,
+                                    key="show_ocr_text",
+                                )
 
                             st.divider()
+
+                            if show_text:
+                                img = _open_image(file)
+                                W, H = img.size
+                                draw = ImageDraw.Draw(img)
+
+                                # Each item is assumed like: [bbox, [text, score]] (given your accesses item[1][0], item[1][1])
+                                for item in ocr_json:
+                                    try:
+                                        bbox_raw = item[0]
+                                        text = str(item[1][0])
+                                        score = (
+                                            float(item[1][1])
+                                            if isinstance(item[1][1], (int, float, str))
+                                            else None
+                                        )
+                                    except Exception:
+                                        # If structure differs, try keys
+                                        bbox_raw = (
+                                            item.get("bbox")
+                                            or item.get("poly")
+                                            or item.get("box")
+                                            or [0, 0, W, H]
+                                        )
+                                        text = item.get("text", "")
+                                        score = item.get("score", None)
+
+                                    xyxy = _bbox_from_any(bbox_raw, W, H)
+                                    label = (
+                                        f"{text}"
+                                        if not show_score or score is None
+                                        else f"{score*100:.2f}%: {text}"
+                                    )
+                                    # Scale label thickness by image size
+                                    scale = math.sqrt((W * H) / (100 * 100))
+                                    _draw_label(
+                                        draw,
+                                        xyxy,
+                                        label,
+                                        scale=max(0.7, min(2.0, scale)),
+                                    )
+
+                                st.image(
+                                    img, caption="OCR overlay", use_container_width=True
+                                )
 
                             for item in ocr_json:
                                 st.write(
@@ -528,7 +583,8 @@ def view():
                     st.error("No archive contents available. Please check the file.")
 
             with top:
-                download_and_display_file(file)
+                with st.expander("Preview", expanded=True):
+                    download_and_display_file(file)
 
 
 if __name__ == "__main__":

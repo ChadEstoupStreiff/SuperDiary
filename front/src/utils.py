@@ -7,12 +7,13 @@ import tempfile
 from pathlib import Path
 from typing import List
 from urllib.parse import quote
-import tifffile
+
 import emoji
+import numpy as np
 import pandas as pd
 import requests
 import streamlit as st
-import numpy as np
+import tifffile
 
 map_languauge_extension = {
     "py": "python",
@@ -198,8 +199,7 @@ def get_setting(key: str, default=None):
         return default
 
 
-def display_file(file_path: str, file_url: str, default_height_if_needed: int = 1000):
-    file_url = file_url.replace("http://back:80", "http://localhost:8400")
+def display_file(file_path: str, default_height_if_needed: int = 1000):
     file_extension = file_path.split(".")[-1].lower()
     mime = guess_mime(file_path)
 
@@ -236,9 +236,11 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
                     else:
                         img_min, img_max = img.min(), img.max()
                         if img_max > 255 or img_min < 0:
-                            img = (img - img_min) / (img_max - img_min)  # normalize to [0,1]
+                            img = (img - img_min) / (
+                                img_max - img_min
+                            )  # normalize to [0,1]
                             img = (img * 255).astype(np.uint8)
-                            
+
                     st.image(img, use_container_width=True)
 
             except Exception as e:
@@ -247,7 +249,6 @@ def display_file(file_path: str, file_url: str, default_height_if_needed: int = 
         else:
             with open(file_path, "rb") as file:
                 file_bytes = file.read()
-
 
                 if file_extension == "md" or file_extension == "markdown":
                     st.markdown(file_bytes.decode("utf-8"), unsafe_allow_html=True)
@@ -344,7 +345,6 @@ def download_and_display_file(file_name, default_height_if_needed=1000):
                     fp.seek(0)
                     display_file(
                         fp.name,
-                        f"http://back:80/files/download/{quote(file_name)}",
                         default_height_if_needed,
                     )
 
@@ -672,6 +672,7 @@ def paths_to_markdown_tree(paths: List[str]) -> str:
 
     return print_tree(tree)
 
+
 def generate_color(text: str) -> str:
     """
     Generate a color based on the text input.
@@ -682,8 +683,10 @@ def generate_color(text: str) -> str:
     b = hash_value & 0x0000FF
     return f"#{r:02X}{g:02X}{b:02X}"
 
+
 def fmt_bytes(b):
     b = float(max(0, b))
-    for u in ["B","KB","MB","GB","TB","PB"]:
-        if b < 1024 or u == "PB": return f"{b:.2f} {u}"
+    for u in ["B", "KB", "MB", "GB", "TB", "PB"]:
+        if b < 1024 or u == "PB":
+            return f"{b:.2f} {u}"
         b /= 1024.0

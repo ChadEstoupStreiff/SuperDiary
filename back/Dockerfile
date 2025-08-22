@@ -1,7 +1,5 @@
 FROM python:3.12-slim-bookworm
 
-
-# UPDATE
 RUN apt-get update -y
 RUN apt-get upgrade -y
 RUN pip install --upgrade pip
