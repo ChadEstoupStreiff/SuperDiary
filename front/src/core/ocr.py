@@ -39,17 +39,20 @@ def _bbox_from_any(b, W, H):
     # Fallback: whole image
     return (0, 0, W, H)
 
-
+def _get_font(size: int = 16):
+    # Use a font with full Unicode support
+    try:
+        return ImageFont.truetype("DejaVuSans.ttf", size)
+    except OSError:
+        # fallback if font not available
+        return ImageFont.load_default()
+    
 def _draw_label(draw: ImageDraw.ImageDraw, xyxy, text, scale=1.0):
     x1, y1, x2, y2 = xyxy
     # Box
     draw.rectangle([x1, y1, x2, y2], outline=(255, 0, 0), width=max(1, int(2 * scale)))
     # Text bg
-    font_size = max(12, int(20 * scale))
-    try:
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except Exception:
-        font = ImageFont.load_default(font_size)
+    font = _get_font(max(12, int(20 * scale)))
     tw, th = draw.textbbox((0, 0), text, font=font)[2:]
     pad = max(2, int(2 * scale))
     tx, ty = x1, max(0, y1 - th - 2 * pad)
