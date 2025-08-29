@@ -17,7 +17,6 @@ class Authentificator:
     @staticmethod
     def try_loggin():
         if "user_logged" in st.session_state and st.session_state["user_logged"]:
-            logging.critical("User is already logged in.")
             return True
 
         if time.time() - Authentificator.last_attempt_time < 2:
@@ -29,22 +28,18 @@ class Authentificator:
         pwd = config.get("APP_PWD", "")
 
         if len(pwd) > 0:
-            logging.critical(f"Password protection is enabled. {pwd}")
             LOGIN_TIMEOUT = int(config["LOGIN_TIMEOUT"])
             # Cookie login
             controller = CookieController()
             auth_key = controller.get("auth_key")
             if auth_key is not None:
                 Authentificator.last_attempt_time = time.time()
-                logging.critical(f"Key found: {auth_key}")
                 if auth_key in Authentificator.key_memory:
-                    logging.critical("Auth key found in memory")
                     if (
                         Authentificator.key_memory[auth_key]["last_used"]
                         + LOGIN_TIMEOUT
                         > time.time()
                     ):
-                        logging.critical("Valid session found.")
                         Authentificator._log_user(controller, auth_key=auth_key)
                     else:
                         toast_for_rerun(
@@ -55,8 +50,6 @@ class Authentificator:
                     toast_for_rerun("No valid session found.", icon="⚠️")
                     Authentificator._unlog_user(controller, auth_key)
             else:
-                logging.critical("No auth key")
-
                 # Input login
                 pwd_input = st.text_input("Password", type="password", key="app_pwd")
                 if len(pwd_input) > 0:
@@ -71,7 +64,6 @@ class Authentificator:
                     st.error("Invalid password!")
             return False
         else:
-            logging.critical("Password protection is disabled.")
             st.session_state["user_logged"] = True
             return True
 
