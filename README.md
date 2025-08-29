@@ -59,7 +59,7 @@ Stop the web app
 MIT License © Chad Estoup-Streiff
 
 
-### TODO / Ideas
+## TODO / Ideas
 Ideas:
 - Favorites files ? Will display on top when search
 - Pin file to dashboard ?
@@ -67,13 +67,16 @@ Ideas:
 - Github link to add context to chat ?
 - Super notes with block ( #%% delimiters )
 - audio transcription with online models (mistral or chatgpt ?)
+- Page for contacts, add contacts to projects, add tags to contact
+- Page de biblio (on intégré au viewer), contenant certains fichiers et les liens entre eux pour faire une visualisation graph
+- Change app name (it's more of a super assistant)
+- CLIP search on images ?
 
 Bugs:  
 None :)
 
 TODO: 
 - Page (for volume on front, back can handles a lot of files)
-- CLIP search on images ?
 
 Optimization:
 - on search, don't create a new connection for each file
