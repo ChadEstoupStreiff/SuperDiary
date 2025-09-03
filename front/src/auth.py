@@ -1,14 +1,10 @@
-import logging
 import time
 import uuid
 
 import streamlit as st
 from dotenv import dotenv_values
-from utils import toast_for_rerun
 from streamlit_cookies_controller import CookieController
-
-st.set_page_config("Cookie QuickStart", "🍪", layout="wide")
-
+from utils import toast_for_rerun
 
 class Authentificator:
     key_memory = {}

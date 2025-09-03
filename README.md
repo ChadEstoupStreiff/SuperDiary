@@ -1,4 +1,4 @@
-<img src="front/assets/logo.png" alt="drawing" width="30"/>  
+<img src="assets/logo.png" alt="drawing" width="30"/>  
 
 # Super Diary
 
@@ -25,7 +25,37 @@ Inspired by tools like *Paperless*, it leverages state-of-the-art models to unlo
 - **Infra**: Docker for deployment  
 
 ## 📷 Preview  
-In coming...
+## 📷 Preview
+
+<img src="assets/home.png" alt="Super Diary Home Dashboard" width="1000"/>  
+
+*Home dashboard with an overview of your files, and stats.*
+
+<img src="assets/research_line.png" alt="Super Diary Search Results in Line View" width="1000"/>  
+
+*Search results displayed in a line view for easy navigation and quick access.*
+
+<img src="assets/research_card.png" alt="Super Diary Search Results in Card View" width="1000"/>  
+
+*Search results displayed in a card view for a visual and organized experience.*
+
+<img src="assets/view.png" alt="Super Diary File Viewer" width="1000"/>  
+
+*File viewer with support for various file types, including text, PDF, images, and more.*
+
+<img src="assets/chat.png" alt="Super Diary AI Chat Assistant" width="1000"/>  
+
+*AI-powered chat assistant that reads extracted features and linked information from your files and calendar events.*
+
+<img src="assets/params.png" alt="Super Diary Settings Panel" width="1000"/>  
+
+*Settings panel to configure AI models, external connections (Ollama, Mistral, ChatGPT, Gemini), and app preferences.*
+
+<img src="assets/notes.png" alt="Super Diary Notes Editor" width="1000"/>  
+
+*Notes editor with block support for structured and organized note-taking.*
+
+
 
 ## 🚀 Launch
 
