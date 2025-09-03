@@ -25,9 +25,6 @@ Inspired by tools like *Paperless*, it leverages state-of-the-art models to unlo
 - **AI**: Llama3, Mistral, Whisper, PaddleOCR, BLIP
 - **Infra**: Docker for deployment
 
-## 📷 Preview
-Coming soon...
-
 ## 📷 Preview  
 
 <img src="assets/home.png" alt="Super Diary Home Dashboard" width="1000"/>  
