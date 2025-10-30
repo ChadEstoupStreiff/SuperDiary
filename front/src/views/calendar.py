@@ -121,6 +121,7 @@ def box_date(date):
                 display_files(
                     files,
                     representation_mode=0,
+                    multi_select_mode=0,
                     show_preview=False,
                     key=f"files_for_date_{date}",
                 )

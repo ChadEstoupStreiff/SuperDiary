@@ -375,7 +375,7 @@ def settings():
         loaded_settings = load_settings()
         settings = copy.deepcopy(loaded_settings)
 
-        cols = st.columns([2, 1, 1])
+        cols = st.columns([3, 1, 1, 1])
         with cols[0]:
             settings["auto_display_file_size_limit"] = st.number_input(
                 "Auto display file size limit (MB), -1 to disable",
@@ -387,7 +387,7 @@ def settings():
         representation_options = ["🧮 Table", "🃏 Cards", "🏷️ List"]
         with cols[1]:
             settings["explorer_default_representation_mode"] = st.segmented_control(
-                "Default representation mode in explorer",
+                "Default representation mode in EXPLORER",
                 options=range(len(representation_options)),
                 format_func=lambda x: representation_options[x],
                 default=settings.get("explorer_default_representation_mode", 1),
@@ -395,11 +395,19 @@ def settings():
             )
         with cols[2]:
             settings["projects_default_representation_mode"] = st.segmented_control(
-                "Default representation mode in projects",
+                "Default representation mode in PROJECTS",
                 options=range(len(representation_options)),
                 format_func=lambda x: representation_options[x],
                 default=settings.get("projects_default_representation_mode", 1),
                 key="projects_representation",
+            )
+        with cols[3]:
+            settings["chat_files_default_representation_mode"] = st.segmented_control(
+                "Default representation mode in CHAT",
+                options=range(len(representation_options)),
+                format_func=lambda x: representation_options[x],
+                default=settings.get("chat_files_default_representation_mode", 0),
+                key="chat_representation",
             )
 
         cols = st.columns(2)

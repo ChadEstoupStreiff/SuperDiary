@@ -72,7 +72,6 @@ def projects():
             representation_mode=representation_mode,
             show_preview=show_preview,
             nbr_of_files_per_line=nbr_of_files_per_line,
-            allow_multiple_selection=True,
         )
     with tabs[2]:
         if records:

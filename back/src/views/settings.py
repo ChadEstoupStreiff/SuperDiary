@@ -14,6 +14,7 @@ default_settings = {
     "search_limit": 50,
     "explorer_default_representation_mode": 1,  # 0: grid, 1: list, 2: table
     "projects_default_representation_mode": 1,  # 0: grid, 1: list, 2: table
+    "chat_files_default_representation_mode": 0, # 0: grid, 1: list, 2: table
     "enable_auto_ocr": True,
     "enable_auto_transcription": True,
     "enable_auto_summary": True,

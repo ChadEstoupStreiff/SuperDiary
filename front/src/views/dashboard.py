@@ -161,6 +161,7 @@ def dashboard():
                 display_files(
                     added_files,
                     representation_mode=0,
+                    multi_select_mode=0,
                     key="recent_added_files",
                 )
 
@@ -170,6 +171,7 @@ def dashboard():
                 display_files(
                     opened_files,
                     representation_mode=0,
+                    multi_select_mode=0,
                     key="recent_opened_files",
                 )
 
@@ -182,6 +184,7 @@ def dashboard():
                 display_files(
                     today_files,
                     representation_mode=0,
+                    multi_select_mode=0,
                     key="today_files",
                 )
 
@@ -195,6 +198,7 @@ def dashboard():
                 display_files(
                     week_files,
                     representation_mode=0,
+                    multi_select_mode=0,
                     key="week_files",
                 )
 

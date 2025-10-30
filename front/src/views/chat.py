@@ -4,6 +4,7 @@ import time
 
 import requests
 import streamlit as st
+from core.files import representation_mode_select, display_files
 from core.calendar import box_calendar_record
 from core.calendar import search_engine as calendar_search_engine
 from core.explorer import search_engine as file_search_engine
@@ -37,37 +38,42 @@ def dialog_new_chat():
 @st.dialog("📁 Search files", width="large")
 def dialog_search_files():
     # MARK: Search files
-    result = file_search_engine(nbr_columns=3)
-    if result:
-        st.session_state.chat_search_files = result["files"]
+    with st.expander("Search Files", expanded=True):
+        result = file_search_engine(nbr_columns=3)
+        if result is not None:
+            st.session_state.chat_search_files = result["files"]
 
-    selected = []
+    top = st.container()
+
     if "chat_search_files" in st.session_state:
-        default_value = st.checkbox(
-            "Select all files",
-            label_visibility="hidden",
-            value=False,
-            key="select_all_files",
+        representation_mode, show_preview, nbr_of_files_per_line = (
+            representation_mode_select(
+                default_mode=get_setting("chat_files_default_representation_mode")
+            )
         )
-        spacer()
-        for file in st.session_state.chat_search_files:
-            filename = os.path.basename(file)
-            if st.checkbox(filename, value=default_value, key=file):
-                selected.append(file)
+        selected = display_files(
+            st.session_state.chat_search_files,
+            representation_mode=representation_mode,
+            show_preview=show_preview,
+            nbr_of_files_per_line=nbr_of_files_per_line,
+            multi_select_mode=1,
+            allow_actions=False,
+            key="chat_search_files_selection",
+        )
+    else:
+        selected = []
 
-        if st.button("Add Selected Files", use_container_width=True):
-            if len(selected) > 0:
-                for file in selected:
-                    if file not in st.session_state.chat_files:
-                        st.session_state.chat_files.append(file)
-                del st.session_state.chat_search_files
-                toast_for_rerun(
-                    f"Added {len(selected)} files to the chat.",
-                    icon="✅",
-                )
-                st.rerun()
-            else:
-                st.warning("No files selected.")
+    with top:
+        if st.button("Add Selected Files", disabled=not selected, use_container_width=True):
+            for file in selected:
+                if file not in st.session_state.chat_files:
+                    st.session_state.chat_files.append(file)
+            del st.session_state.chat_search_files
+            toast_for_rerun(
+                f"Added {len(selected)} files to the chat.",
+                icon="✅",
+            )
+            st.rerun()
 
 
 @st.dialog("📅 Search calendars", width="large")

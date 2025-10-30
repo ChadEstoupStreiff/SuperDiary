@@ -349,30 +349,102 @@ def ai_actions_dialog(files, key="ai_actions"):
         st.rerun()
 
 
-def table_files(files, allow_multiple_selection: bool = False, key: str = "table"):
-    # MARK: TABLE FILES
-    allow_multiple_selection_options = ["🔎 View", "📦 Select"]
-    if allow_multiple_selection:
-        cols = st.columns([1, 2, 1, 1, 1, 1, 1])
-        with cols[0]:
+multiple_selection_options = ["🔎 View", "📦 Select"]
+
+
+def multi_select_menu(
+    key: str = "multi_select", default_mode: int = 0, disable_pill: bool = False
+):
+    cols = st.columns([1, 3, 1, 1, 1, 1])
+    with cols[0]:
+        if disable_pill:
+            interact_mode = multiple_selection_options[default_mode]
+        else:
             interact_mode = st.pills(
                 "Interaction Mode",
-                allow_multiple_selection_options,
-                default=allow_multiple_selection_options[1],
+                multiple_selection_options,
+                default=multiple_selection_options[default_mode],
+                key=f"{key}_interaction_mode",
             )
-            if interact_mode not in allow_multiple_selection_options:
-                interact_mode = allow_multiple_selection_options[0]
+            if interact_mode not in multiple_selection_options:
+                interact_mode = multiple_selection_options[0]
 
     select_default_value = False
-    if (
-        allow_multiple_selection
-        and interact_mode == allow_multiple_selection_options[1]
-    ):
-        with cols[1]:
-            spacer()
+    if interact_mode == multiple_selection_options[1]:
+        with cols[0 if disable_pill else 1]:
+            if not disable_pill:
+                spacer()
             select_default_value = st.checkbox(
-                "Select default", value=True, key=f"{key}_select_default"
+                "📦 All", value=True, key=f"multiselect_select_default_{key}"
             )
+
+    return interact_mode, select_default_value, cols
+
+
+def multi_select_actions_menu(selected_files, key: str = "multi_select", cols=None):
+    if cols is None:
+        cols = st.columns([0, 0, 1, 1, 1, 1, 1])
+    with cols[2]:
+        spacer(25)
+        if st.button(
+            "🗑️ Delete",
+            use_container_width=True,
+            key=f"{key}_delete",
+            disabled=len(selected_files) == 0,
+        ):
+            delete_files_dialog(selected_files)
+    with cols[3]:
+        spacer(25)
+        if st.button(
+            "📂 Edit Project",
+            use_container_width=True,
+            key=f"{key}_edit_project",
+            disabled=len(selected_files) == 0,
+        ):
+            edit_project_dialog(selected_files, key=f"{key}_edit_project")
+    with cols[4]:
+        spacer(25)
+        if st.button(
+            "🏷️ Edit Tags",
+            use_container_width=True,
+            key=f"{key}_edit_tags",
+            disabled=len(selected_files) == 0,
+        ):
+            edit_tags_dialog(selected_files, key=f"{key}_edit_tags")
+    with cols[5]:
+        spacer(25)
+        if st.button(
+            "📥 Download All",
+            use_container_width=True,
+            key=f"{key}_download_all",
+            disabled=len(selected_files) == 0,
+        ):
+            # TODO implement download all files
+            pass
+    with cols[6]:
+        spacer(25)
+        if st.button(
+            "✨ AI actions",
+            use_container_width=True,
+            key=f"{key}_ai_actions",
+            disabled=len(selected_files) == 0,
+        ):
+            ai_actions_dialog(selected_files)
+
+
+def table_files(
+    files,
+    multi_select_mode: bool = False,
+    allow_actions: bool = True,
+    key: str = "table",
+):
+    # MARK: TABLE FILES
+    interact_mode, select_default_value, multi_select_cols = multi_select_menu(
+        key=key,
+        default_mode=multi_select_mode if multi_select_mode is not None else 0,
+        disable_pill=multi_select_mode is not None,
+    )
+
     table = pd.DataFrame(
         [
             {
@@ -403,10 +475,7 @@ def table_files(files, allow_multiple_selection: bool = False, key: str = "table
         table,
         column_config={
             "see": st.column_config.CheckboxColumn(
-                "🔎"
-                if not allow_multiple_selection
-                or interact_mode == allow_multiple_selection_options[0]
-                else "📦",
+                "🔎" if interact_mode == multiple_selection_options[0] else "📦",
                 default=select_default_value,
             )
         },
@@ -416,73 +485,35 @@ def table_files(files, allow_multiple_selection: bool = False, key: str = "table
         key=f"{key}_lines",
     )
     selected_rows = table.query("see == True")
-    if (
-        not allow_multiple_selection
-        or interact_mode == allow_multiple_selection_options[0]
-    ):
+    if interact_mode == multiple_selection_options[0]:
         if len(selected_rows) > 0:
             st.session_state.file_to_see = f"/shared/{selected_rows.iloc[0]['Date']}/{selected_rows.iloc[0]['Subfolder']}/{selected_rows.iloc[0]['File']}"
             st.switch_page(PAGE_VIEWER)
-
-    if allow_multiple_selection:
-        selected_files = [
+    else:
+        files = [
             f"/shared/{row['Date']}/{row['Subfolder']}/{row['File']}"
             for _, row in selected_rows.iterrows()
         ]
-        with cols[2]:
-            spacer(25)
-            if st.button(
-                "🗑️ Delete",
-                use_container_width=True,
-                key=f"{key}_delete",
-                disabled=len(selected_rows) == 0,
-            ):
-                delete_files_dialog(selected_files)
-        with cols[3]:
-            spacer(25)
-            if st.button(
-                "📂 Edit Project",
-                use_container_width=True,
-                key=f"{key}_edit_project",
-                disabled=len(selected_rows) == 0,
-            ):
-                edit_project_dialog(selected_files, key=f"{key}_edit_project")
-        with cols[4]:
-            spacer(25)
-            if st.button(
-                "🏷️ Edit Tags",
-                use_container_width=True,
-                key=f"{key}_edit_tags",
-                disabled=len(selected_rows) == 0,
-            ):
-                edit_tags_dialog(selected_files, key=f"{key}_edit_tags")
-        with cols[5]:
-            spacer(25)
-            if st.button(
-                "📥 Download All",
-                use_container_width=True,
-                key=f"{key}_download_all",
-                disabled=len(selected_rows) == 0,
-            ):
-                # TODO implement download all files
-                pass
-        with cols[6]:
-            spacer(25)
-            if st.button(
-                "✨ AI actions",
-                use_container_width=True,
-                key=f"{key}_ai_actions",
-                disabled=len(selected_rows) == 0,
-            ):
-                ai_actions_dialog(selected_files)
+        if allow_actions:
+            multi_select_actions_menu(files, key=key, cols=multi_select_cols)
+        return files
+    return None
 
 
-def box_file(file: str, height: int, show_preview: bool, key: str = ""):
+def box_file(
+    file: str,
+    height: int,
+    show_preview: bool,
+    select_mode: bool = False,
+    select_default_value: bool = False,
+    key: str = "",
+):
     # MARK: BOX FILE
+    selected = None
     with st.container(border=True, height=height):
-        preview = None
+        preview_container = None
         if show_preview:
-            preview = st.container(
+            preview_container = st.container(
                 border=True,
                 height=height // 2,
             )
@@ -490,6 +521,12 @@ def box_file(file: str, height: int, show_preview: bool, key: str = ""):
         date = file.split("/")[2]
         subfolder = file.split("/")[3]
 
+        if select_mode:
+            selected = st.checkbox(
+                "📦 Select",
+                value=select_default_value,
+                key=f"{key}_select_{file}",
+            )
         cols = st.columns(2)
         st.markdown(f"##### {file_name}")
         st.caption(
@@ -526,11 +563,61 @@ def box_file(file: str, height: int, show_preview: bool, key: str = ""):
                 st.switch_page(PAGE_VIEWER)
         with cols[1]:
             download_file_button(file)
-    return preview
+    return preview_container, selected
 
 
-def line_file(file: str, show_preview: bool, key: str = ""):
+def boxes_files(
+    files,
+    nbr_of_files_per_line: int,
+    multi_select_mode: bool = False,  # None to be able to switch
+    allow_actions: bool = True,
+    show_preview: bool = False,
+    key: str = "boxes_files",
+):
+    interact_mode, select_default_value, multi_select_cols = multi_select_menu(
+        key=key,
+        default_mode=multi_select_mode if multi_select_mode is not None else 0,
+        disable_pill=multi_select_mode is not None,
+    )
+    selected_files = []
+    if multi_select_mode:
+        selected_files = []
+
+    file_preview_containers = []
+    cols = st.columns(nbr_of_files_per_line)
+    for i, file in enumerate(files):
+        with cols[i % nbr_of_files_per_line]:
+            preview_container, selected = box_file(
+                file,
+                height=600 if show_preview else 300,
+                show_preview=show_preview,
+                select_mode=interact_mode == multiple_selection_options[1],
+                select_default_value=select_default_value,
+                key=key,
+            )
+            file_preview_containers.append(preview_container)
+            if selected:
+                selected_files.append(file)
+    if show_preview:
+        for i, file_preview_container in enumerate(file_preview_containers):
+            with file_preview_container:
+                download_and_display_file(files[i], default_height_if_needed=250)
+
+    if interact_mode == multiple_selection_options[1] and allow_actions:
+        multi_select_actions_menu(selected_files, key=key, cols=multi_select_cols)
+        return selected_files
+    return None
+
+
+def line_file(
+    file: str,
+    show_preview: bool,
+    select_mode: bool = False,
+    select_default_value: bool = False,
+    key: str = "",
+):
     # MARK: LINE FILE
+    selected = None
     with st.container(border=True):
         file_name = os.path.basename(file)
         date = file.split("/")[2]
@@ -572,6 +659,12 @@ def line_file(file: str, show_preview: bool, key: str = ""):
             else:
                 st.info("No summary available for this file.")
         with cols[3 if show_preview else 2]:
+            if select_mode:
+                selected = st.checkbox(
+                    "📦 Select",
+                    value=select_default_value,
+                    key=f"{key}_select_{file}",
+                )
             if st.button(
                 "🔎",
                 help="Click to view file details.",
@@ -585,8 +678,45 @@ def line_file(file: str, show_preview: bool, key: str = ""):
             return cols[0].container(
                 border=True,
                 height=300,
-            )
-        return None
+            ), selected
+    return None, selected
+
+
+def list_files(
+    files,
+    show_preview: bool = False,
+    multi_select_mode: bool = False,  # None to be able to switch
+    allow_actions: bool = True,
+    key: str = "list_files",
+):
+    interact_mode, select_default_value, multi_select_cols = multi_select_menu(
+        key=key,
+        default_mode=multi_select_mode if multi_select_mode is not None else 0,
+        disable_pill=multi_select_mode is not None,
+    )
+    selected_files = []
+
+    file_preview_infos = []
+    for file in files:
+        preview_container, selected = line_file(
+            file,
+            show_preview=show_preview,
+            select_mode=interact_mode == multiple_selection_options[1],
+            select_default_value=select_default_value,
+            key=key,
+        )
+        if selected:
+            selected_files.append(file)
+        file_preview_infos.append(preview_container)
+    if show_preview:
+        for i, file_preview_container in enumerate(file_preview_infos):
+            with file_preview_container:
+                download_and_display_file(files[i], default_height_if_needed=250)
+
+    if interact_mode == multiple_selection_options[1] and allow_actions:
+        multi_select_actions_menu(selected_files, key=key, cols=multi_select_cols)
+        return selected_files
+    return None
 
 
 def display_files(
@@ -594,42 +724,43 @@ def display_files(
     representation_mode: int,
     show_preview: bool = False,
     nbr_of_files_per_line: int = 3,
-    allow_multiple_selection: bool = False,
+    multi_select_mode: bool = None,  # None to be able to switch
+    allow_actions: bool = True,
     key="",
 ):
+    selected_files = []
     if len(files) == 0:
         st.info("No files found.")
     elif representation_mode == 0:
-        table_files(files, allow_multiple_selection, key=key)
+        selected_files = table_files(
+            files,
+            multi_select_mode=multi_select_mode,
+            allow_actions=allow_actions,
+            key=key,
+        )
 
     # MARK: BOXES
     elif representation_mode == 1:
-        cols = st.columns(nbr_of_files_per_line)
-        file_preview_infos = []
-        for i, file in enumerate(files):
-            with cols[i % nbr_of_files_per_line]:
-                file_preview_infos.append(
-                    box_file(
-                        file,
-                        height=600 if show_preview else 300,
-                        show_preview=show_preview,
-                        key=key,
-                    )
-                )
-        if show_preview:
-            for i, file_preview_container in enumerate(file_preview_infos):
-                with file_preview_container:
-                    download_and_display_file(files[i], default_height_if_needed=250)
+        selected_files = boxes_files(
+            files,
+            multi_select_mode=multi_select_mode,
+            allow_actions=allow_actions,
+            nbr_of_files_per_line=nbr_of_files_per_line,
+            show_preview=show_preview,
+            key=key,
+        )
 
     # MARK: LIST
     elif representation_mode == 2:
-        file_preview_infos = []
-        for file in files:
-            file_preview_infos.append(line_file(file, show_preview=show_preview))
-        if show_preview:
-            for i, file_preview_container in enumerate(file_preview_infos):
-                with file_preview_container:
-                    download_and_display_file(files[i], default_height_if_needed=250)
+        selected_files = list_files(
+            files,
+            multi_select_mode=multi_select_mode,
+            allow_actions=allow_actions,
+            show_preview=show_preview,
+            key=key,
+        )
+
+    return selected_files
 
 
 def representation_mode_select(
