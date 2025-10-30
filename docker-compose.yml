@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   back_db:
     image: mariadb:10.6
