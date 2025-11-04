@@ -6,9 +6,12 @@ from typing import List
 
 import requests
 import streamlit as st
+from core.explorer import search_engine as file_search_engine
+from core.files import display_files, representation_mode_select
 from core.ocr import _bbox_from_any, _draw_label, _open_image
-from pages import PAGE_EXPLORER, PAGE_NOTES
+from pages import PAGE_EXPLORER, PAGE_NOTES, PAGE_VIEWER
 from PIL import ImageDraw
+from streamlit_agraph import Config, Edge, Node, agraph
 from utils import (
     clear_cache,
     delete_file,
@@ -18,6 +21,7 @@ from utils import (
     generate_aside_tag_markdown,
     generate_project_visual_markdown,
     generate_tag_visual_markdown,
+    get_setting,
     guess_mime,
     paths_to_markdown_tree,
     refractor_text_area,
@@ -215,6 +219,135 @@ def dialog_edit_file(file: str, projects: List[str], tags: List[str]):
                     )
 
 
+# MARK: ADD LINK
+@st.dialog("🔗 Add Link", width="large")
+def dialog_add_link(file):
+    with st.expander("Search Files", expanded=True):
+        result = file_search_engine(nbr_columns=3)
+        if result is not None:
+            st.session_state.link_search_files = result["files"]
+
+    if "link_search_files" in st.session_state:
+        representation_mode, show_preview, nbr_of_files_per_line = (
+            representation_mode_select(
+                default_mode=get_setting("link_files_default_representation_mode")
+            )
+        )
+        selected = display_files(
+            st.session_state.link_search_files,
+            representation_mode=representation_mode,
+            show_preview=show_preview,
+            nbr_of_files_per_line=nbr_of_files_per_line,
+            multi_select_mode=1,
+            allow_actions=False,
+            key="link_search_files_selection",
+        )
+    else:
+        selected = []
+
+    force = st.number_input(
+        "Link Force",
+        min_value=0.1,
+        max_value=10.0,
+        value=1.0,
+        step=0.1,
+        help="Set the force of the link between the files.",
+    )
+    comment = st.text_area(
+        "Link Comment",
+        value="",
+    )
+    if st.button("Add Selected Files", disabled=not selected, use_container_width=True):
+        for selected_file in selected:
+            requests.post(
+                "http://back:80/links/add",
+                params={
+                    "fileA": file,
+                    "fileB": selected_file,
+                    "force": force,
+                    "comment": comment,
+                },
+            )
+        del st.session_state.link_search_files
+        toast_for_rerun(
+            f"Added {len(selected)} files to the links.",
+            icon="✅",
+        )
+        st.rerun()
+
+
+# MARK: GET EDGES AND NODES FOR FILE LINKS
+def get_edges_and_nodes(
+    file,
+    recursive: bool = True,
+    visited=None,
+    edge_memory=None,
+    first=True,
+):
+    if visited is None:
+        visited = set()
+    if edge_memory is None:
+        edge_memory = set()
+    if file in visited:
+        return [], [], visited, edge_memory
+    visited.add(file)
+    edges = []
+    nodes = [
+        Node(
+            id=file,
+            label=file.split("/")[-1],
+            size=30,
+            color="#33cfff" if not first else "#ff33dd",
+        )
+    ]
+    result = requests.get(f"http://back:80/links/list/{file}")
+    if result.status_code == 200 and result.json() is not None:
+        links = result.json()
+        for link in links:
+            edge_pair = (file, link[0])
+            reverse_edge_pair = (link[0], file)
+            if not recursive or (
+                edge_pair not in edge_memory and reverse_edge_pair not in edge_memory
+            ):
+                edges.append(
+                    Edge(
+                        source=file,
+                        target=link[0],
+                        width=2 * link[1],
+                        label=link[2] or "",
+                    )
+                )
+                edge_memory.add(edge_pair)
+            if not recursive:
+                nodes.append(
+                    Node(
+                        id=link[0],
+                        label=link[0].split("/")[-1],
+                        size=20,
+                        color="#33cfff",
+                    )
+                )
+        if recursive:
+            for link in links:
+                if link[0] not in visited:
+                    (
+                        sub_edges,
+                        sub_nodes,
+                        sub_visited,
+                        sub_edge_memory,
+                    ) = get_edges_and_nodes(
+                        link[0],
+                        visited=visited,
+                        edge_memory=edge_memory,
+                        first=False,
+                    )
+                    edges.extend(sub_edges)
+                    nodes.extend(sub_nodes)
+                    visited.update(sub_visited)
+                    edge_memory.update(sub_edge_memory)
+    return edges, nodes, visited, edge_memory
+
+
 def see_file(file):
     # MARK: SEE FILE
     date = file.split("/")[2]
@@ -311,6 +444,99 @@ def see_file(file):
                 st.markdown(f"**MIME Type:** {mime}")
             else:
                 st.error("Failed to load metadata for this file.")
+
+    # MARK: LINKS
+    with tab_links:
+        if st.button(
+            "🔗 Add Link",
+            use_container_width=True,
+            help="Click to add a link to another file.",
+        ):
+            dialog_add_link(file)
+
+        result = requests.get(f"http://back:80/links/list/{file}")
+        if result.status_code == 200 and result.json() is not None:
+            links = result.json()
+            if len(links) == 0:
+                st.info("No links available for this file.")
+            else:
+                full_tree = st.toggle(
+                    "🌳 Full tree",
+                    value=True,
+                    help="Toggle to show the full tree of linked files.",
+                )
+                hierarchical_tree = st.toggle(
+                    "Hierarchical layout",
+                    value=True,
+                    help="Toggle to show the links in a hierarchical layout.",
+                )
+
+                edges, nodes, _, _ = (
+                    get_edges_and_nodes(file, recursive=True)
+                    if full_tree
+                    else (get_edges_and_nodes(file, recursive=False))
+                )
+                # nodes.append(
+                #     Node(
+                #         id=file,
+                #         label=file.split("/")[-1],
+                #         size=30,
+                #         color="#ff33dd",
+                #     )
+                # )
+                config = Config(
+                    width=900,
+                    height=600,
+                    directed=False,
+                    physics=not hierarchical_tree,
+                    hierarchical=hierarchical_tree,
+                )
+
+                return_value = agraph(nodes=nodes, edges=edges, config=config)
+                if return_value is not None:
+                    st.session_state["file_to_see"] = return_value
+                    st.switch_page(PAGE_VIEWER)
+
+                delete_button = st.toggle(
+                    "Delete Link Mode",
+                    help="Select 'On' to enable delete link mode. In this mode, you can delete links by clicking the delete button next to each link.",
+                )
+                for link in links:
+                    cols = st.columns([1, 6])
+                    with cols[0]:
+                        if delete_button:
+                            if st.button(
+                                "🗑️",
+                                use_container_width=True,
+                                help=f"Click to remove the link to {link[0]}.",
+                                key=f"delete_link_{link[0]}",
+                            ):
+                                result = requests.delete(
+                                    f"http://back:80/links/remove?fileA={file}&fileB={link[0]}"
+                                )
+                                if result.status_code == 200:
+                                    toast_for_rerun(
+                                        "Link removed successfully.",
+                                        icon="🗑️",
+                                    )
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to remove link. Please try again.")
+                        else:
+                            if st.button(
+                                "🔍",
+                                use_container_width=True,
+                                help=f"Click to view the linked file {link[0]}.",
+                                key=f"view_link_{link[0]}",
+                            ):
+                                st.session_state["file_to_see"] = link[0]
+                                st.switch_page(PAGE_VIEWER)
+                    with cols[1]:
+                        st.markdown(f"##### {link[1]} 🔗 {link[0].split('/')[-1]}")
+                        if link[2]:
+                            st.markdown(f"{link[2]}")
+        else:
+            st.warning("No links available for this file.")
 
     # MARK: SUMMARIZE
     with tab_summarize:
@@ -524,7 +750,7 @@ def view():
                                     label = (
                                         f"{text}"
                                         if not show_score or score is None
-                                        else f"{score*100:.2f}%: {text}"
+                                        else f"{score * 100:.2f}%: {text}"
                                     )
                                     # Scale label thickness by image size
                                     scale = math.sqrt((W * H) / (100 * 100))
@@ -541,7 +767,7 @@ def view():
 
                             for item in ocr_json:
                                 st.write(
-                                    f"{(item[1][1]*100):.2f}% : {item[1][0]}"
+                                    f"{(item[1][1] * 100):.2f}% : {item[1][0]}"
                                     if show_score
                                     else item[1][0]
                                 )

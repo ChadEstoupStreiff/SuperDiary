@@ -179,3 +179,11 @@ class ChatMessage(Base):
     files = Column(TEXT, nullable=True)
     calendar = Column(TEXT, nullable=True)
     content = Column(TEXT, nullable=False)
+
+class Link(Base):
+    __tablename__ = "Link"
+
+    fileA = Column(String(256), primary_key=True, index=True)
+    fileB = Column(String(256), primary_key=True, index=True)
+    force = Column(Float, nullable=False, default=1.0)
+    comment = Column(TEXT, nullable=True)

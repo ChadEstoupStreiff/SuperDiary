@@ -81,6 +81,9 @@ import views.chat
 
 app.include_router(views.chat.router)
 
+import views.link
+app.include_router(views.link.router)
+
 import views.utils
 
 app.include_router(views.utils.router)
