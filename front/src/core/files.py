@@ -355,7 +355,7 @@ multiple_selection_options = ["🔎 View", "📦 Select"]
 def multi_select_menu(
     key: str = "multi_select", default_mode: int = 0, disable_pill: bool = False
 ):
-    cols = st.columns([1, 3, 1, 1, 1, 1])
+    cols = st.columns([1, 3, 1, 1, 1, 1, 1])
     with cols[0]:
         if disable_pill:
             interact_mode = multiple_selection_options[default_mode]
