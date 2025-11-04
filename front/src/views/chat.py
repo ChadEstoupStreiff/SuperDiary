@@ -119,7 +119,7 @@ def dialog_search_calendars():
                 st.warning("No calendar events selected.")
 
 
-@st.dialog("✏️ Edit Chat")
+@st.dialog("✏️ Edit")
 def dialog_edit_chat():
     # MARK: Edit chat
     if "chat_session" not in st.session_state:
@@ -141,7 +141,7 @@ def dialog_edit_chat():
             st.error(f"Failed to update chat. {response.text}")
 
 
-@st.dialog("🗑️ Delete Chat")
+@st.dialog("🗑️ Delete")
 def dialog_delete_chat():
     # MARK: Delete chat
     st.warning(
@@ -456,6 +456,7 @@ def chat():
                 )
 
             # MARK: Calendars
+            spacer()
             st.markdown("**Calendar events attached**")
             cols = st.columns(2)
             with cols[0]:
