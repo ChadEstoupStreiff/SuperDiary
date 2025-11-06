@@ -375,7 +375,7 @@ def settings():
         loaded_settings = load_settings()
         settings = copy.deepcopy(loaded_settings)
 
-        cols = st.columns([3, 1, 1, 1])
+        cols = st.columns([3, 3, 2, 2, 2])
         with cols[0]:
             settings["auto_display_file_size_limit"] = st.number_input(
                 "Auto display file size limit (MB), -1 to disable",
@@ -384,8 +384,16 @@ def settings():
                 help="Set the maximum file size (in MB) for automatic display in the viewer.",
             )
 
-        representation_options = ["🧮 Table", "🃏 Cards", "🏷️ List"]
         with cols[1]:
+            settings["search_default_timeframe_days"] = st.number_input(
+                "Default search timeframe (days)",
+                min_value=1,
+                value=settings.get("search_default_timeframe_days", 30),
+                help="Set the default timeframe (in days) for search operations.",
+            )
+
+        representation_options = ["🧮 Table", "🃏 Cards", "🏷️ List"]
+        with cols[2]:
             settings["explorer_default_representation_mode"] = st.segmented_control(
                 "Default representation mode in EXPLORER",
                 options=range(len(representation_options)),
@@ -393,7 +401,7 @@ def settings():
                 default=settings.get("explorer_default_representation_mode", 1),
                 key="representation",
             )
-        with cols[2]:
+        with cols[3]:
             settings["projects_default_representation_mode"] = st.segmented_control(
                 "Default representation mode in PROJECTS",
                 options=range(len(representation_options)),
@@ -401,7 +409,7 @@ def settings():
                 default=settings.get("projects_default_representation_mode", 1),
                 key="projects_representation",
             )
-        with cols[3]:
+        with cols[4]:
             settings["chat_files_default_representation_mode"] = st.segmented_control(
                 "Default representation mode in CHAT",
                 options=range(len(representation_options)),

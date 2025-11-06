@@ -12,6 +12,7 @@ default_settings = {
     # "summarization_model": "llama3.2:3b",
     # "summarization_model": "llama3.1:8b",
     "search_limit": 50,
+    "search_default_timeframe_days": 30,
     "explorer_default_representation_mode": 1,  # 0: grid, 1: list, 2: table
     "projects_default_representation_mode": 1,  # 0: grid, 1: list, 2: table
     "chat_files_default_representation_mode": 0, # 0: grid, 1: list, 2: table

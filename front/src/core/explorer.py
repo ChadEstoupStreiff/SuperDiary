@@ -3,7 +3,7 @@ from typing import List
 
 import requests
 import streamlit as st
-from utils import mimes, mimes_map
+from utils import get_setting, mimes, mimes_map
 
 
 def search_files(
@@ -85,7 +85,10 @@ def search_engine(nbr_columns: int = 6):
                 search_dates = st.date_input(
                     "Search by date",
                     value=(
-                        datetime.date.today() - datetime.timedelta(days=7),
+                        datetime.date.today()
+                        - datetime.timedelta(
+                            days=get_setting("search_default_timeframe_days", 30)
+                        ),
                         datetime.date.today(),
                     ),
                     key="search_dates",
