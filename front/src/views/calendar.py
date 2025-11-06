@@ -4,7 +4,7 @@ import requests
 import streamlit as st
 from core.calendar import box_calendar_record
 from core.files import display_files
-from utils import toast_for_rerun, refractor_text_area
+from utils import refractor_text_area, toast_for_rerun
 
 
 @st.dialog("🆕 Create Record", width="large")
@@ -92,7 +92,9 @@ def box_date(date):
         error_files = files.text
         files = []
 
-    records = requests.get(f"http://back:80/calendar/search?start_date={date}&end_date={date}")
+    records = requests.get(
+        f"http://back:80/calendar/search?start_date={date}&end_date={date}"
+    )
     error_records = None
     if records.status_code == 200:
         records = records.json()
@@ -101,7 +103,8 @@ def box_date(date):
         records = []
 
     with st.expander(
-        date.strftime("%Y-%m-%d")
+        ("" if date != datetime.date.today() else "🫡 ")
+        + date.strftime("%Y-%m-%d")
         + f" - **{len(records)}** records, **{len(files)}** files, **{sum([r['time_spent'] for r in records])}** hours",
         expanded=False,
     ):
@@ -169,15 +172,18 @@ def calendar():
     cols = st.columns(7 if enable_weekends else 5)
     for i in range(7 if enable_weekends else 5):
         with cols[i]:
-            st.write(f"""### **{[
-                    "Monday",
-                    "Tuesday",
-                    "Wednesday",
-                    "Thursday",
-                    "Friday",
-                    "Saturday",
-                    "Sunday",
-                ][i]}**"""
+            st.write(
+                f"""### **{
+                    [
+                        "Monday",
+                        "Tuesday",
+                        "Wednesday",
+                        "Thursday",
+                        "Friday",
+                        "Saturday",
+                        "Sunday",
+                    ][i]
+                }**"""
             )
     start_date = datetime.date(selected_year, selected_month + 1, 1)
     start_date_offset = start_date.weekday()
