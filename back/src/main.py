@@ -166,17 +166,21 @@ def metrics():
             .group_by(ProjectFile.project)
             .all()
         )
+        files_per_project = sorted(files_per_project.items(), key=lambda x: x[1], reverse=True)
+        
         file_type_counts = {}
         for file in files:
             ext = os.path.splitext(file)[1].lower()
             if ext not in file_type_counts:
                 file_type_counts[ext] = 0
             file_type_counts[ext] += 1
+        file_type_counts = sorted(file_type_counts.items(), key=lambda x: x[1], reverse=True)
 
         # Count files per tag
         files_per_tag = dict(
             db.query(TagFile.tag, func.count(TagFile.file)).group_by(TagFile.tag).all()
         )
+        files_per_tag = sorted(files_per_tag.items(), key=lambda x: x[1], reverse=True)
 
         # Set of all file names
         all_files = set(files)
