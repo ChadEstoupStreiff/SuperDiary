@@ -375,7 +375,7 @@ def settings():
         loaded_settings = load_settings()
         settings = copy.deepcopy(loaded_settings)
 
-        cols = st.columns([3, 3, 2, 2, 2])
+        cols = st.columns(6)
         with cols[0]:
             settings["auto_display_file_size_limit"] = st.number_input(
                 "Auto display file size limit (MB), -1 to disable",
@@ -391,9 +391,17 @@ def settings():
                 value=settings.get("search_default_timeframe_days", 30),
                 help="Set the default timeframe (in days) for search operations.",
             )
+        
+        with cols[2]:
+            settings["target_hourly_working_time"] = st.number_input(
+                "Target hourly working time (hours)",
+                min_value=0.0,
+                value=settings.get("target_hourly_working_time", 7.5),
+                help="Set the target hourly working time (in hours) for productivity tracking. +-1 hour tolerance.",
+            )
 
         representation_options = ["🧮 Table", "🃏 Cards", "🏷️ List"]
-        with cols[2]:
+        with cols[3]:
             settings["explorer_default_representation_mode"] = st.segmented_control(
                 "Default representation mode in EXPLORER",
                 options=range(len(representation_options)),
@@ -401,7 +409,7 @@ def settings():
                 default=settings.get("explorer_default_representation_mode", 1),
                 key="representation",
             )
-        with cols[3]:
+        with cols[4]:
             settings["projects_default_representation_mode"] = st.segmented_control(
                 "Default representation mode in PROJECTS",
                 options=range(len(representation_options)),
@@ -409,7 +417,7 @@ def settings():
                 default=settings.get("projects_default_representation_mode", 1),
                 key="projects_representation",
             )
-        with cols[4]:
+        with cols[5]:
             settings["chat_files_default_representation_mode"] = st.segmented_control(
                 "Default representation mode in CHAT",
                 options=range(len(representation_options)),

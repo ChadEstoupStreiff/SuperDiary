@@ -4,7 +4,7 @@ import requests
 import streamlit as st
 from core.calendar import box_calendar_record
 from core.files import display_files
-from utils import refractor_text_area, toast_for_rerun
+from utils import get_setting, refractor_text_area, toast_for_rerun
 
 
 @st.dialog("🆕 Create Record", width="large")
@@ -102,8 +102,28 @@ def box_date(date):
         error_records = records.text
         records = []
 
+    target_hourly_working_time = get_setting("target_hourly_working_time") or 7.5
+
+    def find_emoji_for_time_spent(hours, date):
+        if date > datetime.date.today():
+            return ""
+        elif date == datetime.date.today():
+            return "🫡 "
+        else:
+            if hours == 0:
+                return "⚠️ "
+            if (
+                hours >= target_hourly_working_time - 1
+                and hours <= target_hourly_working_time + 1
+            ):
+                return "✅ "
+            elif hours > target_hourly_working_time + 1:
+                return "🔥 "
+            else:
+                return "🛌 "
+
     with st.expander(
-        ("" if date != datetime.date.today() else "🫡 ")
+        find_emoji_for_time_spent(sum([r["time_spent"] for r in records]), date)
         + date.strftime("%Y-%m-%d")
         + f" - **{len(records)}** records, **{len(files)}** files, **{sum([r['time_spent'] for r in records])}** hours",
         expanded=False,

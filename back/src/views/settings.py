@@ -17,6 +17,7 @@ default_settings = {
     "projects_default_representation_mode": 1,  # 0: grid, 1: list, 2: table
     "chat_files_default_representation_mode": 0, # 0: grid, 1: list, 2: table
     "link_files_default_representation_mode": 0, # 0: grid, 1: list, 2: table
+    "target_hourly_working_time": 7.5,
     "enable_auto_ocr": True,
     "enable_auto_transcription": True,
     "enable_auto_summary": True,
