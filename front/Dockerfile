@@ -3,7 +3,7 @@ FROM python:3.12-slim-bookworm
 RUN apt-get update -y
 RUN apt-get upgrade -y
 RUN pip install --upgrade pip
-RUN apt-get install fonts-dejavu-core -y
+RUN apt-get install python3-xyz -y
 
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt

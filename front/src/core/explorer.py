@@ -3,7 +3,7 @@ from typing import List
 
 import requests
 import streamlit as st
-from utils import get_setting, mimes, mimes_map
+from utils import get_setting, mimes_map_compressed
 
 
 def search_files(
@@ -98,11 +98,12 @@ def search_engine(nbr_columns: int = 6):
             with st.container(height=120, border=False):
                 file_types = st.multiselect(
                     "File Types",
-                    options=mimes,
-                    format_func=lambda x: mimes_map[x],
+                    options=mimes_map_compressed,
+                    format_func=lambda x: x[0],
                     key="file_types",
                     help="Select file types to filter files.",
                 )
+                file_types = [x for xs in file_types for x in xs[1]]
                 exclude_file_types = st.toggle(
                     "Exclude File Types",
                     key="exclude_file_types",

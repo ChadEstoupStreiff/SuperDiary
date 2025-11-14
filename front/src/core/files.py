@@ -580,8 +580,6 @@ def boxes_files(
         disable_pill=multi_select_mode is not None,
     )
     selected_files = []
-    if multi_select_mode:
-        selected_files = []
 
     file_preview_containers = []
     cols = st.columns(nbr_of_files_per_line)
@@ -605,8 +603,7 @@ def boxes_files(
 
     if interact_mode == multiple_selection_options[1] and allow_actions:
         multi_select_actions_menu(selected_files, key=key, cols=multi_select_cols)
-        return selected_files
-    return None
+    return selected_files
 
 
 def line_file(
@@ -715,8 +712,7 @@ def list_files(
 
     if interact_mode == multiple_selection_options[1] and allow_actions:
         multi_select_actions_menu(selected_files, key=key, cols=multi_select_cols)
-        return selected_files
-    return None
+    return selected_files
 
 
 def display_files(
