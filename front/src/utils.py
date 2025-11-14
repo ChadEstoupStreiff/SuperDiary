@@ -176,8 +176,8 @@ mimes_map = {
     "application/x-msdownload": "Windows Executable",
 }
 mimes_map_compressed = {
-    "images": ("image/jpeg", "image/png", "image/gif", "image/webp", "image/tiff", "image/bmp", "image/svg+xml"),
-    "documents": (
+    "🎨 images": ("image/jpeg", "image/png", "image/gif", "image/webp", "image/tiff", "image/bmp", "image/svg+xml"),
+    "📄 documents": (
         "application/pdf",
         "application/rtf",
         "application/epub+zip",
@@ -185,7 +185,7 @@ mimes_map_compressed = {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ),
-    "audio": (
+    "🎵 audio": (
         "audio/mpeg",
         "audio/wav",
         "audio/ogg",
@@ -193,7 +193,7 @@ mimes_map_compressed = {
         "audio/aac",
         "audio/x-ms-wma",
     ),
-    "video": (
+    "🎬 video": (
         "video/mp4",
         "video/avi",
         "video/mov",
@@ -202,29 +202,7 @@ mimes_map_compressed = {
         "video/x-flv",
         "video/mpeg",
     ),
-    "archives": (
-        "application/zip",
-        "application/x-7z-compressed",
-        "application/x-rar-compressed",
-        "application/x-tar",
-        "application/gzip",
-        "application/x-bzip",
-        "application/x-bzip2",
-        "application/x-iso9660-image",
-    ),
-    "code": (
-        "application/json",
-        "application/javascript",
-        "application/x-python-code",
-        "application/x-httpd-php",
-        "application/x-sh",
-        "application/x-bash",
-        "application/x-csh",
-        "application/xml",
-        "application/octet-stream",
-        "application/x-msdownload",
-    ),
-    "text": (
+    "📝 text": (
         "text/plain",
         "text/markdown",
         "text/html",
@@ -236,6 +214,28 @@ mimes_map_compressed = {
         "text/x-shellscript",
         "text/x-csrc",
         "text/x-java-source",
+    ),
+    "🗄 archives": (
+        "application/zip",
+        "application/x-7z-compressed",
+        "application/x-rar-compressed",
+        "application/x-tar",
+        "application/gzip",
+        "application/x-bzip",
+        "application/x-bzip2",
+        "application/x-iso9660-image",
+    ),
+    "💻 code": (
+        "application/json",
+        "application/javascript",
+        "application/x-python-code",
+        "application/x-httpd-php",
+        "application/x-sh",
+        "application/x-bash",
+        "application/x-csh",
+        "application/xml",
+        "application/octet-stream",
+        "application/x-msdownload",
     ),
 }
 

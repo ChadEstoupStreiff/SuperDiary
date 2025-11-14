@@ -98,12 +98,12 @@ def search_engine(nbr_columns: int = 6):
             with st.container(height=120, border=False):
                 file_types = st.multiselect(
                     "File Types",
-                    options=mimes_map_compressed,
-                    format_func=lambda x: x[0],
+                    options=mimes_map_compressed.keys(),
                     key="file_types",
                     help="Select file types to filter files.",
                 )
-                file_types = [x for xs in file_types for x in xs[1]]
+                file_types = [mimes_map_compressed[x] for x in file_types]
+                file_types = [x for xs in file_types for x in xs]
                 exclude_file_types = st.toggle(
                     "Exclude File Types",
                     key="exclude_file_types",
