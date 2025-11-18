@@ -25,6 +25,12 @@ PAGE_EXPLORER = st.Page(
     icon="📂",
     url_path="explorer",
 )
+PAGE_SOTA = st.Page(
+    "views/stateoftheart.py",
+    title="State Of The Art",
+    icon="📃",
+    url_path="stateoftheart",
+)
 PAGE_VIEWER = st.Page(
     "views/view.py",
     title="Document",

@@ -10,7 +10,7 @@ Base = declarative_base()
 class StockPile(Base):
     __tablename__ = "StockPile"
 
-    key = Column(String(64), primary_key=True, index=True)
+    key = Column(String(512), primary_key=True, index=True)
     value = Column(TEXT, nullable=False)
 
 class Setting(Base):

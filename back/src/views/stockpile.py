@@ -7,7 +7,6 @@ from fastapi import APIRouter, HTTPException
 
 router = APIRouter(prefix="/stockpile", tags=["Stock Pile"])
 
-
 @router.get("/get/{key}")
 async def get_stockpile(key: str):
     """
@@ -49,6 +48,29 @@ async def create_stockpile_item(key: str, value: str):
         logging.error(traceback.format_exc())
         raise HTTPException(
             status_code=500, detail=f"Error creating/updating stockpile item: {str(e)}"
+        )
+    finally:
+        db.close()
+
+
+@router.delete("/delete/{key}")
+async def delete_stockpile_item(key: str):
+    """
+    Delete a stockpile item by key.
+    """
+    db = get_db()
+    try:
+        stockpile_item = db.query(StockPile).filter(StockPile.key == key).first()
+        if not stockpile_item:
+            raise HTTPException(status_code=404, detail="Key not found in stockpile")
+        db.delete(stockpile_item)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error deleting stockpile item {key}: {str(e)}")
+        logging.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting stockpile item: {str(e)}"
         )
     finally:
         db.close()
@@ -118,6 +140,7 @@ async def add_recent(file: str):
     finally:
         db.close()
 
+
 @router.delete("/recentopened")
 async def clear_recent(file: str):
     """
@@ -151,6 +174,7 @@ async def clear_recent(file: str):
     finally:
         db.close()
 
+
 def get_recent_added():
     """
     Get the most recent added stockpile items.
@@ -170,6 +194,7 @@ def get_recent_added():
         )
     finally:
         db.close()
+
 
 @router.post("/recentadded")
 async def add_recent_added(file: str):
@@ -210,6 +235,7 @@ async def add_recent_added(file: str):
     finally:
         db.close()
 
+
 @router.delete("/recentadded")
 async def clear_recent_added(file: str):
     """
@@ -242,6 +268,7 @@ async def clear_recent_added(file: str):
         )
     finally:
         db.close()
+
 
 @router.get("/recentadded")
 async def get_recent_added_items():

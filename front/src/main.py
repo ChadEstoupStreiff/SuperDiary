@@ -6,6 +6,7 @@ from pages import (
     PAGE_CHAT,
     PAGE_DASHBOARD,
     PAGE_EXPLORER,
+    PAGE_SOTA,
     PAGE_NOTES,
     PAGE_PROJECTS,
     PAGE_SETTINGS,
@@ -29,9 +30,10 @@ if __name__ == "__main__":
             {
                 "": [
                     PAGE_DASHBOARD,
+                    PAGE_EXPLORER,
                     PAGE_CALENDAR,
                     PAGE_PROJECTS,
-                    PAGE_EXPLORER,
+                    PAGE_SOTA,
                     PAGE_CHAT,
                     PAGE_SETTINGS,
                 ],

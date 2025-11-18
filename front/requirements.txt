@@ -7,3 +7,4 @@ tifffile==2018.10.18
 streamlit-cookies-controller
 streamlit-agraph
 SPARQLWrapper
+stqdm

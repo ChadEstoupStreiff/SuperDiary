@@ -72,7 +72,14 @@ def search_files(
     }
 
 
-def search_engine(nbr_columns: int = 6):
+def search_engine(
+    nbr_columns: int = 6,
+    force_types: List[str] = None,
+    force_subfolder: List[str] = None,
+    force_tags: List[str] = None,
+    force_projects: List[str] = None,
+    force_start_date: datetime = None,
+):
     with st.form("file_search_form", clear_on_submit=False):
         search_text = st.text_input(
             "Search files",
@@ -174,12 +181,38 @@ def search_engine(nbr_columns: int = 6):
                 )
                 if search_mode is None:
                     search_mode = 1
-
+        if force_types is not None or force_subfolder is not None or force_tags is not None or force_projects is not None:
+            forced_caption = "Forced filters applied:"
+            if force_types is not None:
+                forced_caption += f" Types: {', '.join(force_types)}."
+            if force_subfolder is not None:
+                forced_caption += f" Subfolders: {', '.join(force_subfolder)}."
+            if force_tags is not None:
+                forced_caption += f" Tags: {', '.join(force_tags)}."
+            if force_projects is not None:
+                forced_caption += f" Projects: {', '.join(force_projects)}."
+            st.caption(forced_caption)
         if st.form_submit_button(
             "Search",
             use_container_width=True,
             help="Click to search files based on the criteria.",
         ):
+            if force_types is not None:
+                for t in force_types:
+                    if t not in file_types:
+                        file_types.append(t)
+            if force_subfolder is not None:
+                for s in force_subfolder:
+                    if s not in subfolder:
+                        subfolder.append(s)
+            if force_tags is not None:
+                for t in force_tags:
+                    if t not in tags:
+                        tags.append(t)
+            if force_projects is not None:
+                for p in force_projects:
+                    if p not in projects:
+                        projects.append(p)
             return search_files(
                 search_text if len(search_text) > 0 else None,
                 search_dates[0],
@@ -195,3 +228,26 @@ def search_engine(nbr_columns: int = 6):
                 exclude_tags=exclude_tags,
             )
     return None
+
+
+def generate_query_description(search_result):
+    query_str = f"Found {len(search_result['files'])} files in {search_result['time_spent'].total_seconds():.3f}s with mode {search_result['search_mode']} beetween {search_result['start_date']} and {search_result['end_date']}"
+    if search_result["query"] is not None and len(search_result["query"]) > 0:
+        query_str += f" with query '{search_result['query']}'"
+    if search_result["types"] is not None and len(search_result["types"]) > 0:
+        query_str += f" and types {', '.join(search_result['types'])}" + (
+            "" if not search_result["exclude_file_types"] else " (excluded)"
+        )
+    if search_result["subfolder"] is not None and len(search_result["subfolder"]) > 0:
+        query_str += f" and subfolders {', '.join(search_result['subfolder'])}" + (
+            "" if not search_result["exclude_subfolders"] else " (excluded)"
+        )
+    if search_result["projects"] is not None and len(search_result["projects"]) > 0:
+        query_str += f" and projects {', '.join(search_result['projects'])}" + (
+            "" if not search_result["exclude_projects"] else " (excluded)"
+        )
+    if search_result["tags"] is not None and len(search_result["tags"]) > 0:
+        query_str += f" and tags {', '.join(search_result['tags'])}" + (
+            "" if not search_result["exclude_tags"] else " (excluded)"
+        )
+    return query_str

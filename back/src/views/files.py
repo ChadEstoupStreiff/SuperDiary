@@ -14,7 +14,7 @@ from controllers.OCRManager import OCRManager
 from controllers.SummarizeManager import SummarizeManager
 from controllers.TranscriptionManager import TranscriptionManager
 from db import get_db
-from db.models import Note, ProjectFile, TagFile
+from db.models import Note, ProjectFile, TagFile, Link, StockPile
 from fastapi import APIRouter, HTTPException, UploadFile
 from PIL import Image
 from pillow_heif import register_heif_opener
@@ -215,9 +215,15 @@ async def delete_file(file: str):
         db = get_db()
         try:
             # Delete ProjectFile entries
+            file_name = file_path.split("/")[-1]
+            file_date = file_path.split("/")[2]
             db.query(ProjectFile).filter(ProjectFile.file == file_path).delete()
             db.query(TagFile).filter(TagFile.file == file_path).delete()
             db.query(Note).filter(Note.file == file_path).delete()
+            db.query(Link).filter(Link.fileA == file_path).delete()
+            db.query(Link).filter(Link.fileB == file_path).delete()
+            db.query(StockPile).filter(StockPile.file == f"sota_info_{file_date}_{file_name}").delete()
+
             db.commit()
         except Exception as e:
             db.rollback()
@@ -284,6 +290,26 @@ async def move_file(
             tag_files = db.query(TagFile).filter(TagFile.file == file).all()
             for tag_file in tag_files:
                 tag_file.file = new_file_path
+
+            # Update links entries
+            links_a = db.query(Link).filter(Link.fileA == file).all()
+            for link in links_a:
+                link.fileA = new_file_path
+            links_b = db.query(Link).filter(Link.fileB == file).all()
+            for link in links_b:
+                link.fileB = new_file_path
+            
+            # Update StockPile entries
+            file_name = file.split("/")[-1]
+            file_date = file.split("/")[2]
+            stockpile_item = (
+                db.query(StockPile).filter(StockPile.key == f"sota_info_{file_date}_{file_name}").first()
+            )
+            if stockpile_item:
+                new_file_name = name
+                new_file_date = date
+                stockpile_item.key = f"sota_info_{new_file_date}_{new_file_name}"
+                
             db.commit()
         except Exception as e:
             db.rollback()
