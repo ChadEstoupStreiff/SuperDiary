@@ -64,19 +64,21 @@ def _search_pubmed_by_title(title: str) -> Dict[str, Any]:
     raw_title = " ".join(raw_title.split())  # collapse whitespace
 
     # Authors -> 'Family, Given'
-    raw_authors: List[str] = []
+    raw_authors: str = ""
     for a in summary.get("authors", []):
         name = (a.get("name") or "").strip()  # usually "Surname Initials"
         if not name:
             continue
         # Split "Surname Initials" into "Surname, I."
         parts = name.split()
+        raw_authors += " | "
         if len(parts) >= 2:
             family = parts[0]
             given = " ".join(parts[1:])
-            raw_authors.append(f"{family}, {given}")
+            raw_authors += f"{family}, {given}"
         else:
-            raw_authors.append(name)
+            raw_authors += name
+    raw_authors = raw_authors.lstrip(" | ")
 
     # Year
     pubdate = (summary.get("pubdate") or "").strip()
@@ -140,7 +142,7 @@ def _search_arxiv_by_title(title: str) -> Dict[str, Any]:
     raw_title = " ".join(raw_title.split())  # collapse whitespace
 
     # authors -> list of "Family, Given" (best effort from 'Given Family' strings)
-    raw_authors = []
+    raw_authors = ""
     for a in entry.findall("atom:author", ns):
         name = (a.findtext("atom:name", default="", namespaces=ns) or "").strip()
         if not name:
@@ -149,9 +151,10 @@ def _search_arxiv_by_title(title: str) -> Dict[str, Any]:
         if len(parts) >= 2:
             family = parts[-1]
             given = " ".join(parts[:-1])
-            raw_authors.append(f"{family}, {given}")
+            raw_authors += f"{family}, {given}"
         else:
-            raw_authors.append(name)
+            raw_authors += name
+    raw_authors = raw_authors.lstrip(" | ")
 
     published = entry.findtext("atom:published", default="", namespaces=ns) or ""
     year = published[:4] if len(published) >= 4 else "n.d."
@@ -206,16 +209,18 @@ def _normalize_crossref_item(item: Dict[str, Any]) -> Dict[str, Any]:
     issue = item.get("issue", "") or ""
     pages = item.get("page", "") or ""
 
-    authors_list: List[str] = []
+    authors_list: str = ""
     for a in authors:
         fam = (a.get("family") or "").strip()
         giv = (a.get("given") or "").strip()
         if fam and giv:
-            authors_list.append(f"{fam}, {giv}")
+            authors_list += f"{fam}, {giv}"
         elif fam:
-            authors_list.append(fam)
+            authors_list += fam
         elif giv:
-            authors_list.append(giv)
+            authors_list += giv
+        authors_list += " | "
+    authors_list = authors_list.rstrip(" | ")
 
     return {
         "title": raw_title,
@@ -234,7 +239,8 @@ def _normalize_crossref_item(item: Dict[str, Any]) -> Dict[str, Any]:
 def format_APA(files: List[Dict[str, Any]]) -> str:
     """Format a reference in APA style."""
 
-    def format_APA_authors(authors: List[str]) -> str:
+    def format_APA_authors(authors: str) -> str:
+        authors = [a.strip() for a in authors.split("|") if a.strip()]
         if len(authors) == 0:
             return ""
         elif len(authors) == 1:
@@ -246,7 +252,7 @@ def format_APA(files: List[Dict[str, Any]]) -> str:
 
     result = ""
     for file in files:
-        authors_str = format_APA_authors(file.get("authors", []))
+        authors_str = format_APA_authors(file.get("authors", ""))
         year = file.get("year", "n.d.")
         title = file.get("title", "")
         journal = file.get("journal", "")
@@ -327,7 +333,8 @@ def get_reference_from_title(title: str) -> Dict[str, Any]:
 def format_Vancouver(files: List[Dict[str, Any]]) -> str:
     """Format a reference in Vancouver style."""
 
-    def format_Vancouver_authors(authors: List[str]) -> str:
+    def format_Vancouver_authors(authors: str) -> str:
+        authors = [a.strip() for a in authors.split("|") if a.strip()]
         if len(authors) == 0:
             return ""
         elif len(authors) <= 6:
@@ -337,7 +344,7 @@ def format_Vancouver(files: List[Dict[str, Any]]) -> str:
 
     result = ""
     for file in files:
-        authors_str = format_Vancouver_authors(file.get("authors", []))
+        authors_str = format_Vancouver_authors(file.get("authors", ""))
         year = file.get("year", "n.d.")
         title = file.get("title", "")
         journal = file.get("journal", "")
@@ -363,7 +370,7 @@ def format_BibTeX(files: List[Dict[str, Any]]) -> str:
     """Format a reference in BibTeX style."""
     result = ""
     for idx, file in enumerate(files):
-        authors = " and ".join(file.get("authors", []))
+        authors = " and ".join(file.get("authors", "").split("|"))
         year = file.get("year", "n.d.")
         title = file.get("title", "")
         journal = file.get("journal", "")

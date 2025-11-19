@@ -414,21 +414,35 @@ def download_and_display_file(file_name, default_height_if_needed=1000):
 
 def download_file_button(file: str):
     file_name = os.path.basename(file)
-    with st.spinner("Preparing file...", show_time=True):
-        response = requests.get(f"http://back:80/files/download/{file}")
-    if response.status_code == 200:
-        with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
-            tmp_file.write(response.content)
-            tmp_file.flush()
-            tmp_file.seek(0)
-            st.download_button(
-                "📥",
-                tmp_file.read(),
-                file_name=file_name,
-                help="Click to download the file.",
-                use_container_width=True,
-                key=f"see_download_{file}",
-            )
+    if f"prepare_download_{file}" not in st.session_state or not st.session_state[f"prepare_download_{file}"]:
+        def prepare_download_click_button():
+            st.session_state[f"prepare_download_{file}"] = True
+        st.button(
+            "⬇️",
+            help="Click to prepare the file for download.",
+            use_container_width=True,
+            key=f"button_prepare_download_{file}",
+            on_click=prepare_download_click_button,
+        )
+    else:
+        with st.spinner("Preparing file...", show_time=True):
+            response = requests.get(f"http://back:80/files/download/{file}")
+        if response.status_code == 200:
+            with tempfile.NamedTemporaryFile(delete=True) as tmp_file:
+                tmp_file.write(response.content)
+                tmp_file.flush()
+                tmp_file.seek(0)
+                def download_click_button():
+                    del st.session_state[f"prepare_download_{file}"]
+                st.download_button(
+                    "📥",
+                    tmp_file.read(),
+                    file_name=file_name,
+                    help="Click to download the file.",
+                    use_container_width=True,
+                    key=f"see_download_{file}",
+                    on_click=download_click_button,
+                )
 
 
 def generate_tag_visual_markdown(name: str, color: str):

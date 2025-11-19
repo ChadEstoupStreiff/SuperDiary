@@ -147,7 +147,7 @@ def stateoftheart():
                         #     width="small",
                         #     format="YYYY-MM-DD",
                         # ),
-                        # "authors": st.column_config.ListColumn(
+                        # "authors": st.column_config.TextColumn(
                         #     "Authors",
                         #     width="medium",
                         # ),
@@ -165,6 +165,40 @@ def stateoftheart():
                         "Tags",
                     ],
                 )
+
+                row_update = False
+                for i in range(len(table)):
+                    base_dict = {
+                        k: v
+                        for k, v in data_table.iloc[i].to_dict().items()
+                        if k
+                        not in ["select", "Filename", "Upload Date", "Projects", "Tags"]
+                    }
+                    row_dict = {
+                        k: v
+                        for k, v in table.iloc[i].to_dict().items()
+                        if k
+                        not in ["select", "Filename", "Upload Date", "Projects", "Tags"]
+                    }
+
+                    if base_dict != row_dict:
+                        st.info(f"Row {i + 1} has been modified. Saving changes...")
+                        row_update = True
+                        file = files[i]
+                        file_name = file.split("/")[-1]
+                        file_date = file.split("/")[2]
+                        file_key = f"{file_date}_{file_name}"
+
+                        result = requests.post(
+                            f"http://back:80/stockpile/set/sota_info_{file_key}?value={json.dumps(row_dict)}",
+                        )
+                        if result.status_code != 200:
+                            st.error(f"Error while saving SOTA info for file {file}.")
+                            st.stop()
+
+                if row_update:
+                    toast_for_rerun("SOTA updated.", "✅")
+                    st.rerun()
 
                 selected = table.query("select == True")
                 st.caption(f"{len(selected)} files selected.")

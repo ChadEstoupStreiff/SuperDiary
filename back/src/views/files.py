@@ -222,7 +222,7 @@ async def delete_file(file: str):
             db.query(Note).filter(Note.file == file_path).delete()
             db.query(Link).filter(Link.fileA == file_path).delete()
             db.query(Link).filter(Link.fileB == file_path).delete()
-            db.query(StockPile).filter(StockPile.file == f"sota_info_{file_date}_{file_name}").delete()
+            db.query(StockPile).filter(StockPile.key == f"sota_info_{file_date}_{file_name}").delete()
 
             db.commit()
         except Exception as e:
@@ -309,7 +309,7 @@ async def move_file(
                 new_file_name = name
                 new_file_date = date
                 stockpile_item.key = f"sota_info_{new_file_date}_{new_file_name}"
-                
+
             db.commit()
         except Exception as e:
             db.rollback()
