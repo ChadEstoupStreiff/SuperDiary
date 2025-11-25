@@ -70,8 +70,8 @@ def read_content(
         if mime.startswith("image/"):
             result = db.query(OCR).filter(OCR.file == file).first()
             if result is not None:
-                ocr = "\n".join([item[1][0] for item in json.loads(result.get("ocr"))])
-                blip = result.get("blip")
+                ocr = "\n".join([item[1][0] for item in json.loads(result.ocr)])
+                blip = result.blip
                 if ocr and blip:
                     content = f"CAPTION: {blip}\nOCR: {ocr}"
 
@@ -82,7 +82,7 @@ def read_content(
                 db.query(Transcription).filter(Transcription.file == file).first()
             )
             if transcription is not None:
-                transcription = transcription.get("transcription")
+                transcription = transcription.transcription
                 if transcription:
                     content = f"Transcription: {transcription}"
 

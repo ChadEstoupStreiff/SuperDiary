@@ -176,7 +176,15 @@ mimes_map = {
     "application/x-msdownload": "Windows Executable",
 }
 mimes_map_compressed = {
-    "🎨 images": ("image/jpeg", "image/png", "image/gif", "image/webp", "image/tiff", "image/bmp", "image/svg+xml"),
+    "🎨 images": (
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "image/tiff",
+        "image/bmp",
+        "image/svg+xml",
+    ),
     "📄 documents": (
         "application/pdf",
         "application/rtf",
@@ -414,9 +422,13 @@ def download_and_display_file(file_name, default_height_if_needed=1000):
 
 def download_file_button(file: str):
     file_name = os.path.basename(file)
-    if f"prepare_download_{file}" not in st.session_state or not st.session_state[f"prepare_download_{file}"]:
+    if (
+        f"prepare_download_{file}" not in st.session_state
+        or not st.session_state[f"prepare_download_{file}"]
+    ):
         def prepare_download_click_button():
             st.session_state[f"prepare_download_{file}"] = True
+
         st.button(
             "⬇️",
             help="Click to prepare the file for download.",
@@ -432,8 +444,10 @@ def download_file_button(file: str):
                 tmp_file.write(response.content)
                 tmp_file.flush()
                 tmp_file.seek(0)
+
                 def download_click_button():
                     del st.session_state[f"prepare_download_{file}"]
+
                 st.download_button(
                     "📥",
                     tmp_file.read(),
@@ -462,7 +476,7 @@ def generate_tag_visual_markdown(name: str, color: str):
 def generate_aside_tag_markdown(names: List[str], colors: List[str]):
     return f"""
     <div style="display: flex; flex-direction: raw; flex-wrap: wrap; gap: 8px; margin: 6px;">
-        {''.join(generate_tag_visual_markdown(name, color) for name, color in zip(names, colors))}
+        {"".join(generate_tag_visual_markdown(name, color) for name, color in zip(names, colors))}
     </div>
     """
 
@@ -477,7 +491,7 @@ def generate_project_visual_markdown(name: str, color: str):
 def generate_aside_project_markdown(names: List[str], colors: List[str]):
     return f"""
     <div style="display: flex; flex-direction: raw; flex-wrap: wrap; gap: 8px; margin: 6px;">
-        {''.join(generate_project_visual_markdown(name, color) for name, color in zip(names, colors))}
+        {"".join(generate_project_visual_markdown(name, color) for name, color in zip(names, colors))}
     </div>
     """
 
@@ -722,7 +736,7 @@ def text_emoji_input(
         )
 
     return (
-        f"{st.session_state[f"text_emoji_input_emoji_{key}"]} {text}"
+        f"{st.session_state[f'text_emoji_input_emoji_{key}']} {text}"
         if text
         else st.session_state[f"text_emoji_input_emoji_{key}"]
     )
