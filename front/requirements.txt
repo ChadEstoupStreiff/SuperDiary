@@ -6,5 +6,6 @@ numpy<2.0
 tifffile==2018.10.18
 streamlit-cookies-controller
 streamlit-agraph
+streamlit_elements
 SPARQLWrapper
 stqdm

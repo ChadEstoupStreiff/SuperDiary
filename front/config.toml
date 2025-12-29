@@ -214,12 +214,12 @@ token = ""
 showPyplotGlobalUse = true
 
 
-[theme]
+# [theme]
 # primaryColor = "#00F0FF"       # Neon cyan for highlights/buttons
 # backgroundColor = "#0D1117"     # Very dark blue-gray, good for contrast
 # secondaryBackgroundColor = "#161B22"  # Slightly lighter dark for panels/cards
-primaryColor = "#9D4EDD"         # Vibrant neon purple
-backgroundColor = "#0D1117"      # Dark blue-gray base
-secondaryBackgroundColor = "#161B22"  # Panel background
-textColor = "#ffffff"
+# primaryColor = "#9D4EDD"         # Vibrant neon purple
+# backgroundColor = "#0D1117"      # Dark blue-gray base
+# secondaryBackgroundColor = "#161B22"  # Panel background
+# textColor = "#ffffff"
 #font = "sans-serif"

@@ -4,7 +4,280 @@ import requests
 import streamlit as st
 from core.calendar import box_calendar_record
 from core.files import display_files
+from dateutil.relativedelta import relativedelta
+from streamlit_elements import elements, mui, nivo
 from utils import get_setting, refractor_text_area, toast_for_rerun
+
+
+def pie_chart(records, key="calendar_pie_chart"):
+    pie_data = {}
+    for record in records:
+        project = record["project"]
+        time_spent = record["time_spent"]
+        if project not in pie_data:
+            pie_data[project] = 0.0
+        pie_data[project] += time_spent
+    pie_data = [{"id": k, "label": k, "value": v} for k, v in pie_data.items()]
+    with elements(f"elements_{key}"):
+        with mui.Box(key=f"box_{key}", sx={"height": 500}):
+            nivo.Pie(
+                data=pie_data,
+                margin={"top": 40, "right": 80, "bottom": 80, "left": 80},
+                innerRadius=0.5,
+                padAngle=0.7,
+                cornerRadius=3,
+                activeOuterRadiusOffset=8,
+                borderWidth=1,
+                borderColor={"from": "color", "modifiers": [["darker", 0.2]]},
+                arcLinkLabelsSkipAngle=10,
+                arcLinkLabelsTextColor="#333333",
+                arcLinkLabelsThickness=2,
+                arcLinkLabelsColor={"from": "color"},
+                arcLabelsSkipAngle=10,
+                arcLabelsTextColor={
+                    "from": "color",
+                    "modifiers": [["darker", 2]],
+                },
+            )
+
+
+def bar_chart(records, per: str = "month", key="calendar_bar_chart"):
+    if not records:
+        return
+
+    # 1. Parse dates and identify the full range boundaries
+    parsed_data = []
+    for r in records:
+        dt = datetime.datetime.strptime(r["date"], "%Y-%m-%dT%H:%M:%S").date()
+        parsed_data.append({**r, "dt": dt})
+
+    start_date = min(r["dt"] for r in parsed_data)
+    end_date = max(r["dt"] for r in parsed_data)
+
+    # 2. Build the continuous timeline skeleton
+    # We use a dict where the key is a sortable string and value is the data object
+    bar_data_map = {}
+    all_projects = sorted(list(set(r["project"] for r in parsed_data)))
+
+    current = start_date
+    while current <= end_date:
+        # Determine sortable key and pretty display label
+        if per == "month":
+            sort_key = current.strftime("%Y-%m")
+            label = current.strftime("%b %Y")  # e.g., "Jan 2024"
+            increment = relativedelta(months=1)
+        elif per == "week":
+            year, week, _ = current.isocalendar()
+            sort_key = f"{year}-{week:02d}"
+            label = f"W{week} {year}"
+            increment = datetime.timedelta(weeks=7)  # Jump to next week
+        else:
+            sort_key = current.strftime("%Y-%m-%d")
+            label = current.strftime("%d %b %Y")  # e.g., "01 Jan 2024"
+            increment = datetime.timedelta(days=1)
+
+        if sort_key not in bar_data_map:
+            # Initialize entry with 0 for all known projects to avoid undefined values
+            entry = {"period": label, "sort_key": sort_key}
+            for p in all_projects:
+                entry[p] = 0.0
+            bar_data_map[sort_key] = entry
+
+        current += increment
+
+    # 3. Fill the skeleton with actual data
+    for r in parsed_data:
+        dt = r["dt"]
+        if per == "month":
+            s_key = dt.strftime("%Y-%m")
+        elif per == "week":
+            year, week, _ = dt.isocalendar()
+            s_key = f"{year}-{week:02d}"
+        else:
+            s_key = dt.strftime("%Y-%m-%d")
+
+        if s_key in bar_data_map:
+            bar_data_map[s_key][r["project"]] += r["time_spent"]
+
+    # 4. Sort the list by the sort_key to ensure chronological order
+    formatted_data_list = [bar_data_map[k] for k in sorted(bar_data_map.keys())]
+
+    # 5. Render Nivo Chart
+    with elements(f"elements_{key}"):
+        with mui.Box(key=f"box_{key}", sx={"height": 500}):
+            nivo.Bar(
+                data=formatted_data_list,
+                keys=all_projects,
+                indexBy="period",
+                margin={"top": 50, "right": 130, "bottom": 70, "left": 60},
+                padding=0.3,
+                valueScale={"type": "linear"},
+                indexScale={"type": "band", "round": True},
+                colors={"scheme": "nivo"},
+                borderColor={"from": "color", "modifiers": [["darker", 1.6]]},
+                axisBottom={
+                    "tickSize": 5,
+                    "tickPadding": 5,
+                    "tickRotation": -45,  # Rotated for better readability
+                    "legend": "Period",
+                    "legendPosition": "middle",
+                    "legendOffset": 60,
+                },
+                axisLeft={
+                    "tickSize": 5,
+                    "tickPadding": 5,
+                    "tickRotation": 0,
+                    "legend": "Hours Spent",
+                    "legendPosition": "middle",
+                    "legendOffset": -50,
+                },
+                labelSkipWidth=12,
+                labelSkipHeight=12,
+                legends=[
+                    {
+                        "dataFrom": "keys",
+                        "anchor": "bottom-right",
+                        "direction": "column",
+                        "translateX": 120,
+                        "itemWidth": 100,
+                        "itemHeight": 20,
+                        "symbolSize": 20,
+                    }
+                ],
+            )
+
+def line_chart(records, per: str = "month", key = "calendar_line_chart"):
+    if not records:
+        return
+
+    # 1. Parse dates and identify boundaries
+    parsed_data = []
+    for r in records:
+        dt = datetime.datetime.strptime(r["date"], "%Y-%m-%dT%H:%M:%S").date()
+        parsed_data.append({**r, "dt": dt})
+    
+    start_date = min(r["dt"] for r in parsed_data)
+    end_date = max(r["dt"] for r in parsed_data)
+    all_projects = sorted(list(set(r["project"] for r in parsed_data)))
+
+    # 2. Build the continuous timeline skeleton (chronological keys)
+    timeline_keys = []
+    labels_map = {} # Maps sort_key -> Pretty Label
+    
+    current = start_date
+    while current <= end_date:
+        if per == "month":
+            s_key = current.strftime("%Y-%m")
+            label = current.strftime("%b %Y")
+            increment = relativedelta(months=1)
+        elif per == "week":
+            year, week, _ = current.isocalendar()
+            s_key = f"{year}-W{week:02d}"
+            label = f"W{week} {year}"
+            increment = datetime.timedelta(weeks=1)
+        else:
+            s_key = current.strftime("%Y-%m-%d")
+            label = current.strftime("%d %b %Y")
+            increment = datetime.timedelta(days=1)
+        
+        if s_key not in timeline_keys:
+            timeline_keys.append(s_key)
+            labels_map[s_key] = label
+            
+        current += increment
+
+    timeline_keys.sort()
+
+    # 3. Initialize data structure for Nivo Line: { project_name: { sort_key: value } }
+    series_accumulator = {p: {k: 0.0 for k in timeline_keys} for p in all_projects}
+
+    # 4. Populate with actual data
+    for r in parsed_data:
+        dt = r["dt"]
+        project = r["project"]
+        if per == "month":
+            s_key = dt.strftime("%Y-%m")
+        elif per == "week":
+            year, week, _ = dt.isocalendar()
+            s_key = f"{year}-W{week:02d}"
+        else:
+            s_key = dt.strftime("%Y-%m-%d")
+        
+        if s_key in series_accumulator[project]:
+            series_accumulator[project][s_key] += r["time_spent"]
+
+    # 5. Format for Nivo Line: List of {"id": project, "data": [{"x": label, "y": value}]}
+    line_data = []
+    for project in all_projects:
+        project_series = {"id": project, "data": []}
+        for s_key in timeline_keys:
+            project_series["data"].append({
+                "x": labels_map[s_key],
+                "y": series_accumulator[project][s_key]
+            })
+        line_data.append(project_series)
+
+    # 6. Render Nivo Line Chart
+    with elements(f"elements_{key}"):
+        with mui.Box(key=f"box_{key}", sx={"height": 500}):
+            nivo.Line(
+                data=line_data,
+                margin={"top": 50, "right": 110, "bottom": 70, "left": 60},
+                xScale={"type": "point"},
+                yScale={
+                    "type": "linear",
+                    "min": "auto",
+                    "max": "auto",
+                    "stacked": False,
+                    "reverse": False
+                },
+                axisTop=None,
+                axisRight=None,
+                axisBottom={
+                    "tickSize": 5,
+                    "tickPadding": 5,
+                    "tickRotation": -45,
+                    "legend": "Period",
+                    "legendOffset": 60,
+                    "legendPosition": "middle"
+                },
+                axisLeft={
+                    "tickSize": 5,
+                    "tickPadding": 5,
+                    "tickRotation": 0,
+                    "legend": "Hours Spent",
+                    "legendOffset": -50,
+                    "legendPosition": "middle"
+                },
+                pointSize={10},
+                pointColor={"theme": "background"},
+                pointBorderWidth={2},
+                pointBorderColor={"from": "serieColor"},
+                pointLabelYOffset={-12},
+                useMesh={True}, # Enables hover tooltips easily
+                legends=[{
+                    "anchor": "bottom-right",
+                    "direction": "column",
+                    "justify": False,
+                    "translateX": 100,
+                    "translateY": 0,
+                    "itemsSpacing": 0,
+                    "itemDirection": "left-to-right",
+                    "itemWidth": 80,
+                    "itemHeight": 20,
+                    "itemOpacity": 0.75,
+                    "symbolSize": 12,
+                    "symbolShape": "circle",
+                    "symbolBorderColor": "rgba(0, 0, 0, .5)",
+                    "effects": [{
+                        "on": "hover",
+                        "style": {
+                            "itemBackground": "rgba(0, 0, 0, .03)",
+                            "itemOpacity": 1
+                        }
+                    }]
+                }]
+            )
 
 
 @st.dialog("🆕 Create Record", width="large")
@@ -189,34 +462,98 @@ def calendar():
                 step=1,
             )
 
-    cols = st.columns(7 if enable_weekends else 5)
-    for i in range(7 if enable_weekends else 5):
-        with cols[i]:
-            st.write(
-                f"""### **{
-                    [
-                        "Monday",
-                        "Tuesday",
-                        "Wednesday",
-                        "Thursday",
-                        "Friday",
-                        "Saturday",
-                        "Sunday",
-                    ][i]
-                }**"""
-            )
-    start_date = datetime.date(selected_year, selected_month + 1, 1)
-    start_date_offset = start_date.weekday()
-    for i in range(6):
+    tab_calendar, tab_stats = st.tabs(["📅 Calendar", "📊 Statistics"])
+
+    with tab_calendar:
+        # Just for me :)
+        today = datetime.date.today()
+        start_date = datetime.date(2025, 11, 1)  # 2025 of november
+        end_date = datetime.date(2028, 10, 31)  # 3 years, until october 2028
+        total_days = (end_date - start_date).days
+        days_passed = (today - start_date).days
+        progress = max(0.0, min(1.0, days_passed / total_days))
+        st.progress(
+            progress,
+            text=f"PhD Progress - {(progress * 100):.2f}% - {days_passed} / {total_days} days - {total_days - days_passed} days left",
+        )
+
         cols = st.columns(7 if enable_weekends else 5)
-        for j in range(7 if enable_weekends else 5):
-            if i * 7 + j >= start_date_offset:
-                date = start_date + datetime.timedelta(
-                    days=i * 7 + j - start_date_offset
+        for i in range(7 if enable_weekends else 5):
+            with cols[i]:
+                st.write(
+                    f"""### **{
+                        [
+                            "Monday",
+                            "Tuesday",
+                            "Wednesday",
+                            "Thursday",
+                            "Friday",
+                            "Saturday",
+                            "Sunday",
+                        ][i]
+                    }**"""
                 )
-                if date.month == selected_month + 1:
-                    with cols[j]:
-                        box_date(date)
+        start_date = datetime.date(selected_year, selected_month + 1, 1)
+        start_date_offset = start_date.weekday()
+        for i in range(6):
+            cols = st.columns(7 if enable_weekends else 5)
+            for j in range(7 if enable_weekends else 5):
+                if i * 7 + j >= start_date_offset:
+                    date = start_date + datetime.timedelta(
+                        days=i * 7 + j - start_date_offset
+                    )
+                    if date.month == selected_month + 1:
+                        with cols[j]:
+                            box_date(date)
+
+    with tab_stats:
+        with st.form("calendar stat form"):
+            cols = st.columns(2)
+            with cols[0]:
+                stat_start_date = st.date_input(
+                    "Start Date",
+                    value=datetime.date(
+                        selected_year,
+                        selected_month + 1,
+                        1,
+                    ),
+                )
+            with cols[1]:
+                stat_end_date = st.date_input(
+                    "End Date",
+                    value=datetime.date(
+                        selected_year,
+                        selected_month + 1,
+                        1,
+                    )
+                    + datetime.timedelta(days=30),
+                )
+            submitted = st.form_submit_button(
+                "Generate Statistics", use_container_width=True
+            )
+        if submitted:
+            records = requests.get(
+                f"http://back:80/calendar/search?start_date={stat_start_date}&end_date={stat_end_date}"
+            )
+            error_records = None
+            if records.status_code == 200:
+                records = records.json()
+            else:
+                error_records = records.text
+                records = []
+            if error_records:
+                st.error(f"Error fetching records: {error_records}")
+            else:
+                if records:
+                    pie_chart(records, key="calendar_pie_chart")
+                    bar_chart(records, per="month", key="calendar_bar_chart_month")
+                    bar_chart(records, per="week", key="calendar_bar_chart_week")
+                    bar_chart(records, per="day", key="calendar_bar_chart_day")
+                    # line_chart(records, per="month", key="calendar_line_chart_month")
+                    # line_chart(records, per="week", key="calendar_line_chart_week")
+                    # line_chart(records, per="day", key="calendar_line_chart_day")
+                else:
+                    st.info("No records found for the selected date range.")
 
 
 if __name__ == "__main__":
