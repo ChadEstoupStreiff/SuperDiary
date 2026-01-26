@@ -546,9 +546,9 @@ def calendar():
             else:
                 if records:
                     pie_chart(records, key="calendar_pie_chart")
-                    bar_chart(records, per="month", key="calendar_bar_chart_month")
-                    bar_chart(records, per="week", key="calendar_bar_chart_week")
                     bar_chart(records, per="day", key="calendar_bar_chart_day")
+                    # bar_chart(records, per="week", key="calendar_bar_chart_week")
+                    bar_chart(records, per="month", key="calendar_bar_chart_month")
                     # line_chart(records, per="month", key="calendar_line_chart_month")
                     # line_chart(records, per="week", key="calendar_line_chart_week")
                     # line_chart(records, per="day", key="calendar_line_chart_day")
