@@ -7,11 +7,13 @@ from sqlalchemy.orm import declarative_base, mapped_column
 
 Base = declarative_base()
 
+
 class StockPile(Base):
     __tablename__ = "StockPile"
 
     key = Column(String(512), primary_key=True, index=True)
     value = Column(TEXT, nullable=False)
+
 
 class Setting(Base):
     __tablename__ = "Setting"
@@ -164,6 +166,7 @@ class ChatSession(Base):
     description = Column(TEXT, nullable=True)
     date = Column(DateTime, nullable=False)
 
+
 class ChatMessage(Base):
     __tablename__ = "ChatMessage"
 
@@ -180,6 +183,7 @@ class ChatMessage(Base):
     calendar = Column(TEXT, nullable=True)
     content = Column(TEXT, nullable=False)
 
+
 class Link(Base):
     __tablename__ = "Link"
 
@@ -187,3 +191,109 @@ class Link(Base):
     fileB = Column(String(256), primary_key=True, index=True)
     force = Column(Float, nullable=False, default=1.0)
     comment = Column(TEXT, nullable=True)
+
+
+class Task(Base):
+    __tablename__ = "Task"
+
+    id = Column(
+        String(255), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
+    )
+    title = Column(String(255), nullable=False)
+    description = Column(TEXT, nullable=True)
+    start_date = Column(DateTime, nullable=True)
+    end_date = Column(DateTime, nullable=True)
+    completed = Column(DateTime, nullable=True)
+    priority = Column(Float, nullable=False, default=0.0)
+    
+class TaskTag(Base):
+    __tablename__ = "TaskTag"
+
+    task_id = mapped_column(
+        ForeignKey("Task.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    tag = mapped_column(
+        ForeignKey("Tag.name", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+
+class TaskProject(Base):
+    __tablename__ = "TaskProject"
+
+    task_id = mapped_column(
+        ForeignKey("Task.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    project_name = mapped_column(
+        ForeignKey("Project.name", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+
+class TaskFile(Base):
+    __tablename__ = "TaskFile"
+
+    task_id = mapped_column(
+        ForeignKey("Task.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    file = Column(String(512), primary_key=True, index=True)
+
+class TaskCalendar(Base):
+    __tablename__ = "TaskCalendar"
+
+    task_id = mapped_column(
+        ForeignKey("Task.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    calendar_id = mapped_column(
+        ForeignKey("CalendarRecord.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+
+
+class KanbanBoard(Base):
+    __tablename__ = "KanbanBoard"
+
+    id = Column(
+        String(255), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
+    )
+    name = Column(String(255), nullable=False)
+    description = Column(TEXT, nullable=True)
+
+
+class KanbanColumn(Base):
+    __tablename__ = "KanbanColumn"
+
+    id = Column(
+        String(255), primary_key=True, default=lambda: str(uuid.uuid4()), index=True
+    )
+    board_id = mapped_column(
+        ForeignKey("KanbanBoard.id", ondelete="CASCADE", onupdate="CASCADE"),
+        index=True,
+    )
+    name = Column(String(255), nullable=False)
+    color = Column(String(32), nullable=False)
+    position = Column(Float, nullable=False)
+
+
+class KanbanColumnTask(Base):
+    __tablename__ = "KanbanColumnTask"
+
+    column_id = mapped_column(
+        ForeignKey("KanbanColumn.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    task_id = mapped_column(
+        ForeignKey("Task.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+        index=True,
+    )

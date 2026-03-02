@@ -18,6 +18,14 @@ from db.models import (
     StockPile,
     ChatSession,
     ChatMessage,
+    Task,
+    TaskTag,
+    TaskProject,
+    TaskFile,
+    TaskCalendar,
+    KanbanBoard,
+    KanbanColumn,
+    KanbanColumnTask
 )
 
 

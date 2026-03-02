@@ -2,7 +2,7 @@ FROM python:3.12-slim-bookworm
 
 RUN apt-get update -y
 RUN apt-get upgrade -y
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip setuptools wheel
 RUN apt-get install fonts-dejavu-core -y
 
 COPY requirements.txt requirements.txt

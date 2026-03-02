@@ -19,6 +19,12 @@ PAGE_PROJECTS = st.Page(
     icon="🗂️",
     url_path="projects",
 )
+PAGE_ORGANIZATION = st.Page(
+    "views/organization.py",
+    title="Organization",
+    icon="📋",
+    url_path="organization",
+)
 PAGE_EXPLORER = st.Page(
     "views/explorer.py",
     title="Documents",

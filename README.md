@@ -1,7 +1,7 @@
 <img src="assets/logo.png" alt="drawing" width="30"/>  
 
-# Super Diary
-**Super Diary** is a powerful, AI-enhanced web application for organizing, searching, and extracting content from your documents.
+# God Assistant
+**God Assistant** is a powerful, AI-enhanced web application for organizing, searching, and extracting content from your documents.
 Inspired by tools like *Paperless*, it leverages state-of-the-art models to unlock the full potential of your file collection.
 
 ## 🚀 Features
@@ -27,31 +27,31 @@ Inspired by tools like *Paperless*, it leverages state-of-the-art models to unlo
 
 ## 📷 Preview  
 
-<img src="assets/home.png" alt="Super Diary Home Dashboard" width="1000"/>  
+<img src="assets/home.png" alt="God Assistant Home Dashboard" width="1000"/>  
 
 *Home dashboard with an overview of your files, and stats.*
 
-<img src="assets/research_line.png" alt="Super Diary Search Results in Line View" width="1000"/>  
+<img src="assets/research_line.png" alt="God Assistant Search Results in Line View" width="1000"/>  
 
 *Search results displayed in a line view for easy navigation and quick access.*
 
-<img src="assets/research_card.png" alt="Super Diary Search Results in Card View" width="1000"/>  
+<img src="assets/research_card.png" alt="God Assistant Search Results in Card View" width="1000"/>  
 
 *Search results displayed in a card view for a visual and organized experience.*
 
-<img src="assets/view.png" alt="Super Diary File Viewer" width="1000"/>  
+<img src="assets/view.png" alt="God Assistant File Viewer" width="1000"/>  
 
 *File viewer with support for various file types, including text, PDF, images, and more.*
 
-<img src="assets/chat.png" alt="Super Diary AI Chat Assistant" width="1000"/>  
+<img src="assets/chat.png" alt="God Assistant AI Chat Assistant" width="1000"/>  
 
 *AI-powered chat assistant that reads extracted features and linked information from your files and calendar events.*
 
-<img src="assets/params.png" alt="Super Diary Settings Panel" width="1000"/>  
+<img src="assets/params.png" alt="God Assistant Settings Panel" width="1000"/>  
 
 *Settings panel to configure AI models, external connections (Ollama, Mistral, ChatGPT, Gemini), and app preferences.*
 
-<img src="assets/notes.png" alt="Super Diary Notes Editor" width="1000"/>  
+<img src="assets/notes.png" alt="God Assistant Notes Editor" width="1000"/>  
 
 *Notes editor with block support for structured and organized note-taking.*
 
