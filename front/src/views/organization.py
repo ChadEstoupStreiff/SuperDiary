@@ -9,6 +9,7 @@ from utils import (
 )
 
 PRIORITY_OPTIONS = [
+    {"label": "Idea", "value": -1, "emoji": "💡"},
     {"label": "Low", "value": 0, "emoji": "🟢"},
     {"label": "Medium", "value": 1, "emoji": "🟡"},
     {"label": "High", "value": 2, "emoji": "🟧"},
@@ -117,7 +118,7 @@ def create_task(column):
     priority = st.selectbox(
         "Priority",
         options=PRIORITY_OPTIONS,
-        format_func=lambda x: x["label"],
+        format_func=lambda x: x["emoji"] + " " + x["label"],
     )
 
     projects = requests.get("http://back:80/projects").json()
@@ -264,8 +265,8 @@ def edit_task(task):
     new_priority = st.selectbox(
         "Priority",
         options=PRIORITY_OPTIONS,
-        format_func=lambda x: x["label"],
-        index=int(task["priority"]) if task["priority"] is not None else 0,
+        format_func=lambda x: x["emoji"] + " " + x["label"],
+        index=[p["value"] for p in PRIORITY_OPTIONS].index(task["priority"]) if task["priority"] is not None else 0,
     )
 
     projects = requests.get("http://back:80/projects").json()
@@ -320,10 +321,17 @@ def organization():
     with st.sidebar:
         if st.button("🆕 Create Board", use_container_width=True):
             create_kanban_board()
+        in_sidebar_board_selector = st.toggle("📋 Board selector in sidebar", key="board_selector_sidebar_toggle", value=False)
+        show_edit_columns = st.toggle("✏️ Columns edit", key="show_edit_columns_toggle", value=False)
+        show_edit_tasks = st.toggle("✏️ Tasks edit", key="show_edit_tasks_toggle", value=True)
 
     kaban_boards = requests.get("http://back:80/kanban/boards").json()
 
-    cols = st.columns(5)
+    if in_sidebar_board_selector:
+        st.sidebar.divider()
+        cols = [st.sidebar] * 5
+    else:
+        cols = st.columns(5)
     with cols[0]:
         selected_board = st.selectbox(
             "Select a Kanban board",
@@ -343,6 +351,13 @@ def organization():
         selected_tags = st.multiselect(
             "Select tags to filter",
             options=[t["name"] for t in tags],
+        )
+    
+    with cols[3]:
+        selected_priorities = st.multiselect(
+            "Select priorities to filter",
+            options=PRIORITY_OPTIONS,
+            format_func=lambda x: x["emoji"] + " " + x["label"],
         )
 
     if selected_board:
@@ -368,66 +383,74 @@ def organization():
         columns = [columns[i].container(border=True) for i in range(n_cols)]
         for i, column in enumerate(board_info["columns"]):
             with columns[i]:
-                cols = st.columns(3)
-                with cols[0]:
-                    if st.button(
-                        "⬅️",
-                        use_container_width=True,
-                        key=f"move_left_{column['id']}",
-                        disabled=i == 0,
-                    ):
-                        response = requests.put(
-                            "http://back:80/kanban/columns/{}/move/left".format(
-                                column["id"]
+                if show_edit_columns:
+                    cols = st.columns(3)
+                    with cols[0]:
+                        if st.button(
+                            "⬅️",
+                            use_container_width=True,
+                            key=f"move_left_{column['id']}",
+                            disabled=i == 0,
+                        ):
+                            response = requests.put(
+                                "http://back:80/kanban/columns/{}/move/left".format(
+                                    column["id"]
+                                )
                             )
-                        )
-                        if response.status_code == 200:
-                            toast_for_rerun(
-                                "Column moved left successfully!", icon="✅"
+                            if response.status_code == 200:
+                                toast_for_rerun(
+                                    "Column moved left successfully!", icon="✅"
+                                )
+                                st.rerun()
+                            else:
+                                st.error(
+                                    f"Failed to move column left. Please try again. {response.status_code} : {response.text}"
+                                )
+                                st.toast(
+                                    "Failed to move column left. Please try again.",
+                                    icon="❌",
+                                )
+                    with cols[1]:
+                        if st.button(
+                            "✏️", use_container_width=True, key=f"edit_{column['id']}"
+                        ):
+                            edit_kanban_column(column, board_info["id"])
+                    with cols[2]:
+                        if st.button(
+                            "➡️",
+                            use_container_width=True,
+                            key=f"move_right_{column['id']}",
+                            disabled=i == len(board_info["columns"]) - 1,
+                        ):
+                            response = requests.put(
+                                "http://back:80/kanban/columns/{}/move/right".format(
+                                    column["id"]
+                                )
                             )
-                            st.rerun()
-                        else:
-                            st.error(
-                                f"Failed to move column left. Please try again. {response.status_code} : {response.text}"
-                            )
-                            st.toast(
-                                "Failed to move column left. Please try again.",
-                                icon="❌",
-                            )
-                with cols[1]:
-                    if st.button(
-                        "✏️", use_container_width=True, key=f"edit_{column['id']}"
-                    ):
-                        edit_kanban_column(column, board_info["id"])
-                with cols[2]:
-                    if st.button(
-                        "➡️",
-                        use_container_width=True,
-                        key=f"move_right_{column['id']}",
-                        disabled=i == len(board_info["columns"]) - 1,
-                    ):
-                        response = requests.put(
-                            "http://back:80/kanban/columns/{}/move/right".format(
-                                column["id"]
-                            )
-                        )
-                        if response.status_code == 200:
-                            toast_for_rerun(
-                                "Column moved right successfully!", icon="✅"
-                            )
-                            st.rerun()
-                        else:
-                            st.error(
-                                f"Failed to move column right. Please try again. {response.status_code} : {response.text}"
-                            )
-                            st.toast(
-                                "Failed to move column right. Please try again.",
-                                icon="❌",
-                            )
+                            if response.status_code == 200:
+                                toast_for_rerun(
+                                    "Column moved right successfully!", icon="✅"
+                                )
+                                st.rerun()
+                            else:
+                                st.error(
+                                    f"Failed to move column right. Please try again. {response.status_code} : {response.text}"
+                                )
+                                st.toast(
+                                    "Failed to move column right. Please try again.",
+                                    icon="❌",
+                                )
                 st.markdown(
                     f"<div style='font-size: 2em; font-weight: bold; width: 100%; display: flex; justify-content: center; align-items: center; color: {column['color']}'>{column['name']}</div>",
                     unsafe_allow_html=True,
                 )
+
+                if st.button(
+                    "➕ Add Task",
+                    use_container_width=True,
+                    key=f"add_task_{column['id']}",
+                ):
+                    create_task(column)
 
                 # MARK: TASKS
                 for task in column["tasks"]:
@@ -439,94 +462,103 @@ def organization():
                         t in task["tags"] for t in selected_tags
                     ):
                         continue
+                    if (selected_priorities and not any(
+                        p["value"] == task["priority"] for p in selected_priorities
+                    )):
+                        continue
                     with st.container(border=True):
-                        cols = st.columns(4)
-                        with cols[0]:
-                            if st.button(
-                                "⬅️",
-                                use_container_width=True,
-                                key=f"move_left_{task['id']}",
-                                disabled=i == 0,
-                            ):
-                                response = requests.put(
-                                    "http://back:80/kanban/columns/{column_id}/tasks/{task_id}/move".format(
-                                        column_id=board_info["columns"][i - 1]["id"],
-                                        task_id=task["id"],
+                        if show_edit_tasks:
+                            cols = st.columns(4)
+                            with cols[0]:
+                                if st.button(
+                                    "⬅️",
+                                    use_container_width=True,
+                                    key=f"move_left_{task['id']}",
+                                    disabled=i == 0,
+                                ):
+                                    response = requests.put(
+                                        "http://back:80/kanban/columns/{column_id}/tasks/{task_id}/move".format(
+                                            column_id=board_info["columns"][i - 1]["id"],
+                                            task_id=task["id"],
+                                        )
                                     )
-                                )
-                                if response.status_code == 200:
-                                    toast_for_rerun(
-                                        "Task moved left successfully!", icon="✅"
+                                    if response.status_code == 200:
+                                        toast_for_rerun(
+                                            "Task moved left successfully!", icon="✅"
+                                        )
+                                        st.rerun()
+                                    else:
+                                        st.error(
+                                            f"Failed to move task left. Please try again. {response.status_code} : {response.text}"
+                                        )
+                                        st.toast(
+                                            "Failed to move task left. Please try again.",
+                                            icon="❌",
+                                        )
+                            with cols[1]:
+                                if st.button(
+                                    "✏️",
+                                    use_container_width=True,
+                                    key=f"edit_{task['id']}",
+                                ):
+                                    edit_task(task)
+                            with cols[2]:
+                                if st.button(
+                                    "❌" if task["completed"] else "✅",
+                                    use_container_width=True,
+                                    key=f"toggle_completed_{task['id']}",
+                                ):
+                                    response = requests.put(
+                                        "http://back:80/tasks/{}/complete".format(
+                                            task["id"]
+                                        )
                                     )
-                                    st.rerun()
-                                else:
-                                    st.error(
-                                        f"Failed to move task left. Please try again. {response.status_code} : {response.text}"
+                                    if response.status_code == 200:
+                                        toast_for_rerun(
+                                            "Task status updated successfully!", icon="✅"
+                                        )
+                                        st.rerun()
+                                    else:
+                                        st.error(
+                                            f"Failed to update task status. Please try again. {response.status_code} : {response.text}"
+                                        )
+                                        st.toast(
+                                            "Failed to update task status. Please try again.",
+                                            icon="❌",
+                                        )
+                            with cols[3]:
+                                if st.button(
+                                    "➡️",
+                                    use_container_width=True,
+                                    key=f"move_right_{task['id']}",
+                                    disabled=i == len(board_info["columns"]) - 1,
+                                ):
+                                    response = requests.put(
+                                        "http://back:80/kanban/columns/{column_id}/tasks/{task_id}/move".format(
+                                            column_id=board_info["columns"][i + 1]["id"],
+                                            task_id=task["id"],
+                                        )
                                     )
-                                    st.toast(
-                                        "Failed to move task left. Please try again.",
-                                        icon="❌",
-                                    )
-                        with cols[1]:
-                            if st.button(
-                                "✏️",
-                                use_container_width=True,
-                                key=f"edit_{task['id']}",
-                            ):
-                                edit_task(task)
-                        with cols[2]:
-                            if st.button(
-                                "❌" if task["completed"] else "✅",
-                                use_container_width=True,
-                                key=f"toggle_completed_{task['id']}",
-                            ):
-                                response = requests.put(
-                                    "http://back:80/tasks/{}/complete".format(
-                                        task["id"]
-                                    )
-                                )
-                                if response.status_code == 200:
-                                    toast_for_rerun(
-                                        "Task status updated successfully!", icon="✅"
-                                    )
-                                    st.rerun()
-                                else:
-                                    st.error(
-                                        f"Failed to update task status. Please try again. {response.status_code} : {response.text}"
-                                    )
-                                    st.toast(
-                                        "Failed to update task status. Please try again.",
-                                        icon="❌",
-                                    )
-                        with cols[3]:
-                            if st.button(
-                                "➡️",
-                                use_container_width=True,
-                                key=f"move_right_{task['id']}",
-                                disabled=i == len(board_info["columns"]) - 1,
-                            ):
-                                response = requests.put(
-                                    "http://back:80/kanban/columns/{column_id}/tasks/{task_id}/move".format(
-                                        column_id=board_info["columns"][i + 1]["id"],
-                                        task_id=task["id"],
-                                    )
-                                )
-                                if response.status_code == 200:
-                                    toast_for_rerun(
-                                        "Task moved right successfully!", icon="✅"
-                                    )
-                                    st.rerun()
-                                else:
-                                    st.error(
-                                        f"Failed to move task right. Please try again. {response.status_code} : {response.text}"
-                                    )
-                                    st.toast(
-                                        "Failed to move task right. Please try again.",
-                                        icon="❌",
-                                    )
+                                    if response.status_code == 200:
+                                        toast_for_rerun(
+                                            "Task moved right successfully!", icon="✅"
+                                        )
+                                        st.rerun()
+                                    else:
+                                        st.error(
+                                            f"Failed to move task right. Please try again. {response.status_code} : {response.text}"
+                                        )
+                                        st.toast(
+                                            "Failed to move task right. Please try again.",
+                                            icon="❌",
+                                        )
 
+                        priority = next(
+                            (p for p in PRIORITY_OPTIONS if p["value"] == task["priority"]),
+                            None,
+                        )
                         st.markdown(
-                            f"### {PRIORITY_OPTIONS[int(task['priority'])]['emoji']} **{task['title']}**"
+                            f"### {priority['emoji']} **{task['title']}**" if priority else f"### **{task['title']}**"
                         )
                         if task["description"]:
                             st.markdown(task["description"])
@@ -571,13 +603,6 @@ def organization():
                                     ", ".join(task["calendars"])
                                 )
                             )
-
-                if st.button(
-                    "➕ Add Task",
-                    use_container_width=True,
-                    key=f"add_task_{column['id']}",
-                ):
-                    create_task(column)
 
         # MARK: ADD NEW COLUMN
         with columns[-1]:
